@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from folio.dsl.model import Element, Markup, TextSpan
+    from folio.dsl.model import Element, Markup, TextMetrics, TextSpan
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,12 +108,13 @@ class TextStyle:
         element_id: str | None,
         x_mm: float,
         y_mm: float,
-        content: str,
+        content: str | Markup | Sequence[str | Markup | TextSpan],
         *,
         width_mm: float,
         line_step_mm: float | None = None,
         max_lines: int | None = None,
         overflow: str = "ellipsis",
+        warn_on_truncate: bool = True,
         **attrs: Any,
     ) -> Element:
         from folio.dsl import wrapped_text
@@ -122,6 +123,38 @@ class TextStyle:
             element_id,
             x_mm,
             y_mm,
+            content,
+            width_mm=width_mm,
+            line_step_mm=line_step_mm,
+            max_lines=max_lines,
+            overflow=overflow,
+            warn_on_truncate=warn_on_truncate,
+            style=self,
+            **attrs,
+        )
+
+    def measure_text(
+        self,
+        content: str | Markup | Sequence[str | Markup | TextSpan],
+        **attrs: Any,
+    ) -> TextMetrics:
+        from folio.dsl import measure_text
+
+        return measure_text(content, style=self, **attrs)
+
+    def measure_wrapped_text(
+        self,
+        content: str | Markup | Sequence[str | Markup | TextSpan],
+        *,
+        width_mm: float,
+        line_step_mm: float | None = None,
+        max_lines: int | None = None,
+        overflow: str = "ellipsis",
+        **attrs: Any,
+    ) -> TextMetrics:
+        from folio.dsl import measure_wrapped_text
+
+        return measure_wrapped_text(
             content,
             width_mm=width_mm,
             line_step_mm=line_step_mm,

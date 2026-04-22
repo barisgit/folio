@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from folio.dsl import (
+    TextLayoutWarning,
     block,
     clip_path,
     component_transfer,
@@ -15,11 +16,14 @@ from folio.dsl import (
     filter_,
     func_a,
     gaussian_blur,
+    grain,
     group,
     image,
     linear_gradient,
     linear_gradient_stops,
     markup,
+    measure_text,
+    measure_wrapped_text,
     merge,
     merge_node,
     multiline,
@@ -321,6 +325,9 @@ def test_qr_rejects_invalid_arguments() -> None:
     with pytest.raises(TypeError, match=r"qr\(\) size_mm must be positive"):
         qr("code", 0, 0, "hello", size_mm=0)
 
+    with pytest.raises(TypeError, match=r"qr\(\) padding_mm must leave positive space"):
+        qr("code", 0, 0, "hello", size_mm=20, padding_mm=10)
+
 
 
 def test_image_clip_helper_renders_inline_defs(tmp_path: Path) -> None:
@@ -611,9 +618,173 @@ def test_wrapped_text_wraps_plain_text_and_supports_style_helpers(tmp_path: Path
 
 
 
-def test_wrapped_text_rejects_non_string_content() -> None:
-    with pytest.raises(TypeError, match=r"wrapped_text\(\) content must be a string"):
-        wrapped_text("copy", 10, 20, markup("<b>unsafe</b>"), width_mm=20)
+def test_measure_text_and_measure_wrapped_text_return_metrics() -> None:
+    inline = measure_text(
+        [
+            "Hello ",
+            span(None, "world", style=tokens.STYLES.kicker, fill=tokens.ACCENT),
+        ],
+        style=tokens.STYLES.body,
+        size_pt=12,
+    )
+    wrapped = measure_wrapped_text(
+        "Alpha beta gamma delta epsilon zeta",
+        width_mm=20,
+        max_lines=2,
+        size_pt=12,
+    )
+
+    assert inline.width_mm > 0
+    assert inline.height_mm > 0
+    assert inline.line_count == 1
+    assert wrapped.width_mm <= 20
+    assert wrapped.line_count == 2
+    assert wrapped.truncated is True
+
+
+
+def test_wrapped_text_supports_structured_content_and_warns_on_truncate(tmp_path: Path) -> None:
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        document = render(
+            page(
+                page_id="cover",
+                filename="cover.svg",
+                page_number=1,
+                elements=[
+                    wrapped_text(
+                        "copy",
+                        10,
+                        20,
+                        [
+                            "Alpha ",
+                            span(None, "beta", style=tokens.STYLES.kicker, fill=tokens.ACCENT),
+                            " gamma delta epsilon zeta eta",
+                        ],
+                        width_mm=20,
+                        max_lines=1,
+                        size_pt=12,
+                    )
+                ],
+            )
+        )
+
+    content = render_document(document, config_dir=tmp_path).pages[0].content
+
+    assert any(item.category is TextLayoutWarning for item in recorded)
+    assert 'id="copy_line_1"' in content
+    assert 'fill="#c8a24a"' in content
+    assert "…</tspan>" in content
+
+
+
+def test_render_document_supports_document_level_defs_and_detects_collisions(
+    tmp_path: Path,
+) -> None:
+    shared_defs = [
+        linear_gradient_stops(
+            "shared_gradient",
+            [("0%", tokens.INK), ("100%", tokens.ACCENT)],
+        ),
+        grain("shared_grain", alpha=0.03),
+    ]
+    document = render(
+        page(
+            rect(
+                "panel_one",
+                0,
+                0,
+                20,
+                20,
+                fill="url(#shared_gradient)",
+                filter="url(#shared_grain)",
+            ),
+            page_id="one",
+            filename="one.svg",
+            page_number=1,
+        ),
+        page(
+            rect(
+                "panel_two",
+                0,
+                0,
+                20,
+                20,
+                fill="url(#shared_gradient)",
+                filter="url(#shared_grain)",
+            ),
+            page_id="two",
+            filename="two.svg",
+            page_number=2,
+        ),
+        defs=shared_defs,
+    )
+
+    pages = render_document(document, config_dir=tmp_path).pages
+
+    assert 'id="shared_gradient"' in pages[0].content
+    assert 'id="shared_gradient"' in pages[1].content
+    assert 'id="shared_grain"' in pages[0].content
+    assert 'id="shared_grain"' in pages[1].content
+
+    collision = render(
+        page(
+            page_id="cover",
+            filename="cover.svg",
+            page_number=1,
+            defs=[
+                linear_gradient(
+                    "shared_gradient",
+                    stop("page_stop", offset="0%", stop_color=tokens.LINE),
+                )
+            ],
+            elements=[rect("panel", 0, 0, 10, 10, fill="url(#shared_gradient)")],
+        ),
+        defs=[
+            linear_gradient(
+                "shared_gradient",
+                stop("doc_stop", offset="0%", stop_color=tokens.INK),
+            )
+        ],
+    )
+
+    with pytest.raises(RenderError, match=r"Duplicate element id: shared_gradient"):
+        validate_document(collision)
+
+
+
+def test_qr_padding_and_grain_helper_render(tmp_path: Path) -> None:
+    document = render(
+        page(
+            page_id="cover",
+            filename="cover.svg",
+            page_number=1,
+            defs=[grain("paper_grain", alpha=0.05)],
+            elements=[
+                rect("panel", 0, 0, 20, 20, fill=tokens.SOFT, filter="url(#paper_grain)"),
+                qr(
+                    "code",
+                    10,
+                    20,
+                    "https://example.com",
+                    size_mm=30,
+                    border_modules=0,
+                    padding_mm=2,
+                    padding_fill=tokens.SOFT,
+                    background_fill=tokens.WHITE,
+                ),
+            ],
+        )
+    )
+
+    content = render_document(document, config_dir=tmp_path).pages[0].content
+
+    assert 'id="paper_grain"' in content
+    assert 'feTurbulence' in content
+    assert '<rect id="code_pad"' in content
+    assert '<rect id="code_bg"' in content
+    assert '<path id="code_fg" d="M' in content
+    assert re.search(r'<rect id="code_bg"[^>]* x="34\.02" y="62\.36"', content)
 
 
 

@@ -13,11 +13,14 @@ from folio.dsl.styles import TextStyle, merge_text_style_attrs
 from folio.render import tokens as render_tokens
 from folio.render.primitives import (
     circle_mm,
+    ellipse_mm,
     escape_text,
     image_mm,
     line_mm,
     m,
     path,
+    polygon_mm,
+    polyline_mm,
     rect_mm,
     svg_open,
     text_mm,
@@ -39,11 +42,14 @@ class ValidationWarning(UserWarning):
 
 
 _HEX_COLOR_RE = re.compile(r"#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})")
-_TOKEN_HEX_COLORS = frozenset(
-    value.lower()
-    for value in vars(render_tokens).values()
-    if isinstance(value, str) and _HEX_COLOR_RE.fullmatch(value)
-)
+
+
+def _token_hex_colors() -> frozenset[str]:
+    return frozenset(
+        value.lower()
+        for value in vars(render_tokens).values()
+        if isinstance(value, str) and _HEX_COLOR_RE.fullmatch(value)
+    )
 
 
 @dataclass(frozen=True)
@@ -145,6 +151,9 @@ def _validate_element(element: Element, seen_ids: set[str]) -> None:
         for part in _text_parts(element.content, source=f"Text element {element.element_id}") or ():
             if isinstance(part, TextSpan):
                 _validate_text_span(part, seen_ids)
+    clip_def = element.attrs.get("clip_def")
+    if isinstance(clip_def, DefNode):
+        _validate_def_node(clip_def, seen_ids)
     for child in element.children:
         _validate_element(child, seen_ids)
 
@@ -188,11 +197,19 @@ def _validate_document(document: Document) -> None:
             raise RenderError(f"Duplicate page filename: {page.filename}")
         if not page.filename.lower().endswith(".svg"):
             raise RenderError(f"Page filename must end with .svg: {page.filename}")
+        if page.width_mm <= 0 or page.height_mm <= 0:
+            raise RenderError(
+                f"Page {page.page_id} must use positive width_mm/height_mm "
+                f"(got {page.width_mm}x{page.height_mm})"
+            )
         page_numbers.add(page.page_number)
         page_ids.add(page.page_id)
         filenames.add(page.filename)
 
         seen_ids: set[str] = {page.page_id}
+        if isinstance(document.defs, tuple):
+            for node in document.defs:
+                _validate_def_node(node, seen_ids)
         if isinstance(page.defs, tuple):
             for node in page.defs:
                 _validate_def_node(node, seen_ids)
@@ -202,14 +219,15 @@ def _validate_document(document: Document) -> None:
 
 def _hex_colors_in_attrs(attrs: Mapping[str, object]) -> set[str]:
     colors: set[str] = set()
+    trusted_colors = _token_hex_colors()
     for value in attrs.values():
         if isinstance(value, str) and _HEX_COLOR_RE.fullmatch(value):
             lowered = value.lower()
-            if lowered not in _TOKEN_HEX_COLORS:
+            if lowered not in trusted_colors:
                 colors.add(lowered)
         elif isinstance(value, TextStyle) and value.fill is not None:
             lowered = value.fill.lower()
-            if _HEX_COLOR_RE.fullmatch(lowered) and lowered not in _TOKEN_HEX_COLORS:
+            if _HEX_COLOR_RE.fullmatch(lowered) and lowered not in trusted_colors:
                 colors.add(lowered)
     return colors
 
@@ -227,6 +245,9 @@ def _collect_element_colors(element: Element, colors: set[str]) -> None:
         for part in _text_parts(element.content, source=f"Text element {element.element_id}") or ():
             if isinstance(part, TextSpan):
                 _collect_text_span_colors(part, colors)
+    clip_def = element.attrs.get("clip_def")
+    if isinstance(clip_def, DefNode):
+        _collect_def_node_colors(clip_def, colors)
     for child in element.children:
         _collect_element_colors(child, colors)
 
@@ -242,6 +263,9 @@ def _collect_def_node_colors(node: DefNode, colors: set[str]) -> None:
 
 def _warn_on_non_token_hex_colors(document: Document) -> None:
     colors: set[str] = set()
+    if isinstance(document.defs, tuple):
+        for node in document.defs:
+            _collect_def_node_colors(node, colors)
     for page in document.pages:
         colors.update(_hex_colors_in_attrs(page.attrs))
         if isinstance(page.defs, tuple):
@@ -417,14 +441,29 @@ def _render_element(element: Element, *, config_dir: Path) -> str:
             **_normalize_svg_attrs(attrs),
         )
 
+    if element.kind is ElementKind.ELLIPSE:
+        rx_mm = float(attrs.pop("rx_mm"))
+        ry_mm = float(attrs.pop("ry_mm"))
+        fill = str(attrs.pop("fill", "none"))
+        return ellipse_mm(
+            element.element_id,
+            element.x_mm,
+            element.y_mm,
+            rx_mm,
+            ry_mm,
+            fill=fill,
+            **_normalize_svg_attrs(attrs),
+        )
+
     if element.kind is ElementKind.TEXT:
         return _render_text(element)
 
     if element.kind is ElementKind.IMAGE:
         if not isinstance(element.content, Asset):
             raise RenderError(f"Image element {element.element_id} is missing an Asset payload")
+        clip_def = attrs.pop("clip_def", None)
         asset_path = _resolve_asset(config_dir, element.content.reference)
-        return image_mm(
+        image_markup = image_mm(
             element.element_id,
             asset_path,
             element.x_mm,
@@ -433,6 +472,10 @@ def _render_element(element: Element, *, config_dir: Path) -> str:
             element.content.height_mm,
             **_normalize_svg_attrs(attrs),
         )
+        if isinstance(clip_def, DefNode):
+            clip_markup = _render_def_node(clip_def, config_dir=config_dir)
+            return f"<defs>\n{clip_markup}</defs>\n{image_markup}"
+        return image_markup
 
     if element.kind is ElementKind.GROUP:
         label = str(attrs.pop("label", element.element_id))
@@ -443,6 +486,24 @@ def _render_element(element: Element, *, config_dir: Path) -> str:
 
     if element.kind is ElementKind.PATH:
         return path(element.element_id, str(element.content or ""), **_normalize_svg_attrs(attrs))
+
+    if element.kind is ElementKind.POLYGON:
+        if not isinstance(element.content, tuple):
+            raise RenderError(f"Polygon element {element.element_id} requires points content")
+        return polygon_mm(
+            element.element_id,
+            element.content,
+            **_normalize_svg_attrs(attrs),
+        )
+
+    if element.kind is ElementKind.POLYLINE:
+        if not isinstance(element.content, tuple):
+            raise RenderError(f"Polyline element {element.element_id} requires points content")
+        return polyline_mm(
+            element.element_id,
+            element.content,
+            **_normalize_svg_attrs(attrs),
+        )
 
     if element.kind is ElementKind.LINE:
         if not isinstance(element.content, tuple) or len(element.content) != 2:
@@ -460,7 +521,12 @@ def _render_element(element: Element, *, config_dir: Path) -> str:
     raise RenderError(f"Unsupported element kind for {element.element_id}: {element.kind}")
 
 
-def _render_page(page: Page, *, config_dir: Path) -> RenderedPage:
+def _render_page(
+    page: Page,
+    *,
+    config_dir: Path,
+    document_defs: str | Markup | tuple[DefNode, ...] = (),
+) -> RenderedPage:
     body = "".join(_render_element(element, config_dir=config_dir) for element in page.elements)
     root = group_mm(
         page.page_id,
@@ -472,7 +538,13 @@ def _render_page(page: Page, *, config_dir: Path) -> RenderedPage:
             **_normalize_svg_attrs(page.attrs),
         },
     )
-    content = svg_open() + _defs_block(page.defs, config_dir=config_dir) + root + "</svg>\n"
+    content = (
+        svg_open(page.width_mm, page.height_mm)
+        + _defs_block(document_defs, config_dir=config_dir)
+        + _defs_block(page.defs, config_dir=config_dir)
+        + root
+        + "</svg>\n"
+    )
     return RenderedPage(
         page_number=page.page_number,
         page_id=page.page_id,
@@ -489,7 +561,7 @@ def render_document(
 ) -> BuildResult:
     validate_document(document)
     pages = [
-        _render_page(page, config_dir=config_dir)
+        _render_page(page, config_dir=config_dir, document_defs=document.defs)
         for page in sorted(document.pages, key=lambda page: page.page_number)
     ]
     config_hash = document.config_hash or (

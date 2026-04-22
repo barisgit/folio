@@ -8,10 +8,13 @@ from typing import Any
 class ElementKind(Enum):
     RECT = auto()
     CIRCLE = auto()
+    ELLIPSE = auto()
     TEXT = auto()
     IMAGE = auto()
     GROUP = auto()
     PATH = auto()
+    POLYGON = auto()
+    POLYLINE = auto()
     LINE = auto()
 
 
@@ -60,13 +63,25 @@ class Page:
     page_id: str
     filename: str
     elements: tuple[Element, ...]
+    width_mm: float = 210.0
+    height_mm: float = 297.0
     defs: str | Markup | tuple[DefNode, ...] = field(default_factory=tuple)
     label: str | None = None
     attrs: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
+class TextMetrics:
+    width_mm: float
+    height_mm: float
+    line_count: int
+    line_step_mm: float
+    truncated: bool = False
+
+
+@dataclass(frozen=True)
 class Document:
     pages: tuple[Page, ...]
+    defs: str | Markup | tuple[DefNode, ...] = field(default_factory=tuple)
     config_hash: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)

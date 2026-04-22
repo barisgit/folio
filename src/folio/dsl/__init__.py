@@ -2,7 +2,17 @@ from __future__ import annotations
 
 from . import builtins as _builtins
 from . import tokens
-from .model import Asset, DefNode, Document, Element, ElementKind, Markup, Page, TextSpan
+from .model import (
+    Asset,
+    DefNode,
+    Document,
+    Element,
+    ElementKind,
+    Markup,
+    Page,
+    TextMetrics,
+    TextSpan,
+)
 from .styles import TextStyle
 
 Block = _builtins.Block
@@ -13,6 +23,7 @@ component_transfer = _builtins.component_transfer
 drop_shadow = _builtins.drop_shadow
 ellipse = _builtins.ellipse
 filter_ = _builtins.filter_
+grain = _builtins.grain
 func_a = _builtins.func_a
 gaussian_blur = _builtins.gaussian_blur
 group = _builtins.group
@@ -24,6 +35,8 @@ markup = _builtins.markup
 mask = _builtins.mask
 merge = _builtins.merge
 merge_node = _builtins.merge_node
+measure_text = _builtins.measure_text
+measure_wrapped_text = _builtins.measure_wrapped_text
 multiline = _builtins.multiline
 offset = _builtins.offset
 page = _builtins.page
@@ -45,6 +58,7 @@ triangle = _builtins.triangle
 tspan = _builtins.tspan
 wrapped_text = _builtins.wrapped_text
 PathBuilder = _builtins.PathBuilder
+TextLayoutWarning = _builtins.TextLayoutWarning
 TransformBuilder = _builtins.TransformBuilder
 
 __all__ = [
@@ -56,8 +70,10 @@ __all__ = [
     "ElementKind",
     "Markup",
     "Page",
+    "TextMetrics",
     "TextSpan",
     "TextStyle",
+    "TextLayoutWarning",
     "TransformBuilder",
     "block",
     "PathBuilder",
@@ -68,6 +84,7 @@ __all__ = [
     "ellipse",
     "filter_",
     "func_a",
+    "grain",
     "gaussian_blur",
     "group",
     "image",
@@ -76,6 +93,8 @@ __all__ = [
     "linear_gradient_stops",
     "markup",
     "mask",
+    "measure_text",
+    "measure_wrapped_text",
     "merge",
     "merge_node",
     "multiline",
