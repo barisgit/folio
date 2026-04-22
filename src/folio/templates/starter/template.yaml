@@ -1,0 +1,16 @@
+schema_version: 1
+id: starter
+name: Folio Starter Kit
+description: Three-page starter project showcasing the folio DSL — layered gradients, clipped photography, drop shadows, and data-viz primitives.
+engine: jinja
+variables:
+  - name: brand_name
+    description: Brand name shown in the cover, footer, and CTA panels.
+  - name: brand_tagline
+    description: Short brand tagline paired with the brand name.
+  - name: document_title
+    description: Main title rendered on the features page.
+  - name: document_kicker
+    description: Eyebrow text above the cover-page hero block.
+  - name: document_subtitle
+    description: Supporting subtitle under the cover-page hero.

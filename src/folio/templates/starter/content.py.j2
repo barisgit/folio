@@ -1,0 +1,130 @@
+from __future__ import annotations
+
+BRAND_NAME = "{{ brand_name | default('FOLIO STUDIO') }}"
+BRAND_TAGLINE = "{{ brand_tagline | default('DESIGN DOCUMENTS IN CODE') }}"
+DOCUMENT_TITLE = "{{ document_title | default('Ship the document.') }}"
+DOCUMENT_KICKER = "{{ document_kicker | default('STARTER KIT  /  ISSUE 01') }}"
+DOCUMENT_SUBTITLE = "{{ document_subtitle | default('Three pages that tour the DSL — custom page sizes, layered gradients, clipped photography, data-viz primitives, and a QR callback.') }}"
+CTA_URL = "{{ cta_url | default('https://folio.dev/starter') }}"
+
+HERO_LINE_1 = "Design."
+HERO_LINE_2_PREFIX = "Render"
+HERO_LINE_2_ACCENT = "anywhere"
+HERO_LINE_3 = "Repeat."
+
+FEATURES = (
+    (
+        "01",
+        "TYPED DSL",
+        (
+            "Every element is a typed Python object with a",
+            "stable id, ready for reconcile and diff.",
+        ),
+    ),
+    (
+        "02",
+        "COMPOSABLE LAYOUTS",
+        (
+            "cols, grid, and flow_cols keep multi-column",
+            "pages aligned without hand-tuned maths.",
+        ),
+    ),
+    (
+        "03",
+        "FAST FEEDBACK",
+        (
+            "Validate, build, reconcile, and preview —",
+            "all from the CLI, all in a single shell.",
+        ),
+    ),
+)
+
+CARDS = (
+    (
+        "assets/icon_layers.svg",
+        "01  COMPOSE",
+        "Typed primitives",
+        (
+            "Rect, circle, ellipse, polygon, polyline, image,",
+            "and text — stacked in block-local frames",
+            "with stable ids for reconcile.",
+        ),
+    ),
+    (
+        "assets/icon_palette.svg",
+        "02  TOKENS",
+        "Design system",
+        (
+            "Share a palette and type scale across every",
+            "page, and extend tokens with your own brand",
+            "colours without warning spam.",
+        ),
+    ),
+    (
+        "assets/icon_zap.svg",
+        "03  ITERATE",
+        "Preview loop",
+        (
+            "Rasterize to PNG via Playwright, Cairo, or",
+            "rsvg. Wire a watcher for instant visual",
+            "feedback on every edit.",
+        ),
+    ),
+    (
+        "assets/icon_chart.svg",
+        "04  MEASURE",
+        "Built-in viz",
+        (
+            "Polyline, polygon, and path_builder cover",
+            "sparklines, annotations, and custom chart",
+            "primitives in pure mm-space.",
+        ),
+    ),
+)
+
+METRICS = (
+    ("PAGES SHIPPED", "148", "up 22 this month"),
+    ("ELEMENTS TRACKED", "2 314", "100% stable ids"),
+    ("BUILD TIME", "0.8s", "cached renders"),
+)
+
+SPARKLINE_VALUES = (12.0, 14.0, 13.0, 18.0, 22.0, 20.0, 26.0, 31.0, 28.0, 36.0, 42.0, 49.0)
+SPARKLINE_AXIS_LABELS = ("JAN", "MAR", "MAY", "JUL", "SEP", "NOV")
+SPARKLINE_PEAK_INDEX = 11
+SPARKLINE_PEAK_LABEL = "Nov  ·  49 pages"
+
+TIMELINE = (
+    (
+        "01  Edit content.py",
+        "Rewrite copy, tokens, and data tuples — the layout stays aligned.",
+    ),
+    (
+        "02  Shape the theme",
+        "Extend the token palette and tune TextStyle presets in theme.py.",
+    ),
+    (
+        "03  Build & preview",
+        "folio build then folio preview — Playwright, Cairo, or rsvg fallback.",
+    ),
+)
+
+__all__ = [
+    "BRAND_NAME",
+    "BRAND_TAGLINE",
+    "CARDS",
+    "CTA_URL",
+    "DOCUMENT_KICKER",
+    "DOCUMENT_SUBTITLE",
+    "DOCUMENT_TITLE",
+    "FEATURES",
+    "HERO_LINE_1",
+    "HERO_LINE_2_ACCENT",
+    "HERO_LINE_2_PREFIX",
+    "HERO_LINE_3",
+    "METRICS",
+    "SPARKLINE_AXIS_LABELS",
+    "SPARKLINE_PEAK_INDEX",
+    "SPARKLINE_PEAK_LABEL",
+    "SPARKLINE_VALUES",
+    "TIMELINE",
+]
