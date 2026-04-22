@@ -105,16 +105,16 @@ TIMELINE = (
 )
 
 METRICS_LEDE_PARTS = (
-    ("normal", "Every chart element is a "),
-    ("emphasis", "first-class DSL primitive"),
-    ("normal", " — no images, no external chart library."),
+    ("normal", "Pair typed primitives with "),
+    ("emphasis", "matplotlib charts"),
+    ("normal", " — `chart()` caches PNGs next to the spec so rebuilds stay fast and reconcile stays clean."),
 )
 
 METRICS_LEGEND_PARTS = (
-    ("normal", "polyline — the sparkline and gridlines.  "),
+    ("normal", "chart() — matplotlib figure, cached PNG, stable id.  "),
     ("normal", "polygon — the corner wedges and stripes.  "),
-    ("normal", "path_builder — the filled area under the curve.  "),
-    ("normal", "drop_shadow and grain — soft elevation and a printed-paper texture."),
+    ("normal", "path_builder — custom annotations and callouts.  "),
+    ("normal", "drop_shadow and grain — soft elevation and printed-paper texture."),
 )
 
 __all__ = [

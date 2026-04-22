@@ -16,6 +16,17 @@ if TYPE_CHECKING:
 _MM_PER_INCH = 25.4
 _DEFAULT_CACHE_DIRNAME = ".folio-cache"
 _CACHE_ENV_VAR = "FOLIO_CHART_CACHE_DIR"
+_spec_base_dir: Path | None = None
+
+
+def set_spec_base_dir(path: Path | None) -> None:
+    """Set the base directory for resolving chart cache paths.
+
+    The loader calls this before executing a spec module so charts land
+    next to the spec instead of the user's current working directory.
+    """
+    global _spec_base_dir
+    _spec_base_dir = Path(path).expanduser().resolve() if path is not None else None
 
 
 def _resolve_cache_dir(override: Path | None) -> Path:
@@ -24,7 +35,8 @@ def _resolve_cache_dir(override: Path | None) -> Path:
     env_override = os.environ.get(_CACHE_ENV_VAR)
     if env_override:
         return Path(env_override).expanduser().resolve()
-    return (Path.cwd() / _DEFAULT_CACHE_DIRNAME / "charts").resolve()
+    base = _spec_base_dir if _spec_base_dir is not None else Path.cwd()
+    return (base / _DEFAULT_CACHE_DIRNAME / "charts").resolve()
 
 
 def _import_matplotlib() -> Any:

@@ -48,11 +48,13 @@ def load_dsl_module(path: Path) -> types.ModuleType:
     module = importlib.util.module_from_spec(spec)
     dsl_builtins.reset_auto_ids()
     import folio.dsl as dsl_package
+    from folio.dsl import charts as dsl_charts
 
     dsl_package.render = dsl_builtins.render
     original_sys_path = list(sys.path)
     sys.modules[module_name] = module
     sys.path.insert(0, str(resolved.parent))
+    dsl_charts.set_spec_base_dir(resolved.parent)
     try:
         spec.loader.exec_module(module)
     except SyntaxError as exc:

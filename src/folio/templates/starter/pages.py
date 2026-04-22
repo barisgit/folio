@@ -25,14 +25,12 @@ from content import (
 from layout import (
     brand_chip,
     build_rich_content,
-    chart_axis_labels,
     content_card,
     corner_ticks,
     counter_pill,
     metric_tile,
     numbered_feature,
     rounded_photo,
-    sparkline_chart,
 )
 from theme import (
     CAPTION_LIGHT,
@@ -57,6 +55,7 @@ from theme import (
 
 from folio.dsl import (
     block,
+    chart,
     ellipse,
     grain,
     group,
@@ -798,10 +797,46 @@ def _metrics_chart():
     frame_w = PAGE_W - 2 * MARGIN_X
     frame_h = 54.0
     inner_pad = 7.0
-    chart_x = frame_x + inner_pad
-    chart_y = frame_y + 20.0
-    chart_w = frame_w - 2 * inner_pad
-    chart_h = 26.0
+    mpl_x = frame_x + inner_pad
+    mpl_y = frame_y + 18.0
+    mpl_w = frame_w - 2 * inner_pad
+    mpl_h = frame_h - 24.0
+
+    @chart(
+        "main_chart",
+        x_mm=mpl_x,
+        y_mm=mpl_y,
+        width_mm=mpl_w,
+        height_mm=mpl_h,
+        dpi=300,
+    )
+    def main_chart(ax) -> None:
+        months = list(SPARKLINE_AXIS_LABELS)
+        step = max(1, len(SPARKLINE_VALUES) // len(months))
+        xs = list(range(len(SPARKLINE_VALUES)))
+        ax.bar(xs, SPARKLINE_VALUES, color=tokens.ACCENT, alpha=0.28, width=0.72, zorder=1)
+        ax.plot(xs, SPARKLINE_VALUES, color=tokens.ACCENT_DARK, linewidth=1.6, zorder=3)
+        peak = SPARKLINE_PEAK_INDEX
+        ax.scatter([peak], [SPARKLINE_VALUES[peak]], s=36, color=tokens.INK, zorder=4)
+        ax.annotate(
+            SPARKLINE_PEAK_LABEL,
+            xy=(peak, SPARKLINE_VALUES[peak]),
+            xytext=(-6, 8),
+            textcoords="offset points",
+            ha="right",
+            fontsize=7,
+            color=tokens.INK,
+        )
+        ax.set_xticks(xs[::step])
+        ax.set_xticklabels(months, fontsize=6, color=tokens.MUTED)
+        ax.tick_params(axis="x", length=0, pad=3)
+        ax.set_yticks([])
+        for spine in ("top", "right", "left"):
+            ax.spines[spine].set_visible(False)
+        ax.spines["bottom"].set_color(tokens.LINE)
+        ax.spines["bottom"].set_linewidth(0.4)
+        ax.margins(x=0.02)
+
     return group(
         "chart",
         "Chart",
@@ -855,23 +890,7 @@ def _metrics_chart():
             fill=tokens.MUTED,
             anchor="end",
         ),
-        sparkline_chart(
-            "main_sparkline",
-            chart_x,
-            chart_y,
-            chart_w,
-            chart_h,
-            SPARKLINE_VALUES,
-            peak_index=SPARKLINE_PEAK_INDEX,
-            peak_label=SPARKLINE_PEAK_LABEL,
-        ),
-        *chart_axis_labels(
-            "main_sparkline_axis",
-            SPARKLINE_AXIS_LABELS,
-            chart_x,
-            chart_y + chart_h + 5.0,
-            chart_w,
-        ),
+        main_chart,
     )
 
 
@@ -919,12 +938,12 @@ def _metrics_legend():
             (
                 tspan(
                     "legend_tspan_1",
-                    "polyline",
+                    "chart()",
                     font_family=tokens.MONO_FONT_FAMILY,
                     font_weight=700,
                     fill=tokens.WHITE,
                 ),
-                "  sparkline   ",
+                "  matplotlib   ",
                 tspan(
                     "legend_tspan_2",
                     "polygon",
@@ -940,7 +959,7 @@ def _metrics_legend():
                     font_weight=700,
                     fill=tokens.WHITE,
                 ),
-                "  area   ",
+                "  callouts   ",
                 tspan(
                     "legend_tspan_4",
                     "drop_shadow",
