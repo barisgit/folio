@@ -124,6 +124,40 @@ Layout helpers are available both as classes and convenience builders:
 - `grid(cols, rows, inside=(x, y, width, height), col_gap=..., row_gap=...)`
 - `flow_cols(n=3, inside=(x, y, width), gap=..., arrow_w=...)`
 
+## Charts
+
+`chart()` turns a matplotlib figure into a folio `Element` (kind `IMAGE`) that participates in the normal layout, reconcile, and SVG-embedding pipeline.
+It is an optional feature — install with `pip install 'folio[charts]'` (or add matplotlib directly).
+
+It accepts any library that writes into a matplotlib `Axes` (seaborn, pandas, matplotlib itself) or hands back a matplotlib `Figure`. Libraries that produce their own PNGs directly (Plotly static export, Altair) should keep using `image()`.
+
+Three shapes, one code path:
+
+```python
+from folio.dsl import chart
+
+# 1. Decorator — function takes an Axes. Most concise.
+@chart("revenue", x_mm=20, y_mm=120, width_mm=80, height_mm=40)
+def revenue(ax):
+    ax.plot(months, values)
+# `revenue` is now an Element
+
+# 2. Context manager — when you want the Figure object alongside the Axes.
+handle = chart("trends", x_mm=20, y_mm=120, width_mm=80, height_mm=40)
+with handle as ax:
+    ax.plot(...)
+page(handle.element, ...)
+
+# 3. Pre-built Figure — for libraries that hand back a Figure.
+import seaborn as sns
+fig = sns.lineplot(data=df).figure
+element = chart("revenue", x_mm=20, y_mm=120, width_mm=80, height_mm=40).from_figure(fig)
+```
+
+Rendered PNGs are content-addressed by SHA-256 of the PNG bytes, so builds that produce identical figures reuse the cache. The cache lives at `<spec>/.folio-cache/charts/` by default; override with `FOLIO_CHART_CACHE_DIR` or the `cache_dir=` kwarg.
+
+`dpi=300` is the default (print-ready); drop to 150 for drafts. `transparent=True` is the default so page tokens show through chart backgrounds.
+
 ## Notes
 
 - Images are embedded as base64 data URIs.

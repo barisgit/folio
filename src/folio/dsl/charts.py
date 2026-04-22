@@ -1,8 +1,40 @@
+"""Matplotlib-backed chart primitive.
+
+A chart renders a matplotlib ``Figure`` to a cached PNG and wraps it as a
+folio ``Element`` (kind ``IMAGE``) that participates in the normal layout,
+reconcile, and SVG-embedding pipeline.
+
+Three usage shapes share one code path:
+
+    # 1. Decorator — the common case. The function receives an Axes.
+    @chart("revenue", x_mm=20, y_mm=120, width_mm=80, height_mm=40)
+    def revenue(ax):
+        ax.plot(months, values)
+    # revenue is now an Element
+
+    # 2. Context manager — when you want the Figure object alongside the Axes.
+    handle = chart("trends", x_mm=20, y_mm=120, width_mm=80, height_mm=40)
+    with handle as ax:
+        ax.plot(...)
+    element = handle.element
+
+    # 3. Pre-built Figure — for libraries (seaborn, pandas) that hand back
+    # a Figure you constructed yourself. The Figure is not closed for you.
+    fig = sns.lineplot(data=df).figure
+    element = chart("revenue", x_mm=20, y_mm=120, width_mm=80, height_mm=40).from_figure(fig)
+
+Rendered PNGs are content-addressed by SHA-256 of the PNG bytes, so repeated
+builds that produce identical figures reuse the same file. The cache lives at
+``<spec_dir>/.folio-cache/charts/`` by default; override with the
+``FOLIO_CHART_CACHE_DIR`` environment variable or the ``cache_dir=`` argument.
+"""
+
 from __future__ import annotations
 
 import os
 from collections.abc import Callable
 from hashlib import sha256
+from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -20,10 +52,10 @@ _spec_base_dir: Path | None = None
 
 
 def set_spec_base_dir(path: Path | None) -> None:
-    """Set the base directory for resolving chart cache paths.
+    """Record the spec directory so cached PNGs land next to the spec.
 
-    The loader calls this before executing a spec module so charts land
-    next to the spec instead of the user's current working directory.
+    Called by the DSL loader before executing a spec module. Cache references
+    embedded in the rendered Element are resolved relative to this base.
     """
     global _spec_base_dir
     _spec_base_dir = Path(path).expanduser().resolve() if path is not None else None
@@ -39,13 +71,13 @@ def _resolve_cache_dir(override: Path | None) -> Path:
     return (base / _DEFAULT_CACHE_DIRNAME / "charts").resolve()
 
 
-def _import_matplotlib() -> Any:
+def _import_pyplot() -> Any:
     try:
         import matplotlib
     except ImportError as exc:
         raise RuntimeError(
-            "chart() requires matplotlib. Install with `pip install matplotlib` "
-            "(optional dependency — folio does not require it for other primitives)."
+            "chart() requires matplotlib. Install the optional extra with "
+            "`pip install 'folio[charts]'` or add matplotlib directly."
         ) from exc
     matplotlib.use("Agg", force=False)
     import matplotlib.pyplot as plt
@@ -54,8 +86,6 @@ def _import_matplotlib() -> Any:
 
 
 def _figure_to_png_bytes(fig: Figure, *, dpi: int, transparent: bool) -> bytes:
-    from io import BytesIO
-
     buffer = BytesIO()
     fig.savefig(
         buffer,
@@ -69,38 +99,18 @@ def _figure_to_png_bytes(fig: Figure, *, dpi: int, transparent: bool) -> bytes:
 
 
 class ChartHandle:
-    """Render a matplotlib figure into a folio Element as a cached PNG.
+    """Builds a folio Element from a matplotlib Figure.
 
-    Usage — decorator form (preferred for single-block charts):
+    Obtain one via :func:`chart`. Drive it in whichever form fits:
 
-        @chart("revenue", x_mm=20, y_mm=120, width_mm=80, height_mm=40)
-        def revenue(ax):
-            ax.plot(months, values)
-        # revenue is now an Element
+    - ``@handle`` decorator (function takes an Axes)
+    - ``with handle as ax:`` context manager
+    - ``handle.from_figure(fig)`` for a pre-built Figure
 
-    Usage — context manager form (when you want the figure object too):
-
-        ch = chart("trends", x_mm=20, y_mm=120, width_mm=80, height_mm=40)
-        with ch as ax:
-            ax.plot(...)
-        page(ch.element, ...)
+    The underlying Figure is always closed when folio owns it. When you hand
+    in a pre-built Figure via :meth:`from_figure`, folio leaves it alone so
+    you can keep using it.
     """
-
-    __slots__ = (
-        "_cache_dir",
-        "_dpi",
-        "_element",
-        "_element_id",
-        "_fig",
-        "_figure_kwargs",
-        "_height_mm",
-        "_image_attrs",
-        "_plt",
-        "_transparent",
-        "_width_mm",
-        "_x_mm",
-        "_y_mm",
-    )
 
     def __init__(
         self,
@@ -123,16 +133,15 @@ class ChartHandle:
         if dpi <= 0:
             raise TypeError("chart() dpi must be positive")
         self._element_id = element_id
-        self._x_mm = float(x_mm)
-        self._y_mm = float(y_mm)
-        self._width_mm = float(width_mm)
-        self._height_mm = float(height_mm)
-        self._dpi = int(dpi)
-        self._transparent = bool(transparent)
+        self._x_mm = x_mm
+        self._y_mm = y_mm
+        self._width_mm = width_mm
+        self._height_mm = height_mm
+        self._dpi = dpi
+        self._transparent = transparent
         self._cache_dir = _resolve_cache_dir(cache_dir)
-        self._figure_kwargs = dict(figure_kwargs)
-        self._image_attrs = dict(image_attrs)
-        self._plt: Any = None
+        self._figure_kwargs = figure_kwargs
+        self._image_attrs = image_attrs
         self._fig: Figure | None = None
         self._element: Element | None = None
 
@@ -141,7 +150,7 @@ class ChartHandle:
         if self._element is None:
             raise RuntimeError(
                 f"chart('{self._element_id}') has no element yet — "
-                "use it as a decorator or enter the with-block before reading .element"
+                "use it as a decorator, enter the with-block, or call from_figure()"
             )
         return self._element
 
@@ -155,8 +164,7 @@ class ChartHandle:
         return self._fig
 
     def __enter__(self) -> Axes:
-        plt = _import_matplotlib()
-        self._plt = plt
+        plt = _import_pyplot()
         width_in = self._width_mm / _MM_PER_INCH
         height_in = self._height_mm / _MM_PER_INCH
         fig = plt.figure(figsize=(width_in, height_in), dpi=self._dpi, **self._figure_kwargs)
@@ -169,33 +177,13 @@ class ChartHandle:
 
     def __exit__(self, exc_type: type[BaseException] | None, *_: Any) -> None:
         fig = self._fig
-        plt = self._plt
         try:
-            if exc_type is not None or fig is None:
-                return
-            png_bytes = _figure_to_png_bytes(
-                fig, dpi=self._dpi, transparent=self._transparent
-            )
-            digest = sha256(png_bytes).hexdigest()[:16]
-            self._cache_dir.mkdir(parents=True, exist_ok=True)
-            png_path = self._cache_dir / f"{self._element_id}-{digest}.png"
-            if not png_path.exists():
-                png_path.write_bytes(png_bytes)
-            reference = self._relative_reference(png_path)
-            self._element = _builtins.image(
-                self._element_id,
-                reference,
-                self._x_mm,
-                self._y_mm,
-                self._width_mm,
-                self._height_mm,
-                **self._image_attrs,
-            )
+            if exc_type is None and fig is not None:
+                self._rasterize(fig)
         finally:
-            if fig is not None and plt is not None:
-                plt.close(fig)
+            if fig is not None:
+                _import_pyplot().close(fig)
             self._fig = None
-            self._plt = None
 
     def __call__(self, render: Callable[[Axes], None]) -> Element:
         if not callable(render):
@@ -204,10 +192,40 @@ class ChartHandle:
             render(ax)
         return self.element
 
+    def from_figure(self, fig: Figure) -> Element:
+        """Rasterize a pre-built matplotlib Figure without owning its lifecycle.
+
+        Use this for libraries that hand back a Figure (seaborn, pandas,
+        ``Figure``-returning helpers). The caller keeps the Figure and is
+        responsible for closing it if that matters for memory.
+        """
+        if fig is None or not hasattr(fig, "savefig"):
+            raise TypeError("chart().from_figure(fig) expects a matplotlib Figure")
+        self._rasterize(fig)
+        return self.element
+
+    def _rasterize(self, fig: Figure) -> None:
+        png_bytes = _figure_to_png_bytes(fig, dpi=self._dpi, transparent=self._transparent)
+        digest = sha256(png_bytes).hexdigest()[:16]
+        self._cache_dir.mkdir(parents=True, exist_ok=True)
+        png_path = self._cache_dir / f"{self._element_id}-{digest}.png"
+        if not png_path.exists():
+            png_path.write_bytes(png_bytes)
+        self._element = _builtins.image(
+            self._element_id,
+            self._reference_for(png_path),
+            self._x_mm,
+            self._y_mm,
+            self._width_mm,
+            self._height_mm,
+            **self._image_attrs,
+        )
+
     @staticmethod
-    def _relative_reference(png_path: Path) -> str:
+    def _reference_for(png_path: Path) -> str:
+        anchor = _spec_base_dir if _spec_base_dir is not None else Path.cwd()
         try:
-            return str(png_path.relative_to(Path.cwd()))
+            return str(png_path.relative_to(anchor))
         except ValueError:
             return str(png_path)
 
@@ -225,6 +243,20 @@ def chart(
     figure_kwargs: dict[str, Any] | None = None,
     **image_attrs: Any,
 ) -> ChartHandle:
+    """Create a :class:`ChartHandle` for a matplotlib-backed Element.
+
+    :param element_id: Stable DSL id for reconcile.
+    :param x_mm, y_mm: Top-left placement on the page (mm).
+    :param width_mm, height_mm: Rendered size on the page (mm). The Figure
+        is created with the same aspect so text scales predictably.
+    :param dpi: Rasterization DPI. 300 is print-ready; drop to 150 for drafts.
+    :param transparent: If True, the Figure background is left transparent
+        so folio page tokens show through.
+    :param cache_dir: Override the default ``<spec>/.folio-cache/charts`` path.
+    :param figure_kwargs: Extra kwargs forwarded to ``plt.figure(...)``.
+    :param image_attrs: Extra attributes forwarded to ``image(...)`` (e.g.
+        ``clip=``, ``opacity=``).
+    """
     return ChartHandle(
         element_id,
         x_mm=x_mm,
