@@ -24,8 +24,12 @@ include = [
 [project.scripts]
 folio = "folio.cli:app"
 
+[project.optional-dependencies]
+charts = ["matplotlib>=3.8"]
+
 [dependency-groups]
 dev = [
+  "matplotlib>=3.8",
   "pytest>=8.0.0",
   "ruff>=0.5.0",
 ]

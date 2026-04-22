@@ -405,11 +405,11 @@ def test_create_uses_builtin_defaults(tmp_path: Path) -> None:
     assert (project_dir / "theme.py").exists()
     assert (project_dir / "content.py").exists()
     assert (project_dir / ".gitignore").exists()
-    assert (project_dir / "assets" / ".gitkeep").exists()
+    assert (project_dir / "assets" / "hero_typography.jpg").exists()
     assert not (project_dir / "template.yaml").exists()
     content = (project_dir / "content.py").read_text(encoding="utf-8")
-    assert 'BRAND_NAME = "ACME"' in content
-    assert 'DOCUMENT_KICKER = "STARTER TEMPLATE"' in content
+    assert 'BRAND_NAME = "FOLIO STUDIO"' in content
+    assert 'DOCUMENT_KICKER = "STARTER KIT  /  ISSUE 01  /  SPRING 2026"' in content
 
 
 
@@ -437,14 +437,15 @@ def test_create_starter_template_builds_end_to_end(tmp_path: Path) -> None:
     assert (project_dir / "theme.py").exists()
     assert (project_dir / "content.py").exists()
     assert (project_dir / ".gitignore").exists()
-    assert (project_dir / "assets" / ".gitkeep").exists()
+    assert (project_dir / "assets" / "hero_typography.jpg").exists()
     assert "ACME" in (project_dir / "content.py").read_text(encoding="utf-8")
 
     build_command = runner.invoke(app, ["build", str(project_dir), "--no-cache"])
 
     assert build_command.exit_code == 0
     assert (project_dir / "out" / "01_cover.svg").exists()
-    assert (project_dir / "out" / "02_summary.svg").exists()
+    assert (project_dir / "out" / "02_features.svg").exists()
+    assert (project_dir / "out" / "03_metrics.svg").exists()
 
 
 # --- search stock command tests ---

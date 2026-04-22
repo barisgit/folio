@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from . import builtins as _builtins
 from . import tokens
+from .charts import ChartHandle, chart
 from .model import (
     Asset,
     DefNode,
@@ -18,6 +19,7 @@ from .styles import TextStyle
 Block = _builtins.Block
 block = _builtins.block
 circle = _builtins.circle
+# chart / ChartHandle are imported directly above
 clip_path = _builtins.clip_path
 component_transfer = _builtins.component_transfer
 drop_shadow = _builtins.drop_shadow
@@ -64,6 +66,7 @@ TransformBuilder = _builtins.TransformBuilder
 __all__ = [
     "Asset",
     "Block",
+    "ChartHandle",
     "DefNode",
     "Document",
     "Element",
@@ -77,6 +80,7 @@ __all__ = [
     "TransformBuilder",
     "block",
     "PathBuilder",
+    "chart",
     "circle",
     "clip_path",
     "component_transfer",
