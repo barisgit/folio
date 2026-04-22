@@ -927,16 +927,22 @@ class PathBuilder:
         large_arc: bool = False,
         sweep: bool = True,
     ) -> PathBuilder:
-        return self._push(
-            "A",
-            rx_mm,
-            ry_mm,
-            x_axis_rotation_deg,
-            1.0 if large_arc else 0.0,
-            1.0 if sweep else 0.0,
-            self.origin_x_mm + x_mm,
-            self.origin_y_mm + y_mm,
+        # Only rx/ry and destination x/y are in mm-space and need pt
+        # conversion. The rotation is in degrees, and the flags are
+        # unit-less booleans (0 or 1); neither should be scaled by
+        # MM_TO_PT, so serialize them directly instead of going via
+        # ``_push``.
+        rx_pt = _pt(rx_mm)
+        ry_pt = _pt(ry_mm)
+        dst_x_pt = _pt(self.origin_x_mm + x_mm)
+        dst_y_pt = _pt(self.origin_y_mm + y_mm)
+        large_flag = 1 if large_arc else 0
+        sweep_flag = 1 if sweep else 0
+        self.commands.append(
+            f"A{rx_pt} {ry_pt} {x_axis_rotation_deg:g} "
+            f"{large_flag} {sweep_flag} {dst_x_pt} {dst_y_pt}"
         )
+        return self
 
     def close(self) -> PathBuilder:
         self.commands.append("Z")

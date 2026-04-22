@@ -1027,6 +1027,30 @@ def test_text_style_markup_and_triangle_helpers_render(tmp_path: Path) -> None:
     assert '<path id="arrow"' in content
 
 
+def test_path_builder_arc_to_emits_valid_svg_arc_flags() -> None:
+    """arc_to must not scale the rotation or the arc flags.
+
+    Regression: ``PathBuilder._push`` previously ran every value through
+    the mm→pt scalar, turning ``sweep=True`` into ``2.83`` and breaking
+    the resulting SVG arc (all major browsers reject non-0/1 arc flags).
+    """
+    from folio.dsl import path_builder
+
+    arc = path_builder().move_to(0, 10).arc_to(10, 10, 0, 10, 0, sweep=True)
+    # Command string: "M<...> A<rx> <ry> <rotation> <large> <sweep> <x> <y>"
+    commands = arc.build().split()
+    # M0 0 A<rx> <ry> <rotation> <large> <sweep> <x> <y>
+    # Token index 4 = rotation (degrees, must be "0"),
+    # index 5 = large-arc flag, index 6 = sweep flag.
+    assert commands[4] == "0"  # rotation, not "0.0" and definitely not scaled
+    assert commands[5] in {"0", "1"}
+    assert commands[6] in {"0", "1"}
+    assert commands[6] == "1"  # sweep=True → "1", not "2.83"
+
+    not_swept = path_builder().move_to(0, 0).arc_to(5, 5, 0, 5, 5, sweep=False)
+    assert not_swept.build().split()[6] == "0"
+
+
 def test_text_raw_is_replaced_by_markup_builder() -> None:
     with pytest.raises(TypeError, match="use markup"):
         text("headline", 10, 20, "Hello", raw=True)
