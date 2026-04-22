@@ -2,41 +2,53 @@ from __future__ import annotations
 
 BRAND_NAME = "{{ brand_name | default('FOLIO STUDIO') }}"
 BRAND_TAGLINE = "{{ brand_tagline | default('DESIGN DOCUMENTS IN CODE') }}"
-DOCUMENT_TITLE = "{{ document_title | default('Ship the document.') }}"
-DOCUMENT_KICKER = "{{ document_kicker | default('STARTER KIT  /  ISSUE 01') }}"
-DOCUMENT_SUBTITLE = "{{ document_subtitle | default('Three pages that tour the DSL — custom page sizes, layered gradients, clipped photography, data-viz primitives, and a QR callback.') }}"
+DOCUMENT_TITLE = "{{ document_title | default('Design documents, in Python.') }}"
+DOCUMENT_KICKER = "{{ document_kicker | default('STARTER KIT  /  ISSUE 01  /  SPRING 2026') }}"
 CTA_URL = "{{ cta_url | default('https://folio.dev/starter') }}"
 
-HERO_LINE_1 = "Design."
-HERO_LINE_2_PREFIX = "Render"
-HERO_LINE_2_ACCENT = "anywhere"
-HERO_LINE_3 = "Repeat."
+HERO_WORDS = (
+    ("normal", "Design"),
+    ("divider", "."),
+    ("normal", "Render"),
+    ("emphasis", "anywhere"),
+    ("divider", "."),
+    ("normal", "Repeat"),
+    ("divider", "."),
+)
+
+HERO_LEDE_PARTS = (
+    ("normal", "Three pages that tour the DSL — "),
+    ("emphasis", "custom page sizes"),
+    ("normal", ", layered gradients, clipped photography, "),
+    ("emphasis", "measured typography"),
+    ("normal", ", inline data-viz primitives, and a scannable QR callback."),
+)
+
+PHOTO_CAPTION_TAG = "COVER STUDY"
+PHOTO_CAPTION_BODY = "Type specimen — Cranky Pressman  ·  letterpress book"
 
 FEATURES = (
     (
         "01",
         "TYPED DSL",
-        (
-            "Every element is a typed Python object with a",
-            "stable id, ready for reconcile and diff.",
-        ),
+        "Every element is a typed Python object with a stable id — ready for reconcile and diff on every build.",
     ),
     (
         "02",
         "COMPOSABLE LAYOUTS",
-        (
-            "cols, grid, and flow_cols keep multi-column",
-            "pages aligned without hand-tuned maths.",
-        ),
+        "cols, grid, flow_cols and measured text keep multi-column pages aligned without hand-tuned maths.",
     ),
     (
         "03",
         "FAST FEEDBACK",
-        (
-            "Validate, build, reconcile, and preview —",
-            "all from the CLI, all in a single shell.",
-        ),
+        "Validate, build, reconcile, and preview — all from the CLI, all in a single shell, all cached.",
     ),
+)
+
+FEATURES_PAGE_LEDE_PARTS = (
+    ("normal", "Typed primitives, shared tokens, and layout helpers compose into "),
+    ("emphasis", "production-grade pages"),
+    ("normal", " — reconcile-safe, diff-ready, and printable straight from the first build."),
 )
 
 CARDS = (
@@ -44,41 +56,25 @@ CARDS = (
         "assets/icon_layers.svg",
         "01  COMPOSE",
         "Typed primitives",
-        (
-            "Rect, circle, ellipse, polygon, polyline, image,",
-            "and text — stacked in block-local frames",
-            "with stable ids for reconcile.",
-        ),
+        "Rect, circle, ellipse, polygon, polyline, image, and text stack in block-local frames with stable ids for every reconcile.",
     ),
     (
         "assets/icon_palette.svg",
         "02  TOKENS",
         "Design system",
-        (
-            "Share a palette and type scale across every",
-            "page, and extend tokens with your own brand",
-            "colours without warning spam.",
-        ),
+        "Share a palette and a type scale across every page. Extend tokens with project colours without warning spam.",
     ),
     (
         "assets/icon_zap.svg",
         "03  ITERATE",
         "Preview loop",
-        (
-            "Rasterize to PNG via Playwright, Cairo, or",
-            "rsvg. Wire a watcher for instant visual",
-            "feedback on every edit.",
-        ),
+        "Rasterize via Playwright, Cairo, or rsvg — whichever is on the machine. Wire a watcher for instant visual feedback.",
     ),
     (
         "assets/icon_chart.svg",
         "04  MEASURE",
         "Built-in viz",
-        (
-            "Polyline, polygon, and path_builder cover",
-            "sparklines, annotations, and custom chart",
-            "primitives in pure mm-space.",
-        ),
+        "Polyline, polygon, and path_builder cover sparklines, annotations, and custom chart primitives in pure mm-space.",
     ),
 )
 
@@ -104,8 +100,21 @@ TIMELINE = (
     ),
     (
         "03  Build & preview",
-        "folio build then folio preview — Playwright, Cairo, or rsvg fallback.",
+        "folio build, folio preview — Playwright / Cairo / rsvg fallback.",
     ),
+)
+
+METRICS_LEDE_PARTS = (
+    ("normal", "Every chart element is a "),
+    ("emphasis", "first-class DSL primitive"),
+    ("normal", " — no images, no external chart library."),
+)
+
+METRICS_LEGEND_PARTS = (
+    ("normal", "polyline — the sparkline and gridlines.  "),
+    ("normal", "polygon — the corner wedges and stripes.  "),
+    ("normal", "path_builder — the filled area under the curve.  "),
+    ("normal", "drop_shadow and grain — soft elevation and a printed-paper texture."),
 )
 
 __all__ = [
@@ -114,14 +123,16 @@ __all__ = [
     "CARDS",
     "CTA_URL",
     "DOCUMENT_KICKER",
-    "DOCUMENT_SUBTITLE",
     "DOCUMENT_TITLE",
     "FEATURES",
-    "HERO_LINE_1",
-    "HERO_LINE_2_ACCENT",
-    "HERO_LINE_2_PREFIX",
-    "HERO_LINE_3",
+    "FEATURES_PAGE_LEDE_PARTS",
+    "HERO_LEDE_PARTS",
+    "HERO_WORDS",
     "METRICS",
+    "METRICS_LEDE_PARTS",
+    "METRICS_LEGEND_PARTS",
+    "PHOTO_CAPTION_BODY",
+    "PHOTO_CAPTION_TAG",
     "SPARKLINE_AXIS_LABELS",
     "SPARKLINE_PEAK_INDEX",
     "SPARKLINE_PEAK_LABEL",

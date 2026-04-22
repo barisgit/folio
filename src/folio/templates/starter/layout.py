@@ -3,11 +3,17 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from theme import (
+    BRAND_NAME_DARK,
+    BRAND_NAME_LIGHT,
+    BRAND_TAGLINE_DARK,
+    BRAND_TAGLINE_LIGHT,
     CARD_BODY,
     CARD_INDEX,
     CARD_TAG,
     CARD_TITLE,
     CHART_AXIS,
+    EYEBROW,
+    EYEBROW_DARK,
     FEATURE_BODY,
     FEATURE_INDEX,
     FEATURE_TAG,
@@ -18,11 +24,12 @@ from theme import (
 
 from folio.dsl import (
     block,
+    circle,
     clip_path,
     ellipse,
     group,
     image,
-    markup,
+    measure_text,
     path,
     path_builder,
     polygon,
@@ -34,12 +41,180 @@ from folio.dsl import (
 )
 
 
-def corner_ticks(element_id: str, x_mm: float, y_mm: float, width_mm: float, height_mm: float, *, color: str, tick_mm: float = 3.2, stroke_mm: float = 0.25):
+def part(style_key: str, content: str) -> tuple[str, str]:
+    return (style_key, content)
+
+
+def build_rich_content(parts, normal_style, emphasis_style, *, prefix_id: str):
+    from folio.dsl import tspan
+
+    rich: list = []
+    for index, (kind, text_value) in enumerate(parts, start=1):
+        if kind == "emphasis":
+            rich.append(
+                tspan(
+                    f"{prefix_id}_em_{index}",
+                    text_value,
+                    style=emphasis_style,
+                )
+            )
+        else:
+            rich.append(text_value)
+    return rich, normal_style
+
+
+def brand_chip(
+    element_id: str,
+    x_mm: float,
+    y_mm: float,
+    brand_name: str,
+    brand_tagline: str,
+    *,
+    light: bool = True,
+    padding_x_mm: float = 6.0,
+    padding_y_mm: float = 4.0,
+    disc_radius_mm: float = 3.6,
+    disc_gap_mm: float = 3.0,
+):
+    name_style = BRAND_NAME_LIGHT if light else BRAND_NAME_DARK
+    tagline_style = BRAND_TAGLINE_LIGHT if light else BRAND_TAGLINE_DARK
+    name_metrics = measure_text(brand_name, style=name_style)
+    tagline_metrics = measure_text(brand_tagline, style=tagline_style)
+    label_width = max(name_metrics.width_mm, tagline_metrics.width_mm)
+    block_height = name_metrics.height_mm + tagline_metrics.height_mm + 1.8
+    chip_height = max(block_height + 2 * padding_y_mm, disc_radius_mm * 2 + 2.0)
+    chip_width = (
+        padding_x_mm
+        + disc_radius_mm * 2
+        + disc_gap_mm
+        + label_width
+        + padding_x_mm
+    )
+
+    disc_cx = x_mm + padding_x_mm + disc_radius_mm
+    disc_cy = y_mm + chip_height / 2
+    label_x = disc_cx + disc_radius_mm + disc_gap_mm
+    block_top = y_mm + (chip_height - block_height) / 2
+    name_y = block_top + name_metrics.height_mm * 0.76
+    tagline_y = name_y + 4.6
+
+    frame_fill = tokens.WHITE if light else tokens.INK
+    frame_opacity = 0.08 if light else 0.04
+    disc_inner = tokens.deep_navy if light else tokens.WHITE
+
+    return group(
+        element_id,
+        "Brand Chip",
+        rect(
+            f"{element_id}_frame",
+            x_mm,
+            y_mm,
+            chip_width,
+            chip_height,
+            fill=frame_fill,
+            fill_opacity=frame_opacity,
+            rx_mm=chip_height / 2,
+            ry_mm=chip_height / 2,
+        ),
+        circle(
+            f"{element_id}_disc",
+            disc_cx,
+            disc_cy,
+            disc_radius_mm,
+            fill=tokens.ACCENT,
+        ),
+        circle(
+            f"{element_id}_disc_inner",
+            disc_cx,
+            disc_cy,
+            disc_radius_mm * 0.42,
+            fill=disc_inner,
+        ),
+        text(f"{element_id}_name", label_x, name_y, brand_name, style=name_style),
+        text(
+            f"{element_id}_tagline",
+            label_x,
+            tagline_y,
+            brand_tagline,
+            style=tagline_style,
+        ),
+    ), chip_width, chip_height
+
+
+def counter_pill(
+    element_id: str,
+    right_x_mm: float,
+    y_mm: float,
+    label: str,
+    *,
+    light: bool = True,
+    padding_x_mm: float = 6.0,
+    padding_y_mm: float = 3.0,
+):
+    style = BRAND_NAME_LIGHT if light else BRAND_NAME_DARK
+    from theme import COUNTER_MONO_DARK, COUNTER_MONO_LIGHT
+
+    style = COUNTER_MONO_LIGHT if light else COUNTER_MONO_DARK
+    metrics = measure_text(label, style=style)
+    pill_w = metrics.width_mm + 2 * padding_x_mm
+    pill_h = metrics.height_mm + 2 * padding_y_mm
+    x_mm = right_x_mm - pill_w
+    frame_fill = tokens.WHITE if light else tokens.INK
+    frame_opacity = 0.08 if light else 0.04
+    return group(
+        element_id,
+        "Counter Pill",
+        rect(
+            f"{element_id}_frame",
+            x_mm,
+            y_mm,
+            pill_w,
+            pill_h,
+            fill=frame_fill,
+            fill_opacity=frame_opacity,
+            rx_mm=pill_h / 2,
+            ry_mm=pill_h / 2,
+        ),
+        text(
+            f"{element_id}_label",
+            x_mm + pill_w / 2,
+            y_mm + pill_h / 2 + metrics.height_mm * 0.3,
+            label,
+            style=style,
+            anchor="middle",
+        ),
+    )
+
+
+def corner_ticks(
+    element_id: str,
+    x_mm: float,
+    y_mm: float,
+    width_mm: float,
+    height_mm: float,
+    *,
+    color: str,
+    tick_mm: float = 3.2,
+    stroke_mm: float = 0.25,
+    opacity: float = 0.45,
+):
     parts = [
         ((x_mm, y_mm + tick_mm), (x_mm, y_mm), (x_mm + tick_mm, y_mm)),
-        ((x_mm + width_mm - tick_mm, y_mm), (x_mm + width_mm, y_mm), (x_mm + width_mm, y_mm + tick_mm)),
-        ((x_mm + width_mm, y_mm + height_mm - tick_mm), (x_mm + width_mm, y_mm + height_mm), (x_mm + width_mm - tick_mm, y_mm + height_mm)),
-        ((x_mm + tick_mm, y_mm + height_mm), (x_mm, y_mm + height_mm), (x_mm, y_mm + height_mm - tick_mm)),
+        (
+            (x_mm + width_mm - tick_mm, y_mm),
+            (x_mm + width_mm, y_mm),
+            (x_mm + width_mm, y_mm + tick_mm),
+        ),
+        (
+            (x_mm + width_mm, y_mm + height_mm - tick_mm),
+            (x_mm + width_mm, y_mm + height_mm),
+            (x_mm + width_mm - tick_mm, y_mm + height_mm),
+        ),
+        (
+            (x_mm + tick_mm, y_mm + height_mm),
+            (x_mm, y_mm + height_mm),
+            (x_mm, y_mm + height_mm - tick_mm),
+        ),
     ]
     return group(
         element_id,
@@ -51,7 +226,7 @@ def corner_ticks(element_id: str, x_mm: float, y_mm: float, width_mm: float, hei
                 fill="none",
                 stroke=color,
                 stroke_width=stroke_mm,
-                stroke_opacity=0.55,
+                stroke_opacity=opacity,
             )
             for index, points in enumerate(parts, start=1)
         ],
@@ -70,17 +245,17 @@ def numbered_feature(
     column = block(f"feature_{index}", at=(x_mm, y_mm))
     return column.layer(
         f"Feature {index}",
-        column.rect("bar", 0, 0, 14.0, 0.6, fill=tokens.ACCENT),
-        column.text("index", 0, 5.5, index_label, style=FEATURE_INDEX),
-        column.text("tag", 0, 12.0, tag, style=FEATURE_TAG),
-        wrapped_text(
-            column.id("body"),
-            column.x(0),
-            column.y(18.0),
+        column.rect("bar", 0, 0, 16.0, 0.7, fill=tokens.ACCENT),
+        column.text("index", 0, 6.0, index_label, style=FEATURE_INDEX),
+        column.text("tag", 0, 13.5, tag, style=FEATURE_TAG),
+        column.wrapped_text(
+            "body",
+            0,
+            20.0,
             body_text,
             width_mm=width_mm,
-            line_step_mm=3.8,
-            max_lines=3,
+            line_step_mm=3.9,
+            max_lines=4,
             style=FEATURE_BODY,
         ),
     )
@@ -99,6 +274,7 @@ def rounded_photo(
     halo_color: str = tokens.ACCENT,
     halo_opacity: float = 0.35,
     shadow_filter: str = "url(#hero_shadow)",
+    show_frame: bool = True,
 ):
     clip_rect = rect(
         f"{element_id}_clip_rect",
@@ -111,9 +287,7 @@ def rounded_photo(
         fill="white",
     )
     clip = clip_path(f"{element_id}_clip", clip_rect)
-    return group(
-        element_id,
-        "Rounded Photo",
+    children = [
         rect(
             f"{element_id}_halo",
             x_mm + halo_offset_mm,
@@ -136,20 +310,24 @@ def rounded_photo(
             filter=shadow_filter,
             preserveAspectRatio="xMidYMid slice",
         ),
-        rect(
-            f"{element_id}_frame",
-            x_mm,
-            y_mm,
-            width_mm,
-            height_mm,
-            fill="none",
-            stroke=tokens.WHITE,
-            stroke_width=0.4,
-            stroke_opacity=0.18,
-            rx_mm=radius_mm,
-            ry_mm=radius_mm,
-        ),
-    )
+    ]
+    if show_frame:
+        children.append(
+            rect(
+                f"{element_id}_frame",
+                x_mm,
+                y_mm,
+                width_mm,
+                height_mm,
+                fill="none",
+                stroke=tokens.WHITE,
+                stroke_width=0.4,
+                stroke_opacity=0.2,
+                rx_mm=radius_mm,
+                ry_mm=radius_mm,
+            )
+        )
+    return group(element_id, "Rounded Photo", *children)
 
 
 def content_card(
@@ -164,10 +342,10 @@ def content_card(
     body_text: str,
 ):
     card = block(f"card_{index}", at=(x_mm, y_mm))
-    icon_size_mm = 7.5
-    chip_cx = 11.0
-    chip_cy = 13.0
-    chip_r = 6.2
+    icon_size_mm = 9.0
+    chip_cx = 12.0
+    chip_cy = 14.0
+    chip_r = 7.2
     return card.layer(
         f"Card {index}",
         card.rect(
@@ -179,8 +357,8 @@ def content_card(
             fill=tokens.WHITE,
             stroke=tokens.LINE,
             stroke_width=0.3,
-            rx_mm=2.8,
-            ry_mm=2.8,
+            rx_mm=3.2,
+            ry_mm=3.2,
             filter="url(#card_shadow)",
         ),
         card.rect(
@@ -193,43 +371,36 @@ def content_card(
             rx_mm=0.8,
             ry_mm=0.8,
         ),
-        ellipse(
-            f"card_{index}_chip_outer",
-            card.x(chip_cx),
-            card.y(chip_cy),
-            chip_r,
-            chip_r,
-            fill=tokens.mist,
-        ),
-        ellipse(
-            f"card_{index}_chip_ring",
-            card.x(chip_cx),
-            card.y(chip_cy),
-            chip_r + 1.2,
-            chip_r + 1.2,
+        card.ellipse("chip_outer", chip_cx, chip_cy, chip_r, chip_r, fill=tokens.mist),
+        card.ellipse(
+            "chip_ring",
+            chip_cx,
+            chip_cy,
+            chip_r + 1.4,
+            chip_r + 1.4,
             fill="none",
             stroke=tokens.ACCENT,
             stroke_width=0.3,
-            stroke_opacity=0.3,
+            stroke_opacity=0.4,
         ),
-        image(
-            f"card_{index}_icon",
+        card.image(
+            "icon",
             icon_reference,
-            card.x(chip_cx - icon_size_mm / 2),
-            card.y(chip_cy - icon_size_mm / 2),
+            chip_cx - icon_size_mm / 2,
+            chip_cy - icon_size_mm / 2,
             icon_size_mm,
             icon_size_mm,
         ),
-        card.text("tag", 21.5, 10.5, tag, style=CARD_TAG),
-        card.text("title", 21.5, 17.0, title, style=CARD_TITLE),
-        wrapped_text(
-            card.id("body"),
-            card.x(6.0),
-            card.y(27.0),
+        card.text("tag", 24.0, 11.0, tag, style=CARD_TAG),
+        card.text("title", 24.0, 18.0, title, style=CARD_TITLE),
+        card.wrapped_text(
+            "body",
+            7.0,
+            30.0,
             body_text,
-            width_mm=width_mm - 12.0,
-            line_step_mm=4.0,
-            max_lines=4,
+            width_mm=width_mm - 14.0,
+            line_step_mm=4.1,
+            max_lines=5,
             style=CARD_BODY,
         ),
     )
@@ -257,8 +428,8 @@ def metric_tile(
             fill=tokens.WHITE,
             stroke=tokens.LINE,
             stroke_width=0.3,
-            rx_mm=2.6,
-            ry_mm=2.6,
+            rx_mm=3.0,
+            ry_mm=3.0,
             filter="url(#tile_shadow)",
         ),
         tile.rect(
@@ -266,14 +437,14 @@ def metric_tile(
             0,
             0,
             width_mm,
-            1.2,
+            1.4,
             fill=tokens.ACCENT,
-            rx_mm=2.6,
-            ry_mm=2.6,
+            rx_mm=3.0,
+            ry_mm=3.0,
         ),
-        tile.text("label", 6.0, 10.0, label, style=METRIC_LABEL),
-        tile.text("value", 6.0, 26.0, value, style=METRIC_VALUE),
-        tile.text("delta", 6.0, 33.5, delta, style=METRIC_DELTA),
+        tile.text("label", 8.0, 12.0, label, style=METRIC_LABEL),
+        tile.text("value", 8.0, 32.0, value, style=METRIC_VALUE),
+        tile.text("delta", 8.0, 40.0, delta, style=METRIC_DELTA),
     )
 
 
@@ -360,8 +531,8 @@ def sparkline_chart(
             f"{element_id}_point_{idx}",
             px,
             py,
-            0.85,
-            0.85,
+            0.9,
+            0.9,
             fill=tokens.WHITE,
             stroke=tokens.ACCENT,
             stroke_width=0.8,
@@ -372,52 +543,66 @@ def sparkline_chart(
     overlays: list = []
     if peak_index is not None and peak_label is not None and 0 <= peak_index < len(points):
         peak_x, peak_y = points[peak_index]
-        overlays.append(
-            polyline(
-                f"{element_id}_peak_line",
-                [(peak_x, peak_y + 2.2), (peak_x, y_mm + height_mm)],
-                fill="none",
-                stroke=tokens.ACCENT,
-                stroke_width=0.4,
-                stroke_dasharray="1.0 1.2",
-            )
-        )
-        overlays.append(
-            ellipse(
-                f"{element_id}_peak_marker",
-                peak_x,
-                peak_y,
-                1.6,
-                1.6,
-                fill=tokens.ACCENT,
-                stroke=tokens.WHITE,
-                stroke_width=0.8,
-            )
-        )
-        overlays.append(
-            rect(
-                f"{element_id}_peak_chip",
-                peak_x - 16.0,
-                peak_y - 10.0,
-                32.0,
-                6.0,
-                fill=tokens.INK,
-                rx_mm=1.0,
-                ry_mm=1.0,
-            )
-        )
-        overlays.append(
-            text(
-                f"{element_id}_peak_label",
-                peak_x,
-                peak_y - 5.8,
-                peak_label,
-                size_pt=6.8,
-                weight=700,
-                fill=tokens.WHITE,
-                anchor="middle",
-                letter_spacing=0.4,
-            )
+        label_metrics = measure_text(peak_label, size_pt=7.0, weight=700, letter_spacing=0.4)
+        chip_w = label_metrics.width_mm + 6.0
+        chip_h = label_metrics.height_mm + 4.0
+        place_above = peak_y - chip_h - 6.0 > y_mm
+        chip_y = peak_y - chip_h - 4.0 if place_above else peak_y + 4.0
+        chip_x = peak_x - chip_w / 2
+        chip_x = max(x_mm, min(chip_x, x_mm + width_mm - chip_w))
+        tail_tip_y = chip_y + chip_h + 1.6 if place_above else chip_y - 1.6
+        tail_base_y = chip_y + chip_h if place_above else chip_y
+        overlays.extend(
+            [
+                polyline(
+                    f"{element_id}_peak_line",
+                    [(peak_x, peak_y + 2.0), (peak_x, y_mm + height_mm)],
+                    fill="none",
+                    stroke=tokens.ACCENT,
+                    stroke_width=0.4,
+                    stroke_dasharray="1.0 1.2",
+                ),
+                ellipse(
+                    f"{element_id}_peak_marker",
+                    peak_x,
+                    peak_y,
+                    1.7,
+                    1.7,
+                    fill=tokens.ACCENT,
+                    stroke=tokens.WHITE,
+                    stroke_width=0.8,
+                ),
+                rect(
+                    f"{element_id}_peak_chip",
+                    chip_x,
+                    chip_y,
+                    chip_w,
+                    chip_h,
+                    fill=tokens.INK,
+                    rx_mm=1.2,
+                    ry_mm=1.2,
+                ),
+                polygon(
+                    f"{element_id}_peak_chip_tail",
+                    [
+                        (peak_x - 1.3, tail_base_y),
+                        (peak_x + 1.3, tail_base_y),
+                        (peak_x, tail_tip_y),
+                    ],
+                    fill=tokens.INK,
+                ),
+                text(
+                    f"{element_id}_peak_label",
+                    chip_x + chip_w / 2,
+                    chip_y + chip_h - 1.4,
+                    peak_label,
+                    size_pt=7.0,
+                    weight=700,
+                    fill=tokens.WHITE,
+                    anchor="middle",
+                    letter_spacing=0.4,
+                ),
+            ]
         )
 
     return group(
@@ -432,7 +617,9 @@ def sparkline_chart(
     )
 
 
-def chart_axis_labels(element_id: str, labels: Sequence[str], x_mm: float, y_mm: float, width_mm: float):
+def chart_axis_labels(
+    element_id: str, labels: Sequence[str], x_mm: float, y_mm: float, width_mm: float
+):
     if len(labels) < 2:
         return []
     step = width_mm / (len(labels) - 1)
@@ -449,11 +636,15 @@ def chart_axis_labels(element_id: str, labels: Sequence[str], x_mm: float, y_mm:
 
 
 __all__ = [
+    "brand_chip",
+    "build_rich_content",
     "chart_axis_labels",
     "content_card",
     "corner_ticks",
+    "counter_pill",
     "metric_tile",
     "numbered_feature",
+    "part",
     "rounded_photo",
     "sparkline_chart",
 ]
