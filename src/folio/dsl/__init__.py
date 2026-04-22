@@ -31,6 +31,7 @@ path = _builtins.path
 path_builder = _builtins.path_builder
 polygon = _builtins.polygon
 polyline = _builtins.polyline
+qr = _builtins.qr
 transform_builder = _builtins.transform_builder
 radial_gradient = _builtins.radial_gradient
 rect = _builtins.rect
@@ -84,6 +85,7 @@ __all__ = [
     "path_builder",
     "polygon",
     "polyline",
+    "qr",
     "radial_gradient",
     "transform_builder",
     "rect",

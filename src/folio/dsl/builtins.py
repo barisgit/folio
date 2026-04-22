@@ -10,8 +10,15 @@ from folio.dsl.model import Asset, DefNode, Document, Element, ElementKind, Mark
 from folio.dsl.styles import TextStyle, coerce_text_style, merge_text_style_attrs
 from folio.render import tokens as render_tokens
 from folio.render.tokens import MM_TO_PT, PT_TO_MM
+from folio.vendor.qrcodegen import QrCode
 
 _AUTO_IDS: defaultdict[str, int] = defaultdict(int)
+_QR_ECC = {
+    "L": QrCode.Ecc.LOW,
+    "M": QrCode.Ecc.MEDIUM,
+    "Q": QrCode.Ecc.QUARTILE,
+    "H": QrCode.Ecc.HIGH,
+}
 
 
 def reset_auto_ids() -> None:
@@ -188,6 +195,41 @@ def _wrap_plain_text(
         use_ellipsis=overflow == "ellipsis",
     )
     return truncated
+
+
+def _qr_path_data(
+    qr_code: QrCode,
+    *,
+    x_mm: float,
+    y_mm: float,
+    size_mm: float,
+    border_modules: int,
+) -> str:
+    module_count = qr_code.get_size() + (border_modules * 2)
+    module_mm = size_mm / module_count
+    parts: list[str] = []
+    for y_index in range(qr_code.get_size()):
+        run_start: int | None = None
+        for x_index in range(qr_code.get_size() + 1):
+            dark = qr_code.get_module(x_index, y_index)
+            if dark and run_start is None:
+                run_start = x_index
+                continue
+            if dark or run_start is None:
+                continue
+
+            x0_mm = x_mm + ((run_start + border_modules) * module_mm)
+            x1_mm = x_mm + ((x_index + border_modules) * module_mm)
+            y0_mm = y_mm + ((y_index + border_modules) * module_mm)
+            y1_mm = y0_mm + module_mm
+            parts.append(
+                f"M{_pt(x0_mm)} {_pt(y0_mm)} "
+                f"L{_pt(x1_mm)} {_pt(y0_mm)} "
+                f"L{_pt(x1_mm)} {_pt(y1_mm)} "
+                f"L{_pt(x0_mm)} {_pt(y1_mm)} Z"
+            )
+            run_start = None
+    return " ".join(parts)
 
 
 def _coerce_points_mm(
@@ -538,6 +580,33 @@ class Block:
             self.y(y_mm),
             width_mm,
             height_mm,
+            **attrs,
+        )
+
+    def qr(
+        self,
+        suffix: str,
+        x_mm: float,
+        y_mm: float,
+        data: str | bytes,
+        *,
+        size_mm: float,
+        ecc: str = "M",
+        border_modules: int = 4,
+        fill: str = render_tokens.INK,
+        background_fill: str | None = None,
+        **attrs: Any,
+    ) -> Element:
+        return qr(
+            self.id(suffix),
+            self.x(x_mm),
+            self.y(y_mm),
+            data,
+            size_mm=size_mm,
+            ecc=ecc,
+            border_modules=border_modules,
+            fill=fill,
+            background_fill=background_fill,
             **attrs,
         )
 
@@ -905,6 +974,68 @@ def image(
         content=Asset(reference=reference, width_mm=width_mm, height_mm=height_mm),
         attrs=dict(attrs),
     )
+
+
+def qr(
+    element_id: str | None,
+    x_mm: float,
+    y_mm: float,
+    data: str | bytes,
+    *,
+    size_mm: float,
+    ecc: str = "M",
+    border_modules: int = 4,
+    fill: str = render_tokens.INK,
+    background_fill: str | None = None,
+    **attrs: Any,
+) -> Element:
+    if size_mm <= 0:
+        raise TypeError("qr() size_mm must be positive")
+    if border_modules < 0:
+        raise TypeError("qr() border_modules must be zero or greater")
+    if not isinstance(data, str | bytes):
+        raise TypeError("qr() data must be a string or bytes")
+
+    try:
+        error_correction = _QR_ECC[ecc.upper()]
+    except KeyError as exc:
+        raise TypeError("qr() ecc must be one of 'L', 'M', 'Q', or 'H'") from exc
+
+    qr_code = (
+        QrCode.encode_text(data, error_correction)
+        if isinstance(data, str)
+        else QrCode.encode_binary(data, error_correction)
+    )
+    qr_id = _element_id("qr", element_id)
+    label = str(attrs.pop("label", qr_id))
+    shape_rendering = attrs.pop("shape_rendering", "crispEdges")
+    children: list[Element] = []
+    if background_fill is not None:
+        children.append(
+            rect(
+                f"{qr_id}_bg",
+                x_mm,
+                y_mm,
+                size_mm,
+                size_mm,
+                fill=background_fill,
+            )
+        )
+    children.append(
+        path(
+            f"{qr_id}_fg",
+            _qr_path_data(
+                qr_code,
+                x_mm=x_mm,
+                y_mm=y_mm,
+                size_mm=size_mm,
+                border_modules=border_modules,
+            ),
+            fill=fill,
+        )
+    )
+    return group(qr_id, label, *children, shape_rendering=shape_rendering, **attrs)
+
 
 
 def group(

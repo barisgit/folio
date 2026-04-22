@@ -27,6 +27,7 @@ from folio.dsl import (
     page,
     polygon,
     polyline,
+    qr,
     rect,
     render,
     rule,
@@ -265,6 +266,60 @@ def test_transform_builder_serializes_mm_aware_group_transforms(tmp_path: Path) 
 
     assert 'transform="translate(28.35 14.17) rotate(15 56.69 28.35)"' in content
     assert 'transform="rotate(30 70.87 127.56) scale(1.2)"' in content
+
+
+
+def test_qr_renders_compact_paths_and_block_helper(tmp_path: Path) -> None:
+    card = block("card", at=(20, 40))
+    document = render(
+        page(
+            page_id="cover",
+            filename="cover.svg",
+            page_number=1,
+            elements=[
+                qr(
+                    "code",
+                    10,
+                    20,
+                    "https://example.com/folio",
+                    size_mm=29,
+                    background_fill=tokens.WHITE,
+                ),
+                card.qr(
+                    "mini",
+                    0,
+                    0,
+                    b"folio",
+                    size_mm=21,
+                    ecc="H",
+                    border_modules=2,
+                    fill=tokens.ACCENT,
+                ),
+            ],
+        )
+    )
+
+    content = render_document(document, config_dir=tmp_path).pages[0].content
+
+    assert '<g id="code"' in content
+    assert '<rect id="code_bg"' in content
+    assert '<path id="code_fg" d="M' in content
+    assert '<g id="card_mini"' in content
+    assert '<path id="card_mini_fg" d="M' in content
+    assert 'shape-rendering="crispEdges"' in content
+    assert content.count("<rect") == 1
+
+
+
+def test_qr_rejects_invalid_arguments() -> None:
+    with pytest.raises(TypeError, match=r"qr\(\) data must be a string or bytes"):
+        qr("code", 0, 0, object(), size_mm=20)
+
+    with pytest.raises(TypeError, match=r"qr\(\) ecc must be one of"):
+        qr("code", 0, 0, "hello", size_mm=20, ecc="Z")
+
+    with pytest.raises(TypeError, match=r"qr\(\) size_mm must be positive"):
+        qr("code", 0, 0, "hello", size_mm=0)
 
 
 
