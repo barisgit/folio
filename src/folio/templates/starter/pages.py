@@ -6,21 +6,17 @@ from content import (
     CARDS,
     CTA_URL,
     DOCUMENT_KICKER,
-    DOCUMENT_TITLE,
-    FEATURES,
     FEATURES_PAGE_LEDE_PARTS,
     HERO_LEDE_PARTS,
     HERO_WORDS,
     METRICS,
     METRICS_LEDE_PARTS,
-    METRICS_LEGEND_PARTS,
     PHOTO_CAPTION_BODY,
     PHOTO_CAPTION_TAG,
     SPARKLINE_AXIS_LABELS,
     SPARKLINE_PEAK_INDEX,
     SPARKLINE_PEAK_LABEL,
     SPARKLINE_VALUES,
-    TIMELINE,
 )
 from layout import (
     brand_chip,
@@ -29,7 +25,6 @@ from layout import (
     corner_ticks,
     counter_pill,
     metric_tile,
-    numbered_feature,
     rounded_photo,
 )
 from theme import (
@@ -40,7 +35,6 @@ from theme import (
     DISPLAY_SERIF,
     DISPLAY_XL,
     EYEBROW,
-    EYEBROW_DARK,
     EYEBROW_MUTED,
     GIANT_NUMBER,
     LEDE_DARK,
@@ -49,8 +43,8 @@ from theme import (
     LEDE_LIGHT_EM,
     MARGIN_X_MM,
     PAGE_SIZE_MM,
-    T,
     TOTAL_PAGES,
+    T,
 )
 
 from folio.dsl import (
@@ -72,7 +66,7 @@ from folio.dsl import (
     tspan,
     wrapped_text,
 )
-from folio.layout import cols, grid
+from folio.layout import grid
 
 PAGE_W = PAGE_SIZE_MM
 PAGE_H = PAGE_SIZE_MM
@@ -817,16 +811,41 @@ def _metrics_chart():
         ax.bar(xs, SPARKLINE_VALUES, color=tokens.ACCENT, alpha=0.28, width=0.72, zorder=1)
         ax.plot(xs, SPARKLINE_VALUES, color=tokens.ACCENT_DARK, linewidth=1.6, zorder=3)
         peak = SPARKLINE_PEAK_INDEX
-        ax.scatter([peak], [SPARKLINE_VALUES[peak]], s=36, color=tokens.INK, zorder=4)
+        peak_value = SPARKLINE_VALUES[peak]
+        ax.scatter(
+            [peak],
+            [peak_value],
+            s=40,
+            color=tokens.INK,
+            zorder=5,
+            edgecolors=tokens.WHITE,
+            linewidths=1.2,
+        )
         ax.annotate(
             SPARKLINE_PEAK_LABEL,
-            xy=(peak, SPARKLINE_VALUES[peak]),
-            xytext=(-6, 8),
+            xy=(peak, peak_value),
+            xytext=(0, 22),
             textcoords="offset points",
-            ha="right",
+            ha="center",
+            va="center",
             fontsize=7,
-            color=tokens.INK,
+            fontweight="bold",
+            color=tokens.WHITE,
+            bbox=dict(
+                boxstyle="round,pad=0.55,rounding_size=0.5",
+                facecolor=tokens.INK,
+                edgecolor="none",
+            ),
+            arrowprops=dict(
+                arrowstyle="-",
+                color=tokens.INK,
+                linewidth=0.9,
+                shrinkA=0,
+                shrinkB=4,
+            ),
+            zorder=6,
         )
+        ax.set_ylim(0, max(SPARKLINE_VALUES) * 1.35)
         ax.set_xticks(xs[::step])
         ax.set_xticklabels(months, fontsize=6, color=tokens.MUTED)
         ax.tick_params(axis="x", length=0, pad=3)
