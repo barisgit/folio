@@ -24,6 +24,7 @@ folio create my-doc \
 # self-contained project dir (preferred for real specs)
 cd my-doc
 folio validate        # resolves ./build.py by default
+folio check           # validate + lint + typecheck (add --format or --fix as needed)
 folio build
 folio reconcile out/page1.svg --spec .
 folio preview --spec .

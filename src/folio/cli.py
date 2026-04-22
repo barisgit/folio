@@ -7,6 +7,7 @@ from rich.console import Console
 
 from folio.commands import (
     build_command,
+    check_command,
     create_command,
     preview_command,
     reconcile_command,
@@ -18,7 +19,7 @@ console = Console()
 
 app = typer.Typer(
     name="folio",
-    help="Create, build, preview, validate, and reconcile page SVGs.",
+    help="Create, check, build, preview, validate, and reconcile page SVGs.",
     no_args_is_help=True,
     rich_markup_mode="rich",
     context_settings={"help_option_names": ["-h", "--help"]},
@@ -52,4 +53,5 @@ app.command("create")(create_command)
 app.command("validate")(validate_command)
 app.command("preview")(preview_command)
 app.command("reconcile")(reconcile_command)
+app.command("check")(check_command)
 app.add_typer(search_app, name="search")
