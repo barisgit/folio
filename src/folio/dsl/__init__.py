@@ -10,6 +10,8 @@ block = _builtins.block
 circle = _builtins.circle
 clip_path = _builtins.clip_path
 component_transfer = _builtins.component_transfer
+drop_shadow = _builtins.drop_shadow
+ellipse = _builtins.ellipse
 filter_ = _builtins.filter_
 func_a = _builtins.func_a
 gaussian_blur = _builtins.gaussian_blur
@@ -17,13 +19,18 @@ group = _builtins.group
 image = _builtins.image
 line = _builtins.line
 linear_gradient = _builtins.linear_gradient
+linear_gradient_stops = _builtins.linear_gradient_stops
 markup = _builtins.markup
+mask = _builtins.mask
 merge = _builtins.merge
 merge_node = _builtins.merge_node
 multiline = _builtins.multiline
 offset = _builtins.offset
 page = _builtins.page
 path = _builtins.path
+path_builder = _builtins.path_builder
+polygon = _builtins.polygon
+polyline = _builtins.polyline
 radial_gradient = _builtins.radial_gradient
 rect = _builtins.rect
 render = _builtins.render
@@ -34,6 +41,8 @@ svg_node = _builtins.svg_node
 text = _builtins.text
 triangle = _builtins.triangle
 tspan = _builtins.tspan
+wrapped_text = _builtins.wrapped_text
+PathBuilder = _builtins.PathBuilder
 
 __all__ = [
     "Asset",
@@ -47,9 +56,12 @@ __all__ = [
     "TextSpan",
     "TextStyle",
     "block",
+    "PathBuilder",
     "circle",
     "clip_path",
     "component_transfer",
+    "drop_shadow",
+    "ellipse",
     "filter_",
     "func_a",
     "gaussian_blur",
@@ -57,13 +69,18 @@ __all__ = [
     "image",
     "line",
     "linear_gradient",
+    "linear_gradient_stops",
     "markup",
+    "mask",
     "merge",
     "merge_node",
     "multiline",
     "offset",
     "page",
     "path",
+    "path_builder",
+    "polygon",
+    "polyline",
     "radial_gradient",
     "rect",
     "render",
@@ -75,4 +92,5 @@ __all__ = [
     "tokens",
     "triangle",
     "tspan",
+    "wrapped_text",
 ]

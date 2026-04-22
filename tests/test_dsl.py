@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import warnings
 from pathlib import Path
 
 import pytest
@@ -9,17 +10,23 @@ from folio.dsl import (
     block,
     clip_path,
     component_transfer,
+    drop_shadow,
+    ellipse,
     filter_,
     func_a,
     gaussian_blur,
     group,
+    image,
     linear_gradient,
+    linear_gradient_stops,
     markup,
     merge,
     merge_node,
     multiline,
     offset,
     page,
+    polygon,
+    polyline,
     rect,
     render,
     rule,
@@ -29,6 +36,7 @@ from folio.dsl import (
     tokens,
     triangle,
     tspan,
+    wrapped_text,
 )
 from folio.dsl.loader import DslError, load_dsl_module
 from folio.dsl.renderer import (
@@ -164,6 +172,159 @@ def test_public_render_builder_survives_renderer_import_order() -> None:
     from folio.dsl import render as render_builder
 
     assert callable(render_builder)
+
+
+
+def test_page_size_can_be_overridden(tmp_path: Path) -> None:
+    document = render(
+        page(
+            rect("bg", 0, 0, 99, 210, fill=tokens.INK),
+            page_id="dl",
+            filename="dl.svg",
+            page_number=1,
+            width_mm=tokens.DL[0],
+            height_mm=tokens.DL[1],
+        )
+    )
+
+    content = render_document(document, config_dir=tmp_path).pages[0].content
+
+    assert 'width="99mm" height="210mm"' in content
+    assert 'viewBox="0 0 280.63 595.28"' in content
+
+
+
+def test_render_document_supports_shape_primitives_and_path_builder(tmp_path: Path) -> None:
+    card = block("card", at=(40, 50))
+    builder = card.path_builder().move_to(0, 0).line_to(10, 0).quad_to(15, 5, 10, 10).close()
+    document = render(
+        page(
+            page_id="cover",
+            filename="cover.svg",
+            page_number=1,
+            elements=[
+                ellipse("oval", 20, 30, 5, 7, fill=tokens.ACCENT),
+                polygon("triangle_poly", [(0, 0), (10, 0), (5, 10)], fill=tokens.INK),
+                polyline(
+                    "path_line",
+                    [(0, 12), (5, 16), (10, 12)],
+                    fill="none",
+                    stroke=tokens.INK,
+                ),
+                card.polygon(
+                    "scoped_poly",
+                    [(0, 0), (8, 0), (8, 8), (0, 8)],
+                    fill=tokens.SOFT,
+                ),
+                card.path("wave", builder, stroke=tokens.ACCENT, fill="none"),
+            ],
+        )
+    )
+
+    content = render_document(document, config_dir=tmp_path).pages[0].content
+
+    assert '<ellipse id="oval"' in content
+    assert 'rx="14.17"' in content
+    assert 'ry="19.84"' in content
+    assert '<polygon id="triangle_poly" points="0.0,0.0 28.35,0.0 14.17,28.35"' in content
+    assert '<polyline id="path_line" points="0.0,34.02 14.17,45.35 28.35,34.02"' in content
+    assert 'id="card_scoped_poly"' in content
+    assert (
+        '<path id="card_wave" d="M113.39 141.73 L141.73 141.73 '
+        'Q155.91 155.91 141.73 170.08 Z"'
+        in content
+    )
+
+
+
+def test_image_clip_helper_renders_inline_defs(tmp_path: Path) -> None:
+    asset = tmp_path / "logo.png"
+    asset.write_bytes(b"\x89PNG\r\n\x1a\n")
+    document = render(
+        page(
+            page_id="cover",
+            filename="cover.svg",
+            page_number=1,
+            elements=[
+                image(
+                    "hero",
+                    "logo.png",
+                    10,
+                    10,
+                    20,
+                    20,
+                    clip=ellipse("hero_clip_shape", 20, 20, 8, 8, fill="white"),
+                )
+            ],
+        )
+    )
+
+    content = render_document(document, config_dir=tmp_path).pages[0].content
+
+    assert '<defs>' in content
+    assert 'id="hero_clip"' in content
+    assert 'clip-path="url(#hero_clip)"' in content
+    assert '<ellipse id="hero_clip_shape"' in content
+    assert '<image id="hero"' in content
+
+
+
+def test_gradient_and_shadow_helpers_render(tmp_path: Path) -> None:
+    document = render(
+        page(
+            page_id="cover",
+            filename="cover.svg",
+            page_number=1,
+            defs=[
+                linear_gradient_stops(
+                    "panel_gradient",
+                    [("0%", tokens.INK), ("100%", tokens.ACCENT, 0.6)],
+                    angle_deg=45,
+                ),
+                drop_shadow("shadow_filter", blur=4, dy=2, alpha=0.8),
+            ],
+            elements=[
+                rect(
+                    "panel",
+                    0,
+                    0,
+                    20,
+                    20,
+                    fill="url(#panel_gradient)",
+                    filter="url(#shadow_filter)",
+                )
+            ],
+        )
+    )
+
+    content = render_document(document, config_dir=tmp_path).pages[0].content
+
+    assert 'id="panel_gradient_stop_1"' in content
+    assert 'id="panel_gradient_stop_2"' in content
+    assert 'stop-opacity="0.6"' in content
+    assert 'id="shadow_filter"' in content
+    assert 'id="shadow_filter_blur"' in content
+    assert 'id="shadow_filter_alpha_curve"' in content
+    assert 'slope="0.8"' in content
+
+
+
+def test_extended_tokens_suppress_palette_warnings() -> None:
+    tokens.extend(project_orange="#abcdef")
+    document = render(
+        page(
+            page_id="cover",
+            filename="cover.svg",
+            page_number=1,
+            elements=[rect("panel", 0, 0, 10, 10, fill=tokens.project_orange)],
+        )
+    )
+
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        validate_document(document)
+
+    assert not [warning for warning in recorded if warning.category is ValidationWarning]
 
 
 def test_page_group_and_defs_accept_variadic_children(tmp_path: Path) -> None:
@@ -311,6 +472,62 @@ def test_block_and_callable_style_helpers_render(tmp_path: Path) -> None:
     assert 'id="card_body_line_1"' in content
     assert 'id="card_body_line_2"' in content
     assert 'id="card_sep"' in content
+
+
+
+def test_wrapped_text_wraps_plain_text_and_supports_style_helpers(tmp_path: Path) -> None:
+    card = block("card", at=(20, 40))
+    document = render(
+        page(
+            page_id="cover",
+            filename="cover.svg",
+            page_number=1,
+            elements=[
+                wrapped_text(
+                    "copy",
+                    10,
+                    20,
+                    "Alpha beta gamma delta epsilon zeta eta theta.",
+                    width_mm=32,
+                    size_pt=12,
+                    fill=tokens.INK,
+                ),
+                tokens.STYLES.body.wrapped_text(
+                    "copy_style",
+                    10,
+                    50,
+                    "Styled wrapping text should also split into multiple lines.",
+                    width_mm=35,
+                    max_lines=2,
+                ),
+                card.wrapped_text(
+                    "body",
+                    0,
+                    0,
+                    "Scoped block wrapping should preserve block offsets.",
+                    width_mm=26,
+                    size_pt=10,
+                    fill=tokens.INK_2,
+                ),
+            ],
+        )
+    )
+
+    content = render_document(document, config_dir=tmp_path).pages[0].content
+
+    assert 'id="copy_line_1"' in content
+    assert 'id="copy_line_2"' in content
+    assert 'id="copy_style_line_2"' in content
+    assert 'id="card_body_line_1"' in content
+    assert 'id="card_body_line_2"' in content
+    assert "…</tspan>" in content
+    assert re.search(r'<tspan id="card_body_line_1"[^>]* x="56\.69" y="113\.39"', content)
+
+
+
+def test_wrapped_text_rejects_non_string_content() -> None:
+    with pytest.raises(TypeError, match=r"wrapped_text\(\) content must be a string"):
+        wrapped_text("copy", 10, 20, markup("<b>unsafe</b>"), width_mm=20)
 
 
 

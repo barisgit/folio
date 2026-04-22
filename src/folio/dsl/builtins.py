@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+import math
 from collections import defaultdict
 from collections.abc import Iterable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from folio.dsl.model import Asset, DefNode, Document, Element, ElementKind, Markup, Page, TextSpan
-from folio.dsl.styles import TextStyle, coerce_text_style
-from folio.render.tokens import MM_TO_PT
+from folio.dsl.styles import TextStyle, coerce_text_style, merge_text_style_attrs
+from folio.render import tokens as render_tokens
+from folio.render.tokens import MM_TO_PT, PT_TO_MM
 
 _AUTO_IDS: defaultdict[str, int] = defaultdict(int)
 
@@ -79,6 +81,127 @@ def _coerce_text_content(
     )
 
 
+ELLIPSIS = "…"
+_DEFAULT_WRAP_WIDTH_RATIO = 0.53
+_DEFAULT_LINE_HEIGHT = 1.35
+
+
+
+def _default_line_step_mm(size_pt: float) -> float:
+    return round(size_pt * PT_TO_MM * _DEFAULT_LINE_HEIGHT, 2)
+
+
+
+def _measure_text_mm(text: str, *, size_pt: float, letter_spacing: float | None = None) -> float:
+    if not text:
+        return 0.0
+    glyph_width_mm = size_pt * PT_TO_MM * _DEFAULT_WRAP_WIDTH_RATIO
+    letter_spacing_mm = 0.0 if letter_spacing is None else float(letter_spacing) * PT_TO_MM
+    return (len(text) * glyph_width_mm) + (max(0, len(text) - 1) * letter_spacing_mm)
+
+
+
+def _truncate_to_width(
+    text: str,
+    *,
+    width_mm: float,
+    size_pt: float,
+    letter_spacing: float | None,
+    use_ellipsis: bool,
+) -> str:
+    candidate = text.strip()
+    suffix = ELLIPSIS if use_ellipsis and candidate else ""
+    while candidate and _measure_text_mm(
+        f"{candidate}{suffix}",
+        size_pt=size_pt,
+        letter_spacing=letter_spacing,
+    ) > width_mm:
+        candidate = candidate[:-1].rstrip()
+    if not candidate:
+        return ELLIPSIS if use_ellipsis else ""
+    return f"{candidate}{suffix}"
+
+
+
+def _wrap_plain_text(
+    content: str,
+    *,
+    width_mm: float,
+    size_pt: float,
+    letter_spacing: float | None,
+    max_lines: int | None,
+    overflow: str,
+) -> list[str]:
+    if width_mm <= 0:
+        raise TypeError("wrapped_text() width_mm must be positive")
+    if max_lines is not None and max_lines <= 0:
+        raise TypeError("wrapped_text() max_lines must be positive when provided")
+    if overflow not in {"ellipsis", "clip"}:
+        raise TypeError("wrapped_text() overflow must be 'ellipsis' or 'clip'")
+
+    paragraphs = content.splitlines() or [content]
+    lines: list[str] = []
+    for paragraph in paragraphs:
+        if paragraph.strip() == "":
+            lines.append("")
+            continue
+
+        current = ""
+        for word in paragraph.split():
+            candidate = word if not current else f"{current} {word}"
+            if _measure_text_mm(
+                candidate,
+                size_pt=size_pt,
+                letter_spacing=letter_spacing,
+            ) <= width_mm:
+                current = candidate
+                continue
+
+            if current:
+                lines.append(current)
+                current = word
+            else:
+                lines.append(
+                    _truncate_to_width(
+                        word,
+                        width_mm=width_mm,
+                        size_pt=size_pt,
+                        letter_spacing=letter_spacing,
+                        use_ellipsis=False,
+                    )
+                )
+                current = ""
+
+        if current:
+            lines.append(current)
+
+    if max_lines is None or len(lines) <= max_lines:
+        return lines
+
+    truncated = lines[:max_lines]
+    remaining_text = " ".join(line for line in lines[max_lines - 1 :] if line)
+    truncated[-1] = _truncate_to_width(
+        remaining_text or truncated[-1],
+        width_mm=width_mm,
+        size_pt=size_pt,
+        letter_spacing=letter_spacing,
+        use_ellipsis=overflow == "ellipsis",
+    )
+    return truncated
+
+
+def _coerce_points_mm(
+    points_mm: Sequence[tuple[float, float]] | Iterable[tuple[float, float]],
+    *,
+    source: str,
+) -> tuple[tuple[float, float], ...]:
+    points = tuple((float(x_mm), float(y_mm)) for x_mm, y_mm in points_mm)
+    if not points:
+        raise TypeError(f"{source} requires at least one point")
+    return points
+
+
+
 def _offset_mm_attr(attrs: dict[str, Any], key: str, delta: float) -> None:
     value = attrs.get(key)
     if value is not None:
@@ -91,6 +214,93 @@ def _offset_xy_attrs(attrs: dict[str, Any], *, x_mm: float, y_mm: float) -> dict
     _offset_mm_attr(adjusted, "x_mm", x_mm)
     _offset_mm_attr(adjusted, "y_mm", y_mm)
     return adjusted
+
+
+@dataclass(slots=True)
+class PathBuilder:
+    commands: list[str] = field(default_factory=list)
+    origin_x_mm: float = 0.0
+    origin_y_mm: float = 0.0
+
+    def _push(self, command: str, *values_mm: float) -> PathBuilder:
+        if values_mm:
+            serialized = " ".join(str(_pt(value_mm)) for value_mm in values_mm)
+            self.commands.append(f"{command}{serialized}")
+        else:
+            self.commands.append(command)
+        return self
+
+    def move_to(self, x_mm: float, y_mm: float) -> PathBuilder:
+        return self._push("M", self.origin_x_mm + x_mm, self.origin_y_mm + y_mm)
+
+    def line_to(self, x_mm: float, y_mm: float) -> PathBuilder:
+        return self._push("L", self.origin_x_mm + x_mm, self.origin_y_mm + y_mm)
+
+    def horizontal_to(self, x_mm: float) -> PathBuilder:
+        return self._push("H", self.origin_x_mm + x_mm)
+
+    def vertical_to(self, y_mm: float) -> PathBuilder:
+        return self._push("V", self.origin_y_mm + y_mm)
+
+    def curve_to(
+        self,
+        c1x_mm: float,
+        c1y_mm: float,
+        c2x_mm: float,
+        c2y_mm: float,
+        x_mm: float,
+        y_mm: float,
+    ) -> PathBuilder:
+        return self._push(
+            "C",
+            self.origin_x_mm + c1x_mm,
+            self.origin_y_mm + c1y_mm,
+            self.origin_x_mm + c2x_mm,
+            self.origin_y_mm + c2y_mm,
+            self.origin_x_mm + x_mm,
+            self.origin_y_mm + y_mm,
+        )
+
+    def quad_to(self, cx_mm: float, cy_mm: float, x_mm: float, y_mm: float) -> PathBuilder:
+        return self._push(
+            "Q",
+            self.origin_x_mm + cx_mm,
+            self.origin_y_mm + cy_mm,
+            self.origin_x_mm + x_mm,
+            self.origin_y_mm + y_mm,
+        )
+
+    def arc_to(
+        self,
+        rx_mm: float,
+        ry_mm: float,
+        x_axis_rotation_deg: float,
+        x_mm: float,
+        y_mm: float,
+        *,
+        large_arc: bool = False,
+        sweep: bool = True,
+    ) -> PathBuilder:
+        return self._push(
+            "A",
+            rx_mm,
+            ry_mm,
+            x_axis_rotation_deg,
+            1.0 if large_arc else 0.0,
+            1.0 if sweep else 0.0,
+            self.origin_x_mm + x_mm,
+            self.origin_y_mm + y_mm,
+        )
+
+    def close(self) -> PathBuilder:
+        self.commands.append("Z")
+        return self
+
+    def build(self) -> str:
+        return " ".join(self.commands)
+
+    def __str__(self) -> str:
+        return self.build()
 
 
 @dataclass(frozen=True, slots=True)
@@ -138,6 +348,41 @@ class Block:
     ) -> Element:
         return circle(self.id(suffix), self.x(cx_mm), self.y(cy_mm), radius_mm, **attrs)
 
+    def ellipse(
+        self,
+        suffix: str,
+        cx_mm: float,
+        cy_mm: float,
+        rx_mm: float,
+        ry_mm: float,
+        **attrs: Any,
+    ) -> Element:
+        return ellipse(self.id(suffix), self.x(cx_mm), self.y(cy_mm), rx_mm, ry_mm, **attrs)
+
+    def polygon(
+        self,
+        suffix: str,
+        points_mm: Sequence[tuple[float, float]],
+        **attrs: Any,
+    ) -> Element:
+        return polygon(
+            self.id(suffix),
+            [self.point(x_mm, y_mm) for x_mm, y_mm in points_mm],
+            **attrs,
+        )
+
+    def polyline(
+        self,
+        suffix: str,
+        points_mm: Sequence[tuple[float, float]],
+        **attrs: Any,
+    ) -> Element:
+        return polyline(
+            self.id(suffix),
+            [self.point(x_mm, y_mm) for x_mm, y_mm in points_mm],
+            **attrs,
+        )
+
     def text(
         self,
         suffix: str,
@@ -167,6 +412,33 @@ class Block:
             self.y(y_mm),
             lines,
             line_step_mm=line_step_mm,
+            style=style,
+            **attrs,
+        )
+
+    def wrapped_text(
+        self,
+        suffix: str,
+        x_mm: float,
+        y_mm: float,
+        content: str,
+        *,
+        width_mm: float,
+        line_step_mm: float | None = None,
+        max_lines: int | None = None,
+        overflow: str = "ellipsis",
+        style: TextStyle | None = None,
+        **attrs: Any,
+    ) -> Element:
+        return wrapped_text(
+            self.id(suffix),
+            self.x(x_mm),
+            self.y(y_mm),
+            content,
+            width_mm=width_mm,
+            line_step_mm=line_step_mm,
+            max_lines=max_lines,
+            overflow=overflow,
             style=style,
             **attrs,
         )
@@ -282,6 +554,12 @@ class Block:
             **attrs,
         )
 
+    def path_builder(self) -> PathBuilder:
+        return PathBuilder(origin_x_mm=self.x_mm, origin_y_mm=self.y_mm)
+
+    def path(self, suffix: str, d: str | PathBuilder, **attrs: Any) -> Element:
+        return path(self.id(suffix), d, **attrs)
+
     def group(
         self,
         suffix: str,
@@ -307,6 +585,8 @@ def page(
     page_id: str,
     filename: str,
     page_number: int,
+    width_mm: float = render_tokens.A4_WIDTH_MM,
+    height_mm: float = render_tokens.A4_HEIGHT_MM,
     elements: Sequence[Element] | None = None,
     defs: str | Markup | Sequence[DefNode] | None = None,
     label: str | None = None,
@@ -327,6 +607,8 @@ def page(
         page_id=page_id,
         filename=filename,
         elements=page_elements,
+        width_mm=width_mm,
+        height_mm=height_mm,
         defs=_coerce_defs(defs),
         label=label,
         attrs=dict(attrs),
@@ -364,6 +646,52 @@ def circle(
         y_mm=cy_mm,
         attrs={"radius_mm": radius_mm, **attrs},
     )
+
+
+def ellipse(
+    element_id: str | None,
+    cx_mm: float,
+    cy_mm: float,
+    rx_mm: float,
+    ry_mm: float,
+    **attrs: Any,
+) -> Element:
+    return Element(
+        kind=ElementKind.ELLIPSE,
+        element_id=_element_id("ellipse", element_id),
+        x_mm=cx_mm,
+        y_mm=cy_mm,
+        attrs={"rx_mm": rx_mm, "ry_mm": ry_mm, **attrs},
+    )
+
+
+
+def polygon(
+    element_id: str | None,
+    points_mm: Sequence[tuple[float, float]] | Iterable[tuple[float, float]],
+    **attrs: Any,
+) -> Element:
+    return Element(
+        kind=ElementKind.POLYGON,
+        element_id=_element_id("polygon", element_id),
+        content=_coerce_points_mm(points_mm, source="polygon()"),
+        attrs=dict(attrs),
+    )
+
+
+
+def polyline(
+    element_id: str | None,
+    points_mm: Sequence[tuple[float, float]] | Iterable[tuple[float, float]],
+    **attrs: Any,
+) -> Element:
+    return Element(
+        kind=ElementKind.POLYLINE,
+        element_id=_element_id("polyline", element_id),
+        content=_coerce_points_mm(points_mm, source="polyline()"),
+        attrs=dict(attrs),
+    )
+
 
 
 def text(
@@ -435,6 +763,48 @@ def multiline(
 
 
 
+def wrapped_text(
+    element_id: str | None,
+    x_mm: float,
+    y_mm: float,
+    content: str,
+    *,
+    width_mm: float,
+    line_step_mm: float | None = None,
+    max_lines: int | None = None,
+    overflow: str = "ellipsis",
+    style: TextStyle | None = None,
+    **attrs: Any,
+) -> Element:
+    if not isinstance(content, str):
+        raise TypeError("wrapped_text() content must be a string")
+    merged_attrs = merge_text_style_attrs(
+        {"style": style, **attrs} if style is not None else dict(attrs),
+        source="wrapped_text()",
+        for_span=False,
+    )
+    size_pt = float(merged_attrs.get("size_pt", 12))
+    letter_spacing = merged_attrs.get("letter_spacing")
+    wrapped_lines = _wrap_plain_text(
+        content,
+        width_mm=width_mm,
+        size_pt=size_pt,
+        letter_spacing=None if letter_spacing is None else float(letter_spacing),
+        max_lines=max_lines,
+        overflow=overflow,
+    )
+    return multiline(
+        element_id,
+        x_mm,
+        y_mm,
+        wrapped_lines,
+        line_step_mm=line_step_mm or _default_line_step_mm(size_pt),
+        style=style,
+        **attrs,
+    )
+
+
+
 def image(
     element_id: str | None,
     reference: str,
@@ -444,9 +814,26 @@ def image(
     height_mm: float | None = None,
     **attrs: Any,
 ) -> Element:
+    resolved_id = _element_id("image", element_id)
+    clip = attrs.pop("clip", None)
+    clip_id = attrs.pop("clip_id", None)
+    if clip is not None:
+        if isinstance(clip, Element):
+            clip_def = clip_path(clip_id or f"{resolved_id}_clip", clip)
+        elif isinstance(clip, DefNode):
+            clip_def = clip
+            if clip_def.tag != "clipPath":
+                raise TypeError("image() clip DefNode must use tag='clipPath'")
+            if clip_def.element_id is None:
+                raise TypeError("image() clipPath defs must have an id")
+        else:
+            raise TypeError("image() clip must be an Element or clipPath DefNode")
+        attrs["clip_def"] = clip_def
+        attrs.setdefault("clip_path", f"url(#{clip_def.element_id})")
+
     return Element(
         kind=ElementKind.IMAGE,
-        element_id=_element_id("image", element_id),
+        element_id=resolved_id,
         x_mm=x_mm,
         y_mm=y_mm,
         content=Asset(reference=reference, width_mm=width_mm, height_mm=height_mm),
@@ -468,11 +855,11 @@ def group(
     )
 
 
-def path(element_id: str | None, d: str, **attrs: Any) -> Element:
+def path(element_id: str | None, d: str | PathBuilder, **attrs: Any) -> Element:
     return Element(
         kind=ElementKind.PATH,
         element_id=_element_id("path", element_id),
-        content=d,
+        content=d.build() if isinstance(d, PathBuilder) else d,
         attrs=dict(attrs),
     )
 
@@ -610,6 +997,78 @@ def clip_path(
     return svg_node("clipPath", element_id, *children, **attrs)
 
 
+
+def mask(
+    element_id: str | None,
+    *children: DefNode | Element,
+    **attrs: Any,
+) -> DefNode:
+    return svg_node("mask", element_id, *children, **attrs)
+
+
+
+def linear_gradient_stops(
+    element_id: str | None,
+    stops: Sequence[tuple[str, str] | tuple[str, str, float]],
+    *,
+    angle_deg: float | None = None,
+    **attrs: Any,
+) -> DefNode:
+    gradient_attrs = dict(attrs)
+    if angle_deg is not None:
+        radians = math.radians(angle_deg)
+        dx = math.cos(radians) * 0.5
+        dy = math.sin(radians) * 0.5
+        gradient_attrs.setdefault("x1", f"{0.5 - dx:.4f}".rstrip("0").rstrip("."))
+        gradient_attrs.setdefault("y1", f"{0.5 - dy:.4f}".rstrip("0").rstrip("."))
+        gradient_attrs.setdefault("x2", f"{0.5 + dx:.4f}".rstrip("0").rstrip("."))
+        gradient_attrs.setdefault("y2", f"{0.5 + dy:.4f}".rstrip("0").rstrip("."))
+
+    stop_nodes = []
+    for index, entry in enumerate(stops, start=1):
+        offset_value, color, *rest = entry
+        stop_attrs: dict[str, Any] = {"offset": offset_value, "stop_color": color}
+        if rest:
+            stop_attrs["stop_opacity"] = rest[0]
+        stop_nodes.append(stop(f"{element_id}_stop_{index}" if element_id else None, **stop_attrs))
+    return linear_gradient(element_id, *stop_nodes, **gradient_attrs)
+
+
+
+def drop_shadow(
+    element_id: str | None,
+    *,
+    blur: float = 10,
+    dx: float = 0,
+    dy: float = 8,
+    alpha: float = 0.75,
+    **attrs: Any,
+) -> DefNode:
+    filter_attrs = {"x": "-20%", "y": "-20%", "width": "140%", "height": "140%", **attrs}
+    shadow_id = element_id or _element_id("drop_shadow", None)
+    return filter_(
+        shadow_id,
+        gaussian_blur(f"{shadow_id}_blur", in_="SourceAlpha", stdDeviation=str(blur)),
+        offset(f"{shadow_id}_offset", dx=str(dx), dy=str(dy)),
+        component_transfer(
+            f"{shadow_id}_alpha",
+            func_a(f"{shadow_id}_alpha_curve", type="linear", slope=str(alpha)),
+        ),
+        merge(
+            f"{shadow_id}_merge",
+            merge_node(f"{shadow_id}_merge_shadow"),
+            merge_node(f"{shadow_id}_merge_graphic", in_="SourceGraphic"),
+        ),
+        **filter_attrs,
+    )
+
+
+
+def path_builder() -> PathBuilder:
+    return PathBuilder()
+
+
+
 def _pt(value_mm: float) -> float:
     return round(value_mm * MM_TO_PT, 2)
 
@@ -680,12 +1139,10 @@ def triangle(
             f"triangle() direction must be one of {tuple(points_by_direction)}"
         ) from exc
 
-    d = " ".join(
-        [f"M{_pt(points[0][0])} {_pt(points[0][1])}"]
-        + [f"L{_pt(x_point)} {_pt(y_point)}" for x_point, y_point in points[1:]]
-        + ["Z"]
-    )
-    return path(element_id, d, **attrs)
+    builder = PathBuilder().move_to(*points[0])
+    for x_point, y_point in points[1:]:
+        builder.line_to(x_point, y_point)
+    return path(element_id, builder.close(), **attrs)
 
 
 def render(*pages: Page, metadata: dict[str, Any] | None = None) -> Document:

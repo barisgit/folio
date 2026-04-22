@@ -103,6 +103,34 @@ class TextStyle:
             **attrs,
         )
 
+    def wrapped_text(
+        self,
+        element_id: str | None,
+        x_mm: float,
+        y_mm: float,
+        content: str,
+        *,
+        width_mm: float,
+        line_step_mm: float | None = None,
+        max_lines: int | None = None,
+        overflow: str = "ellipsis",
+        **attrs: Any,
+    ) -> Element:
+        from folio.dsl import wrapped_text
+
+        return wrapped_text(
+            element_id,
+            x_mm,
+            y_mm,
+            content,
+            width_mm=width_mm,
+            line_step_mm=line_step_mm,
+            max_lines=max_lines,
+            overflow=overflow,
+            style=self,
+            **attrs,
+        )
+
 
 def coerce_text_style(style: object, *, source: str) -> TextStyle | None:
     if style is None:
