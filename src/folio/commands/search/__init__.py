@@ -1,0 +1,19 @@
+from __future__ import annotations
+
+import typer
+
+from folio.commands.search.stock import fetch_stock, stock_command
+from folio.commands.search.svg import search_svg_assets, svg_command
+
+search_app = typer.Typer(
+    name="search",
+    help="Search for stock images and SVG assets.",
+    no_args_is_help=True,
+    rich_markup_mode="rich",
+)
+app = search_app
+
+search_app.command("stock")(stock_command)
+search_app.command("svg")(svg_command)
+
+__all__ = ["app", "fetch_stock", "search_app", "search_svg_assets", "stock_command", "svg_command"]

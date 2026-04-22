@@ -6,6 +6,7 @@ import typer
 from rich.console import Console
 
 from folio.commands import build_command, preview_command, reconcile_command, validate_command
+from folio.commands.search import search_app
 
 console = Console()
 
@@ -44,3 +45,4 @@ app.command("build")(build_command)
 app.command("validate")(validate_command)
 app.command("preview")(preview_command)
 app.command("reconcile")(reconcile_command)
+app.add_typer(search_app, name="search")
