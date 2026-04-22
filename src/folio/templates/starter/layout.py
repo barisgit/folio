@@ -8,12 +8,9 @@ from theme import (
     BRAND_TAGLINE_DARK,
     BRAND_TAGLINE_LIGHT,
     CARD_BODY,
-    CARD_INDEX,
     CARD_TAG,
     CARD_TITLE,
     CHART_AXIS,
-    EYEBROW,
-    EYEBROW_DARK,
     FEATURE_BODY,
     FEATURE_INDEX,
     FEATURE_TAG,
@@ -37,7 +34,6 @@ from folio.dsl import (
     rect,
     text,
     tokens,
-    wrapped_text,
 )
 
 
@@ -83,13 +79,7 @@ def brand_chip(
     label_width = max(name_metrics.width_mm, tagline_metrics.width_mm)
     block_height = name_metrics.height_mm + tagline_metrics.height_mm + 1.8
     chip_height = max(block_height + 2 * padding_y_mm, disc_radius_mm * 2 + 2.0)
-    chip_width = (
-        padding_x_mm
-        + disc_radius_mm * 2
-        + disc_gap_mm
-        + label_width
-        + padding_x_mm
-    )
+    chip_width = padding_x_mm + disc_radius_mm * 2 + disc_gap_mm + label_width + padding_x_mm
 
     disc_cx = x_mm + padding_x_mm + disc_radius_mm
     disc_cy = y_mm + chip_height / 2
@@ -102,43 +92,47 @@ def brand_chip(
     frame_opacity = 0.08 if light else 0.04
     disc_inner = tokens.deep_navy if light else tokens.WHITE
 
-    return group(
-        element_id,
-        "Brand Chip",
-        rect(
-            f"{element_id}_frame",
-            x_mm,
-            y_mm,
-            chip_width,
-            chip_height,
-            fill=frame_fill,
-            fill_opacity=frame_opacity,
-            rx_mm=chip_height / 2,
-            ry_mm=chip_height / 2,
+    return (
+        group(
+            element_id,
+            "Brand Chip",
+            rect(
+                f"{element_id}_frame",
+                x_mm,
+                y_mm,
+                chip_width,
+                chip_height,
+                fill=frame_fill,
+                fill_opacity=frame_opacity,
+                rx_mm=chip_height / 2,
+                ry_mm=chip_height / 2,
+            ),
+            circle(
+                f"{element_id}_disc",
+                disc_cx,
+                disc_cy,
+                disc_radius_mm,
+                fill=tokens.ACCENT,
+            ),
+            circle(
+                f"{element_id}_disc_inner",
+                disc_cx,
+                disc_cy,
+                disc_radius_mm * 0.42,
+                fill=disc_inner,
+            ),
+            text(f"{element_id}_name", label_x, name_y, brand_name, style=name_style),
+            text(
+                f"{element_id}_tagline",
+                label_x,
+                tagline_y,
+                brand_tagline,
+                style=tagline_style,
+            ),
         ),
-        circle(
-            f"{element_id}_disc",
-            disc_cx,
-            disc_cy,
-            disc_radius_mm,
-            fill=tokens.ACCENT,
-        ),
-        circle(
-            f"{element_id}_disc_inner",
-            disc_cx,
-            disc_cy,
-            disc_radius_mm * 0.42,
-            fill=disc_inner,
-        ),
-        text(f"{element_id}_name", label_x, name_y, brand_name, style=name_style),
-        text(
-            f"{element_id}_tagline",
-            label_x,
-            tagline_y,
-            brand_tagline,
-            style=tagline_style,
-        ),
-    ), chip_width, chip_height
+        chip_width,
+        chip_height,
+    )
 
 
 def counter_pill(
@@ -475,9 +469,7 @@ def sparkline_chart(
     points = [point(i, v) for i, v in enumerate(values)]
 
     area_builder = (
-        path_builder()
-        .move_to(points[0][0], y_mm + height_mm)
-        .line_to(points[0][0], points[0][1])
+        path_builder().move_to(points[0][0], y_mm + height_mm).line_to(points[0][0], points[0][1])
     )
     for px, py in points[1:]:
         area_builder = area_builder.line_to(px, py)

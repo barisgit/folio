@@ -239,7 +239,6 @@ def _cover_top_bar():
 
 
 def _cover_hero_text():
-    eyebrow_metrics = None
     hero_parts: list = []
     for index, (kind, word) in enumerate(HERO_WORDS, start=1):
         if kind == "emphasis":
