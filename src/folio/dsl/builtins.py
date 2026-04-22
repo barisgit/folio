@@ -217,6 +217,69 @@ def _offset_xy_attrs(attrs: dict[str, Any], *, x_mm: float, y_mm: float) -> dict
 
 
 @dataclass(slots=True)
+class TransformBuilder:
+    operations: list[str] = field(default_factory=list)
+    origin_x_mm: float = 0.0
+    origin_y_mm: float = 0.0
+
+    def translate(self, x_mm: float = 0.0, y_mm: float = 0.0) -> TransformBuilder:
+        self.operations.append(f"translate({_pt(x_mm)} {_pt(y_mm)})")
+        return self
+
+    def rotate(
+        self,
+        angle_deg: float,
+        *,
+        cx_mm: float | None = None,
+        cy_mm: float | None = None,
+    ) -> TransformBuilder:
+        if cx_mm is None and cy_mm is None:
+            self.operations.append(f"rotate({angle_deg:g})")
+            return self
+        if cx_mm is None or cy_mm is None:
+            raise TypeError("TransformBuilder.rotate() requires both cx_mm and cy_mm")
+        self.operations.append(
+            f"rotate({angle_deg:g} {_pt(self.origin_x_mm + cx_mm)} {_pt(self.origin_y_mm + cy_mm)})"
+        )
+        return self
+
+    def scale(self, sx: float, sy: float | None = None) -> TransformBuilder:
+        if sy is None:
+            self.operations.append(f"scale({sx:g})")
+        else:
+            self.operations.append(f"scale({sx:g} {sy:g})")
+        return self
+
+    def skew_x(self, angle_deg: float) -> TransformBuilder:
+        self.operations.append(f"skewX({angle_deg:g})")
+        return self
+
+    def skew_y(self, angle_deg: float) -> TransformBuilder:
+        self.operations.append(f"skewY({angle_deg:g})")
+        return self
+
+    def matrix(
+        self,
+        a: float,
+        b: float,
+        c: float,
+        d: float,
+        e_mm: float = 0.0,
+        f_mm: float = 0.0,
+    ) -> TransformBuilder:
+        self.operations.append(
+            f"matrix({a:g} {b:g} {c:g} {d:g} {_pt(e_mm)} {_pt(f_mm)})"
+        )
+        return self
+
+    def build(self) -> str:
+        return " ".join(self.operations)
+
+    def __str__(self) -> str:
+        return self.build()
+
+
+@dataclass(slots=True)
 class PathBuilder:
     commands: list[str] = field(default_factory=list)
     origin_x_mm: float = 0.0
@@ -553,6 +616,9 @@ class Block:
             direction=direction,
             **attrs,
         )
+
+    def transform_builder(self) -> TransformBuilder:
+        return TransformBuilder(origin_x_mm=self.x_mm, origin_y_mm=self.y_mm)
 
     def path_builder(self) -> PathBuilder:
         return PathBuilder(origin_x_mm=self.x_mm, origin_y_mm=self.y_mm)
@@ -1061,6 +1127,11 @@ def drop_shadow(
         ),
         **filter_attrs,
     )
+
+
+
+def transform_builder() -> TransformBuilder:
+    return TransformBuilder()
 
 
 

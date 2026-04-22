@@ -31,6 +31,7 @@ path = _builtins.path
 path_builder = _builtins.path_builder
 polygon = _builtins.polygon
 polyline = _builtins.polyline
+transform_builder = _builtins.transform_builder
 radial_gradient = _builtins.radial_gradient
 rect = _builtins.rect
 render = _builtins.render
@@ -43,6 +44,7 @@ triangle = _builtins.triangle
 tspan = _builtins.tspan
 wrapped_text = _builtins.wrapped_text
 PathBuilder = _builtins.PathBuilder
+TransformBuilder = _builtins.TransformBuilder
 
 __all__ = [
     "Asset",
@@ -55,6 +57,7 @@ __all__ = [
     "Page",
     "TextSpan",
     "TextStyle",
+    "TransformBuilder",
     "block",
     "PathBuilder",
     "circle",
@@ -82,6 +85,7 @@ __all__ = [
     "polygon",
     "polyline",
     "radial_gradient",
+    "transform_builder",
     "rect",
     "render",
     "rule",

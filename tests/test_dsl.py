@@ -34,6 +34,7 @@ from folio.dsl import (
     stop,
     text,
     tokens,
+    transform_builder,
     triangle,
     tspan,
     wrapped_text,
@@ -234,6 +235,36 @@ def test_render_document_supports_shape_primitives_and_path_builder(tmp_path: Pa
         'Q155.91 155.91 141.73 170.08 Z"'
         in content
     )
+
+
+
+def test_transform_builder_serializes_mm_aware_group_transforms(tmp_path: Path) -> None:
+    card = block("card", at=(20, 40))
+    document = render(
+        page(
+            page_id="cover",
+            filename="cover.svg",
+            page_number=1,
+            elements=[
+                group(
+                    "rotated_group",
+                    "Rotated",
+                    rect("panel", 0, 0, 20, 10, fill=tokens.SOFT),
+                    transform=transform_builder().translate(10, 5).rotate(15, cx_mm=20, cy_mm=10),
+                ),
+                card.layer(
+                    "Card",
+                    card.rect("panel", 0, 0, 10, 10, fill=tokens.INK),
+                    transform=card.transform_builder().rotate(30, cx_mm=5, cy_mm=5).scale(1.2),
+                ),
+            ],
+        )
+    )
+
+    content = render_document(document, config_dir=tmp_path).pages[0].content
+
+    assert 'transform="translate(28.35 14.17) rotate(15 56.69 28.35)"' in content
+    assert 'transform="rotate(30 70.87 127.56) scale(1.2)"' in content
 
 
 
