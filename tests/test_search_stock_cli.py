@@ -21,6 +21,9 @@ def _fake_results(*args, **kwargs):
             thumbnail="https://example.com/thumb/abc-123",
             width=1920,
             height=1080,
+            license="cc0",
+            creator="Jane Doe",
+            source="Wikimedia",
         ),
         SearchResult(
             id="def-456",
@@ -30,6 +33,9 @@ def _fake_results(*args, **kwargs):
             thumbnail="https://example.com/thumb/def-456",
             width=800,
             height=600,
+            license="cc-by",
+            creator="John Smith",
+            source="Flickr",
         ),
     ]
 
@@ -75,6 +81,47 @@ def test_search_stock_provider_option(monkeypatch) -> None:
     assert captured["provider"] == "pexels"
 
 
+def test_search_stock_multiple_provider_options(monkeypatch) -> None:
+    captured: dict = {}
+
+    def _capture_multi(*args, **kwargs):
+        captured.update(kwargs)
+        return _fake_results()
+
+    monkeypatch.setattr(stock_mod, "fetch_stock_multi", _capture_multi)
+
+    result = runner.invoke(
+        app,
+        ["search", "stock", "trees", "--provider", "openverse", "--provider", "pixabay"],
+    )
+
+    assert result.exit_code == 0
+    assert captured["providers"] == ["openverse", "pixabay"]
+
+
+def test_search_stock_provider_all(monkeypatch) -> None:
+    captured: dict = {}
+
+    def _capture_multi(*args, **kwargs):
+        captured.update(kwargs)
+        return _fake_results()
+
+    monkeypatch.setattr(stock_mod, "fetch_stock_multi", _capture_multi)
+
+    result = runner.invoke(app, ["search", "stock", "trees", "--provider", "all"])
+
+    assert result.exit_code == 0
+    assert captured["providers"] == ["openverse", "pexels", "pixabay"]
+
+
+def test_search_stock_invalid_provider(monkeypatch) -> None:
+    result = runner.invoke(app, ["search", "stock", "trees", "--provider", "nonexistent"])
+
+    assert result.exit_code == 1
+    assert "Unknown provider" in result.stdout
+    assert "nonexistent" in result.stdout
+
+
 
 def test_search_stock_per_page_option(monkeypatch) -> None:
     captured: dict = {}
@@ -113,6 +160,19 @@ def test_search_stock_missing_api_key_exits(monkeypatch) -> None:
     assert result.exit_code == 1
     assert "PEXELS_API_KEY" in result.stdout
 
+
+
+def test_search_stock_json_output_includes_metadata(monkeypatch) -> None:
+    monkeypatch.setattr(stock_mod, "fetch_stock", _fake_results)
+
+    result = runner.invoke(app, ["search", "stock", "sunset", "--json"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload[0]["license"] == "cc0"
+    assert payload[0]["creator"] == "Jane Doe"
+    assert payload[0]["source"] == "Wikimedia"
+    assert payload[1]["license"] == "cc-by"
 
 
 def test_search_stock_no_args_shows_help() -> None:

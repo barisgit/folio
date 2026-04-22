@@ -56,6 +56,9 @@ def test_fetch_openverse_maps_results(monkeypatch) -> None:
                     "thumbnail": "https://example.com/thumb.jpg",
                     "width": 1600,
                     "height": 900,
+                    "license": "cc0",
+                    "creator": "John Doe",
+                    "source": "Wikimedia",
                 }
             ]
         }
@@ -72,3 +75,6 @@ def test_fetch_openverse_maps_results(monkeypatch) -> None:
     assert results[0].thumbnail == "https://example.com/thumb.jpg"
     assert results[0].width == 1600
     assert results[0].height == 900
+    assert results[0].license == "cc0"
+    assert results[0].creator == "John Doe"
+    assert results[0].source == "Wikimedia"

@@ -8,9 +8,15 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from folio.search.providers import Provider, SearchResult, fetch_stock
+from folio.search.providers import (
+    PROVIDERS,
+    Provider,
+    SearchResult,
+    fetch_stock,
+    fetch_stock_multi,
+)
 
-console = Console(width=120)
+console = Console(width=200)
 
 COMMAND_NAME = "stock"
 COMMAND_HELP = "Search stock images from Openverse, Pexels, or Pixabay."
@@ -24,6 +30,9 @@ def _render_table(results: list[SearchResult]) -> None:
     table.add_column("Description", max_width=60)
     table.add_column("URL", style="blue", max_width=50)
     table.add_column("Size", justify="right")
+    table.add_column("License", max_width=16)
+    table.add_column("Creator", max_width=20)
+    table.add_column("Source", max_width=20)
 
     for i, r in enumerate(results, 1):
         table.add_row(
@@ -33,6 +42,9 @@ def _render_table(results: list[SearchResult]) -> None:
             r.description[:60],
             r.url[:50],
             f"{r.width}×{r.height}",
+            r.license or "\u2013",
+            r.creator or "\u2013",
+            r.source or "\u2013",
         )
     console.print(table)
 
@@ -47,23 +59,67 @@ def _render_json(results: list[SearchResult]) -> None:
             "thumbnail": r.thumbnail,
             "width": r.width,
             "height": r.height,
+            "license": r.license or None,
+            "creator": r.creator or None,
+            "source": r.source or None,
         }
         for r in results
     ]
     console.print_json(_json.dumps(payload))
 
 
+def _resolve_providers(raw_providers: list[str] | None) -> list[Provider]:
+    if not raw_providers:
+        return ["openverse"]
+
+    if "all" in raw_providers:
+        invalid = sorted(
+            {
+                provider
+                for provider in raw_providers
+                if provider != "all" and provider not in PROVIDERS
+            }
+        )
+        if invalid:
+            valid = ", ".join(PROVIDERS) + ", all"
+            raise RuntimeError(
+                f"Unknown provider(s): {', '.join(invalid)}. Valid: {valid}"
+            )
+        return list(PROVIDERS)
+
+    invalid = sorted({provider for provider in raw_providers if provider not in PROVIDERS})
+    if invalid:
+        valid = ", ".join(PROVIDERS) + ", all"
+        raise RuntimeError(
+            f"Unknown provider(s): {', '.join(invalid)}. Valid: {valid}"
+        )
+
+    resolved: list[Provider] = []
+    for provider_name in raw_providers:
+        provider = provider_name  # provider validity checked above
+        if provider not in resolved:
+            resolved.append(provider)
+    return resolved
+
+
 def stock_command(
     query: str = typer.Argument(..., help="Search query string."),
-    provider: Provider = typer.Option(
-        "openverse", "--provider", "-p", help="Image provider."
+    provider: list[str] | None = typer.Option(
+        None,
+        "--provider",
+        "-p",
+        help="Repeat to search multiple providers. Choices: openverse, pexels, pixabay, all.",
     ),
     per_page: int = typer.Option(10, "--per-page", "-n", help="Max results to return."),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
     """Search stock images from Openverse, Pexels, or Pixabay."""
     try:
-        results = fetch_stock(query, provider=provider, per_page=per_page)
+        providers_list = _resolve_providers(provider)
+        if len(providers_list) == 1:
+            results = fetch_stock(query, provider=providers_list[0], per_page=per_page)
+        else:
+            results = fetch_stock_multi(query, providers=providers_list, per_page=per_page)
     except RuntimeError as exc:
         console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc

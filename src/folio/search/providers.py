@@ -24,6 +24,9 @@ class SearchResult:
     thumbnail: str
     width: int
     height: int
+    license: str = ""
+    creator: str = ""
+    source: str = ""
 
 
 def _http_get_json(url: str, *, headers: dict[str, str] | None = None) -> dict[str, Any]:
@@ -50,6 +53,9 @@ def _fetch_openverse(query: str, *, per_page: int = 10) -> list[SearchResult]:
             thumbnail=r.get("thumbnail", ""),
             width=r.get("width", 0),
             height=r.get("height", 0),
+            license=r.get("license", "") or "",
+            creator=r.get("creator", "") or "",
+            source=r.get("source", "") or "",
         )
         for r in data.get("results", [])
     ]
@@ -114,3 +120,32 @@ def fetch_stock(
     """Search stock images from the given provider."""
     fetcher = _FETCHERS[provider]
     return fetcher(query, per_page=per_page)  # type: ignore[operator]
+
+
+def fetch_stock_multi(
+    query: str,
+    *,
+    providers: list[Provider],
+    per_page: int = 10,
+) -> list[SearchResult]:
+    """Search stock images from multiple providers, gracefully degrading on failure.
+
+    Returns combined results from all successful providers.  Raises only when
+    *every* provider fails.
+    """
+    all_results: list[SearchResult] = []
+    errors: list[str] = []
+
+    for prov in providers:
+        try:
+            fetcher = _FETCHERS[prov]
+            all_results.extend(fetcher(query, per_page=per_page))  # type: ignore[operator]
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"{prov}: {exc}")
+
+    if not all_results and errors:
+        raise RuntimeError(
+            "All providers failed:\n" + "\n".join(f"  - {e}" for e in errors)
+        )
+
+    return all_results
