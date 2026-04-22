@@ -7,7 +7,7 @@ import typer
 from rich.console import Console
 
 from folio.cache import cache_build
-from folio.dsl.loader import DslError, default_spec_path, load_dsl_module
+from folio.dsl.loader import DslError, load_dsl_module, resolve_spec_path
 from folio.dsl.renderer import BuildResult, RenderError, build_pages, write_pages
 
 console = Console()
@@ -15,9 +15,9 @@ console = Console()
 
 def build_command(
     spec_path: Annotated[Path | None, typer.Argument(help="Path to Python DSL module")] = None,
-    out_dir: Annotated[Path, typer.Option("--out-dir", help="Directory for rendered SVGs")] = Path(
-        "out"
-    ),
+    out_dir: Annotated[
+        Path | None, typer.Option("--out-dir", help="Directory for rendered SVGs")
+    ] = None,
     page_number: Annotated[
         int | None,
         typer.Option("--page", min=1, help="Only write a single page number"),
@@ -27,7 +27,8 @@ def build_command(
         typer.Option("--no-cache", help="Skip updating the last-build cache"),
     ] = False,
 ) -> None:
-    resolved_spec = (spec_path or default_spec_path()).expanduser().resolve()
+    resolved_spec = resolve_spec_path(spec_path)
+    resolved_out_dir = (out_dir or (resolved_spec.parent / "out")).expanduser().resolve()
     try:
         dsl_module = load_dsl_module(resolved_spec)
         result = build_pages(dsl_module, config_dir=resolved_spec.parent)
@@ -37,7 +38,7 @@ def build_command(
             if not selected_pages:
                 raise RenderError(f"Page {page_number} not found in spec")
             output_result = BuildResult(pages=selected_pages, config_hash=result.config_hash)
-        written = write_pages(output_result, out_dir)
+        written = write_pages(output_result, resolved_out_dir)
         cached = None if no_cache else cache_build(result, spec_path=resolved_spec)
     except DslError as exc:
         console.print(f"[red]Build error:[/red] {exc}")

@@ -6,7 +6,7 @@ from typing import Annotated
 import typer
 from rich.console import Console
 
-from folio.dsl.loader import DslError, default_spec_path, load_dsl_module
+from folio.dsl.loader import DslError, load_dsl_module, resolve_spec_path
 from folio.dsl.renderer import RenderError, document_from_module, validate_document
 
 console = Console()
@@ -15,7 +15,7 @@ console = Console()
 def validate_command(
     spec_path: Annotated[Path | None, typer.Argument(help="Path to Python DSL module")] = None,
 ) -> None:
-    resolved_spec = (spec_path or default_spec_path()).expanduser().resolve()
+    resolved_spec = resolve_spec_path(spec_path)
     try:
         module = load_dsl_module(resolved_spec)
         validate_document(document_from_module(module))

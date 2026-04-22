@@ -3,15 +3,19 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from folio.dsl.styles import TextStyle
+from folio.render import tokens as render_tokens
 from folio.render.tokens import (
+    A4,
     A4_HEIGHT_MM,
     A4_HEIGHT_PT,
     A4_WIDTH_MM,
     A4_WIDTH_PT,
+    A5,
     ACCENT,
     ACCENT_DARK,
     BLUE_GLOW,
     DEFAULT_FONT_FAMILY,
+    DL,
     INK,
     INK_2,
     INK_3,
@@ -25,7 +29,9 @@ from folio.render.tokens import (
     PT_TO_MM,
     SOFT,
     TEXT_SOFT,
+    US_LETTER,
     WHITE,
+    ROLLUP_850x2000,
 )
 
 hero = TextStyle(font_size_pt=38, font_weight=800, fill=WHITE, letter_spacing=-0.95)
@@ -66,6 +72,12 @@ page_title = TextStyle(font_size_pt=14, font_weight=800, fill=INK, letter_spacin
 section_label = TextStyle(font_size_pt=7.5, font_weight=700, fill=ACCENT_DARK, letter_spacing=2.1)
 title = TextStyle(font_size_pt=9.5, font_weight=600)
 title_large = page_title
+
+def extend(**colors: str) -> None:
+    for name, value in colors.items():
+        globals()[name] = value
+        setattr(render_tokens, name, value)
+
 
 STYLES = SimpleNamespace(
     hero=hero,
@@ -109,14 +121,17 @@ STYLES = SimpleNamespace(
 )
 
 __all__ = [
+    "A4",
     "A4_HEIGHT_MM",
     "A4_HEIGHT_PT",
     "A4_WIDTH_MM",
     "A4_WIDTH_PT",
+    "A5",
     "ACCENT",
     "ACCENT_DARK",
     "BLUE_GLOW",
     "DEFAULT_FONT_FAMILY",
+    "DL",
     "INK",
     "INK_2",
     "INK_3",
@@ -128,9 +143,12 @@ __all__ = [
     "MUTED_LIGHT",
     "MUTED_SOFT",
     "PT_TO_MM",
+    "ROLLUP_850x2000",
     "SOFT",
     "STYLES",
     "TEXT_SOFT",
     "TextStyle",
+    "US_LETTER",
     "WHITE",
+    "extend",
 ]

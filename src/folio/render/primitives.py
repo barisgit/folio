@@ -32,14 +32,21 @@ def _attrs(attrs: Mapping[str, object]) -> str:
     return "".join(parts)
 
 
-def svg_open() -> str:
+def _points_attr(points_mm: Sequence[tuple[float, float]]) -> str:
+    return " ".join(f"{m(x_mm)},{m(y_mm)}" for x_mm, y_mm in points_mm)
+
+
+def svg_open(
+    width_mm: float = tokens.A4_WIDTH_MM,
+    height_mm: float = tokens.A4_HEIGHT_MM,
+) -> str:
     return (
         '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n'
         '<svg xmlns="http://www.w3.org/2000/svg"\n'
         '     xmlns:xlink="http://www.w3.org/1999/xlink"\n'
         '     xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"\n'
-        f'     width="{tokens.A4_WIDTH_MM:.0f}mm" height="{tokens.A4_HEIGHT_MM:.0f}mm"\n'
-        f'     viewBox="0 0 {tokens.A4_WIDTH_PT} {tokens.A4_HEIGHT_PT}"\n'
+        f'     width="{width_mm:g}mm" height="{height_mm:g}mm"\n'
+        f'     viewBox="0 0 {m(width_mm)} {m(height_mm)}"\n'
         f'     font-family="{tokens.DEFAULT_FONT_FAMILY}">\n'
     )
 
@@ -84,9 +91,49 @@ def circle_mm(
     return f"<circle{_attrs(merged)}/>"
 
 
+def ellipse_mm(
+    element_id: str | None,
+    cx_mm: float,
+    cy_mm: float,
+    rx_mm: float,
+    ry_mm: float,
+    *,
+    fill: str,
+    **attrs: object,
+) -> str:
+    merged = {
+        "id": element_id,
+        "cx": m(cx_mm),
+        "cy": m(cy_mm),
+        "rx": m(rx_mm),
+        "ry": m(ry_mm),
+        "fill": fill,
+        **attrs,
+    }
+    return f"<ellipse{_attrs(merged)}/>"
+
+
 def path(element_id: str | None, d: str, **attrs: object) -> str:
     merged = {"id": element_id, "d": d, **attrs}
     return f"<path{_attrs(merged)}/>"
+
+
+def polygon_mm(
+    element_id: str | None,
+    points_mm: Sequence[tuple[float, float]],
+    **attrs: object,
+) -> str:
+    merged = {"id": element_id, "points": _points_attr(points_mm), **attrs}
+    return f"<polygon{_attrs(merged)}/>"
+
+
+def polyline_mm(
+    element_id: str | None,
+    points_mm: Sequence[tuple[float, float]],
+    **attrs: object,
+) -> str:
+    merged = {"id": element_id, "points": _points_attr(points_mm), **attrs}
+    return f"<polyline{_attrs(merged)}/>"
 
 
 def line_mm(

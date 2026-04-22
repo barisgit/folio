@@ -7,7 +7,7 @@ import typer
 from rich.console import Console
 
 from folio.cache import CacheError, cached_pages, last_build_svg
-from folio.dsl.loader import default_spec_path
+from folio.dsl.loader import resolve_spec_path
 from folio.preview import PreviewError, render_preview, render_preview_file
 
 console = Console()
@@ -55,7 +55,7 @@ def preview_command(
                 )
             )
         else:
-            resolved_spec = (spec_path or default_spec_path()).expanduser().resolve()
+            resolved_spec = resolve_spec_path(spec_path)
             for page in cached_pages(resolved_spec):
                 cached_svg = last_build_svg(resolved_spec, page.page_number)
                 outputs.append(

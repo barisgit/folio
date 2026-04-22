@@ -7,13 +7,14 @@ from textwrap import dedent
 from typer.testing import CliRunner
 
 import folio.commands.preview as preview_command_module
+import folio.commands.search.stock as stock_mod
 from folio.cache import cache_build, cache_paths
 from folio.cli import app
 from folio.dsl.loader import load_dsl_module
 from folio.dsl.renderer import build_pages
+from folio.search.providers import SearchResult
 
 runner = CliRunner()
-
 
 def test_preview_can_render_arbitrary_svg_path(
     tmp_path: Path,
@@ -119,6 +120,113 @@ def test_build_can_write_one_page_without_cache(tmp_path: Path) -> None:
     assert (out_dir / "two.svg").exists()
     assert not (out_dir / "one.svg").exists()
     assert not cache_paths(spec_path).root.exists()
+
+
+
+def test_build_uses_project_build_py_by_default(tmp_path: Path, monkeypatch) -> None:
+    project_dir = tmp_path / "project"
+    project_dir.mkdir()
+    build_path = project_dir / "build.py"
+    build_path.write_text(
+        dedent(
+            """
+            from folio.dsl import page, render, text
+
+            def build():
+                return render(
+                    page(
+                        page_id="cover",
+                        filename="cover.svg",
+                        page_number=1,
+                        elements=[text("headline", 10, 20, "Hello", size_pt=12)],
+                    )
+                )
+            """
+        ).strip()
+        + "\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.chdir(project_dir)
+    command = runner.invoke(app, ["build", "--no-cache"])
+
+    assert command.exit_code == 0
+    assert (project_dir / "out" / "cover.svg").exists()
+    assert not cache_paths(build_path).root.exists()
+
+
+
+def test_build_accepts_project_directory_as_spec(tmp_path: Path) -> None:
+    project_dir = tmp_path / "project"
+    project_dir.mkdir()
+    build_path = project_dir / "build.py"
+    build_path.write_text(
+        dedent(
+            """
+            from folio.dsl import page, render, text
+
+            def build():
+                return render(
+                    page(
+                        page_id="cover",
+                        filename="cover.svg",
+                        page_number=1,
+                        elements=[text("headline", 10, 20, "Hello", size_pt=12)],
+                    )
+                )
+            """
+        ).strip()
+        + "\n",
+        encoding="utf-8",
+    )
+
+    out_dir = project_dir / "rendered"
+    command = runner.invoke(
+        app,
+        ["build", str(project_dir), "--out-dir", str(out_dir), "--no-cache"],
+    )
+
+    assert command.exit_code == 0
+    assert (out_dir / "cover.svg").exists()
+    assert not cache_paths(build_path).root.exists()
+
+
+
+def test_build_defaults_to_spec_local_out_dir_for_explicit_spec(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    project_dir = tmp_path / "project"
+    project_dir.mkdir()
+    outside_dir = tmp_path / "outside"
+    outside_dir.mkdir()
+    spec_path = project_dir / "build.py"
+    spec_path.write_text(
+        dedent(
+            """
+            from folio.dsl import page, render, text
+
+            def build():
+                return render(
+                    page(
+                        page_id="cover",
+                        filename="cover.svg",
+                        page_number=1,
+                        elements=[text("headline", 10, 20, "Hello", size_pt=12)],
+                    )
+                )
+            """
+        ).strip()
+        + "\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.chdir(outside_dir)
+    command = runner.invoke(app, ["build", str(spec_path), "--no-cache"])
+
+    assert command.exit_code == 0
+    assert (project_dir / "out" / "cover.svg").exists()
+    assert not (outside_dir / "out" / "cover.svg").exists()
 
 
 def test_reconcile_can_override_page_number(tmp_path: Path) -> None:
@@ -264,3 +372,202 @@ def test_reconcile_json_output_is_machine_readable(tmp_path: Path) -> None:
         }
     ]
     assert payload["report_path"].endswith("_p1.json")
+
+
+# --- create command tests ---
+
+
+def test_create_rejects_invalid_var_format(tmp_path: Path) -> None:
+    command = runner.invoke(app, ["create", str(tmp_path / "my-doc"), "--var", "brand_name"])
+
+    assert command.exit_code == 1
+
+
+def test_create_rejects_non_empty_target(tmp_path: Path) -> None:
+    target = tmp_path / "output"
+    target.mkdir()
+    (target / "existing.txt").write_text("already here", encoding="utf-8")
+
+    command = runner.invoke(app, ["create", str(target)])
+
+    assert command.exit_code == 1
+
+
+def test_create_uses_builtin_defaults(tmp_path: Path) -> None:
+    project_dir = tmp_path / "my-doc"
+
+    command = runner.invoke(app, ["create", str(project_dir)])
+
+    assert command.exit_code == 0
+    assert (project_dir / "build.py").exists()
+    assert (project_dir / "pages.py").exists()
+    assert (project_dir / "layout.py").exists()
+    assert (project_dir / "theme.py").exists()
+    assert (project_dir / "content.py").exists()
+    assert (project_dir / ".gitignore").exists()
+    assert (project_dir / "assets" / ".gitkeep").exists()
+    assert not (project_dir / "template.yaml").exists()
+    content = (project_dir / "content.py").read_text(encoding="utf-8")
+    assert 'BRAND_NAME = "ACME"' in content
+    assert 'DOCUMENT_KICKER = "STARTER TEMPLATE"' in content
+
+
+
+def test_create_starter_template_builds_end_to_end(tmp_path: Path) -> None:
+    project_dir = tmp_path / "my-doc"
+
+    create_command = runner.invoke(
+        app,
+        [
+            "create",
+            str(project_dir),
+            "--var",
+            "brand_name=ACME",
+            "--var",
+            "document_title=Ship layouts from Python.",
+            "--var",
+            "document_kicker=STARTER TEMPLATE",
+        ],
+    )
+
+    assert create_command.exit_code == 0
+    assert (project_dir / "build.py").exists()
+    assert (project_dir / "pages.py").exists()
+    assert (project_dir / "layout.py").exists()
+    assert (project_dir / "theme.py").exists()
+    assert (project_dir / "content.py").exists()
+    assert (project_dir / ".gitignore").exists()
+    assert (project_dir / "assets" / ".gitkeep").exists()
+    assert "ACME" in (project_dir / "content.py").read_text(encoding="utf-8")
+
+    build_command = runner.invoke(app, ["build", str(project_dir), "--no-cache"])
+
+    assert build_command.exit_code == 0
+    assert (project_dir / "out" / "01_cover.svg").exists()
+    assert (project_dir / "out" / "02_summary.svg").exists()
+
+
+# --- search stock command tests ---
+
+def _fake_results(*args, **kwargs):
+    return [
+        SearchResult(
+            id="abc-123",
+            provider="openverse",
+            description="A sunset over the ocean",
+            url="https://example.com/photo/abc-123",
+            thumbnail="https://example.com/thumb/abc-123",
+            width=1920,
+            height=1080,
+            license="cc0",
+            creator="Jane Doe",
+            source="Wikimedia",
+        ),
+        SearchResult(
+            id="def-456",
+            provider="openverse",
+            description="Mountain landscape",
+            url="https://example.com/photo/def-456",
+            thumbnail="https://example.com/thumb/def-456",
+            width=800,
+            height=600,
+            license="cc-by",
+            creator="John Smith",
+            source="Flickr",
+        ),
+    ]
+
+
+def test_search_stock_prints_table(monkeypatch) -> None:
+    monkeypatch.setattr(stock_mod, "fetch_stock", _fake_results)
+    result = runner.invoke(app, ["search", "stock", "sunset"])
+    assert result.exit_code == 0
+    assert "sunset over the ocean" in result.stdout
+    assert "1920×1080" in result.stdout
+
+
+def test_search_stock_json_output(monkeypatch) -> None:
+    monkeypatch.setattr(stock_mod, "fetch_stock", _fake_results)
+    result = runner.invoke(app, ["search", "stock", "sunset", "--json"])
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert len(payload) == 2
+    assert payload[0]["id"] == "abc-123"
+    assert payload[0]["width"] == 1920
+    assert payload[1]["description"] == "Mountain landscape"
+
+
+def test_search_stock_provider_option(monkeypatch) -> None:
+    captured: dict = {}
+
+    def _capture(*args, **kwargs):
+        captured.update(kwargs)
+        return _fake_results()
+
+    monkeypatch.setattr(stock_mod, "fetch_stock", _capture)
+    result = runner.invoke(app, ["search", "stock", "trees", "--provider", "pexels"])
+    assert result.exit_code == 0
+    assert captured["provider"] == "pexels"
+
+
+def test_search_stock_multiple_provider_options(monkeypatch) -> None:
+    captured: dict = {}
+
+    def _capture_multi(*args, **kwargs):
+        captured.update(kwargs)
+        return _fake_results()
+
+    monkeypatch.setattr(stock_mod, "fetch_stock_multi", _capture_multi)
+    result = runner.invoke(
+        app,
+        ["search", "stock", "trees", "--provider", "openverse", "--provider", "pixabay"],
+    )
+    assert result.exit_code == 0
+    assert captured["providers"] == ["openverse", "pixabay"]
+
+
+def test_search_stock_per_page_option(monkeypatch) -> None:
+    captured: dict = {}
+
+    def _capture(*args, **kwargs):
+        captured.update(kwargs)
+        return _fake_results()
+
+    monkeypatch.setattr(stock_mod, "fetch_stock", _capture)
+    result = runner.invoke(app, ["search", "stock", "cats", "--per-page", "5"])
+    assert result.exit_code == 0
+    assert captured["per_page"] == 5
+
+
+def test_search_stock_empty_results(monkeypatch) -> None:
+    monkeypatch.setattr(stock_mod, "fetch_stock", lambda *a, **kw: [])
+    result = runner.invoke(app, ["search", "stock", "obscure-query"])
+    assert result.exit_code == 0
+    assert "No results found" in result.stdout
+
+
+def test_search_stock_missing_api_key_exits(monkeypatch) -> None:
+    def _raise(*args, **kwargs):
+        raise RuntimeError("PEXELS_API_KEY environment variable is required for Pexels.")
+
+    monkeypatch.setattr(stock_mod, "fetch_stock", _raise)
+    result = runner.invoke(app, ["search", "stock", "test", "--provider", "pexels"])
+    assert result.exit_code == 1
+    assert "PEXELS_API_KEY" in result.stdout
+
+
+def test_search_stock_json_output_includes_metadata(monkeypatch) -> None:
+    monkeypatch.setattr(stock_mod, "fetch_stock", _fake_results)
+    result = runner.invoke(app, ["search", "stock", "sunset", "--json"])
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload[0]["license"] == "cc0"
+    assert payload[0]["creator"] == "Jane Doe"
+    assert payload[0]["source"] == "Wikimedia"
+
+
+def test_search_stock_no_args_shows_help() -> None:
+    result = runner.invoke(app, ["search"])
+    assert result.exit_code in (0, 2)  # Typer exits 0 or 2 depending on version
+    assert "stock" in result.stdout
+

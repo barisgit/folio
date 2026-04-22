@@ -8,7 +8,7 @@ import typer
 from rich.console import Console
 
 from folio.cache import CacheError, cached_pages, last_build_svg, reconcile_report_path
-from folio.dsl.loader import default_spec_path
+from folio.dsl.loader import resolve_spec_path
 from folio.reconcile.diff import diff_svgs
 from folio.reconcile.parse import ParsedSvg, ParseError, parse_svg
 from folio.reconcile.report import print_report, report_payload, write_report
@@ -77,7 +77,7 @@ def reconcile_command(
         str, typer.Option("--format", help="Report format: text or json")
     ] = "text",
 ) -> None:
-    resolved_spec = (spec_path or default_spec_path()).expanduser().resolve()
+    resolved_spec = resolve_spec_path(spec_path)
     normalized_format = output_format.lower()
     if normalized_format not in {"text", "json"}:
         raise typer.BadParameter("--format must be one of: text, json")

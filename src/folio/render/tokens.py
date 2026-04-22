@@ -3,8 +3,13 @@ from __future__ import annotations
 MM_TO_PT = 72 / 25.4
 PT_TO_MM = 25.4 / 72
 
-A4_WIDTH_MM = 210.0
-A4_HEIGHT_MM = 297.0
+A4 = (210.0, 297.0)
+A5 = (148.0, 210.0)
+DL = (99.0, 210.0)
+US_LETTER = (215.9, 279.4)
+ROLLUP_850x2000 = (850.0, 2000.0)
+
+A4_WIDTH_MM, A4_HEIGHT_MM = A4
 A4_WIDTH_PT = round(A4_WIDTH_MM * MM_TO_PT, 2)
 A4_HEIGHT_PT = round(A4_HEIGHT_MM * MM_TO_PT, 2)
 
