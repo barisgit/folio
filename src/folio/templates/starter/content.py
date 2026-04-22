@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-BRAND_NAME = "{{ brand_name | default('FOLIO STUDIO') }}"
-BRAND_TAGLINE = "{{ brand_tagline | default('DESIGN DOCUMENTS IN CODE') }}"
-DOCUMENT_TITLE = "{{ document_title | default('Design documents, in Python.') }}"
-DOCUMENT_KICKER = "{{ document_kicker | default('STARTER KIT  /  ISSUE 01  /  SPRING 2026') }}"
-CTA_URL = "{{ cta_url | default('https://folio.dev/starter') }}"
+BRAND_NAME = "FOLIO STUDIO"
+BRAND_TAGLINE = "DESIGN DOCUMENTS IN CODE"
+DOCUMENT_TITLE = "Design documents, in Python."
+DOCUMENT_KICKER = "STARTER KIT  /  ISSUE 01  /  SPRING 2026"
+CTA_URL = "https://folio.dev/starter"
 
 HERO_WORDS = (
     ("normal", "Design"),
@@ -31,17 +31,20 @@ FEATURES = (
     (
         "01",
         "TYPED DSL",
-        "Every element is a typed Python object with a stable id — ready for reconcile and diff on every build.",
+        "Every element is a typed Python object with a stable id "
+        "— ready for reconcile and diff on every build.",
     ),
     (
         "02",
         "COMPOSABLE LAYOUTS",
-        "cols, grid, flow_cols and measured text keep multi-column pages aligned without hand-tuned maths.",
+        "cols, grid, flow_cols and measured text keep multi-column "
+        "pages aligned without hand-tuned maths.",
     ),
     (
         "03",
         "FAST FEEDBACK",
-        "Validate, build, reconcile, and preview — all from the CLI, all in a single shell, all cached.",
+        "Validate, build, reconcile, and preview — all from the CLI, "
+        "all in a single shell, all cached.",
     ),
 )
 
@@ -56,25 +59,29 @@ CARDS = (
         "assets/icon_layers.svg",
         "01  COMPOSE",
         "Typed primitives",
-        "Rect, circle, ellipse, polygon, polyline, image, and text stack in block-local frames with stable ids for every reconcile.",
+        "Rect, circle, ellipse, polygon, polyline, image, and text stack in "
+        "block-local frames with stable ids for every reconcile.",
     ),
     (
         "assets/icon_palette.svg",
         "02  TOKENS",
         "Design system",
-        "Share a palette and a type scale across every page. Extend tokens with project colours without warning spam.",
+        "Share a palette and a type scale across every page. "
+        "Extend tokens with project colours without warning spam.",
     ),
     (
         "assets/icon_zap.svg",
         "03  ITERATE",
         "Preview loop",
-        "Rasterize via Playwright, Cairo, or rsvg — whichever is on the machine. Wire a watcher for instant visual feedback.",
+        "Rasterize via Playwright, Cairo, or rsvg — whichever is on the machine. "
+        "Wire a watcher for instant visual feedback.",
     ),
     (
         "assets/icon_chart.svg",
         "04  MEASURE",
         "Built-in viz",
-        "Polyline, polygon, and path_builder cover sparklines, annotations, and custom chart primitives in pure mm-space.",
+        "Polyline, polygon, and path_builder cover sparklines, annotations, "
+        "and custom chart primitives in pure mm-space.",
     ),
 )
 
@@ -107,7 +114,11 @@ TIMELINE = (
 METRICS_LEDE_PARTS = (
     ("normal", "Pair typed primitives with "),
     ("emphasis", "matplotlib charts"),
-    ("normal", " — `chart()` caches PNGs next to the spec so rebuilds stay fast and reconcile stays clean."),
+    (
+        "normal",
+        " — `chart()` caches PNGs next to the spec "
+        "so rebuilds stay fast and reconcile stays clean.",
+    ),
 )
 
 METRICS_LEGEND_PARTS = (

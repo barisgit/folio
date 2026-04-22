@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from pages import build_cover, build_features, build_metrics
-
 from folio.dsl import drop_shadow, grain, render
+
+from pages import build_cover, build_features, build_metrics
 
 
 def build():

@@ -47,6 +47,11 @@ addopts = ["-q"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+# Starter template files are scaffold data, not folio source. They are
+# linted in the context of the scaffolded project (where `folio` is a
+# third-party import), not this repo — the two contexts demand opposite
+# isort classifications, so exclude them here.
+extend-exclude = ["src/folio/templates"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "PTH"]

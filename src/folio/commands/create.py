@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from importlib import resources
 from importlib.resources.abc import Traversable
 from pathlib import Path
@@ -12,6 +13,17 @@ console = Console()
 
 JINJA_SUFFIXES = (".j2", ".jinja", ".jinja2")
 IGNORED_TEMPLATE_FILES = {"template.yaml"}
+
+# Letters/digits/dash only; PyPA project-name style. Matches the characters
+# PyPA recommends for `[project].name`.
+_SLUG_INVALID_RE = re.compile(r"[^a-z0-9-]+")
+
+
+def _default_project_slug(target_dir: Path) -> str:
+    """Derive a PyPA-safe project slug from a target directory name."""
+    raw = target_dir.name.strip().lower()
+    slug = _SLUG_INVALID_RE.sub("-", raw).strip("-")
+    return slug or "my-folio-project"
 
 
 def _parse_vars(var_args: list[str] | None) -> dict[str, str]:
@@ -101,6 +113,7 @@ def create_command(
             raise typer.Exit(1)
 
     variables = _parse_vars(var)
+    variables.setdefault("project_slug", _default_project_slug(target_dir))
 
     try:
         target_dir.mkdir(parents=True, exist_ok=True)

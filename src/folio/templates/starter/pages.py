@@ -1,5 +1,26 @@
 from __future__ import annotations
 
+from folio.dsl import (
+    block,
+    chart,
+    ellipse,
+    grain,
+    group,
+    linear_gradient_stops,
+    page,
+    polygon,
+    qr,
+    radial_gradient,
+    rect,
+    rule,
+    stop,
+    text,
+    tokens,
+    tspan,
+    wrapped_text,
+)
+from folio.layout import grid
+
 from content import (
     BRAND_NAME,
     BRAND_TAGLINE,
@@ -46,27 +67,6 @@ from theme import (
     TOTAL_PAGES,
     T,
 )
-
-from folio.dsl import (
-    block,
-    chart,
-    ellipse,
-    grain,
-    group,
-    linear_gradient_stops,
-    page,
-    polygon,
-    qr,
-    radial_gradient,
-    rect,
-    rule,
-    stop,
-    text,
-    tokens,
-    tspan,
-    wrapped_text,
-)
-from folio.layout import grid
 
 PAGE_W = PAGE_SIZE_MM
 PAGE_H = PAGE_SIZE_MM

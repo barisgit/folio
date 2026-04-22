@@ -2,23 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from theme import (
-    BRAND_NAME_DARK,
-    BRAND_NAME_LIGHT,
-    BRAND_TAGLINE_DARK,
-    BRAND_TAGLINE_LIGHT,
-    CARD_BODY,
-    CARD_TAG,
-    CARD_TITLE,
-    CHART_AXIS,
-    FEATURE_BODY,
-    FEATURE_INDEX,
-    FEATURE_TAG,
-    METRIC_DELTA,
-    METRIC_LABEL,
-    METRIC_VALUE,
-)
-
 from folio.dsl import (
     block,
     circle,
@@ -34,6 +17,23 @@ from folio.dsl import (
     rect,
     text,
     tokens,
+)
+
+from theme import (
+    BRAND_NAME_DARK,
+    BRAND_NAME_LIGHT,
+    BRAND_TAGLINE_DARK,
+    BRAND_TAGLINE_LIGHT,
+    CARD_BODY,
+    CARD_TAG,
+    CARD_TITLE,
+    CHART_AXIS,
+    FEATURE_BODY,
+    FEATURE_INDEX,
+    FEATURE_TAG,
+    METRIC_DELTA,
+    METRIC_LABEL,
+    METRIC_VALUE,
 )
 
 

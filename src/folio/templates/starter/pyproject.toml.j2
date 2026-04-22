@@ -1,0 +1,19 @@
+[project]
+name = "{{ project_slug | default('my-folio-project') }}"
+version = "0.1.0"
+description = "A folio document."
+requires-python = ">=3.11"
+# folio is not yet published to PyPI. While developing, install it in
+# editable mode from your local checkout:
+#     pip install -e /path/to/folio
+# Once folio ships, replace that with:
+#     dependencies = ["folio>=0.1"]
+dependencies = []
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "PTH"]
+ignore = ["B008"]
