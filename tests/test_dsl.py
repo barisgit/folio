@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 import warnings
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -317,7 +318,7 @@ def test_qr_renders_compact_paths_and_block_helper(tmp_path: Path) -> None:
 
 def test_qr_rejects_invalid_arguments() -> None:
     with pytest.raises(TypeError, match=r"qr\(\) data must be a string or bytes"):
-        qr("code", 0, 0, object(), size_mm=20)
+        qr("code", 0, 0, cast(str, object()), size_mm=20)
 
     with pytest.raises(TypeError, match=r"qr\(\) ecc must be one of"):
         qr("code", 0, 0, "hello", size_mm=20, ecc="Z")
@@ -927,10 +928,8 @@ def test_render_document_supports_structured_defs(tmp_path: Path) -> None:
             defs=[
                 linear_gradient(
                     "panel_gradient",
-                    [
-                        stop("panel_gradient_stop_1", offset="0%", stop_color=tokens.INK),
-                        stop("panel_gradient_stop_2", offset="100%", stop_color=tokens.LINE),
-                    ],
+                    stop("panel_gradient_stop_1", offset="0%", stop_color=tokens.INK),
+                    stop("panel_gradient_stop_2", offset="100%", stop_color=tokens.LINE),
                     x1="0",
                     y1="0",
                     x2="1",
@@ -938,13 +937,11 @@ def test_render_document_supports_structured_defs(tmp_path: Path) -> None:
                 ),
                 filter_(
                     "shadow_filter",
-                    [
-                        gaussian_blur("shadow_blur", in_="SourceAlpha", stdDeviation="4")
-                    ],
+                    gaussian_blur("shadow_blur", in_="SourceAlpha", stdDeviation="4"),
                 ),
                 clip_path(
                     "panel_clip",
-                    [rect("panel_clip_rect", 0, 0, 20, 20, fill="none")],
+                    rect("panel_clip_rect", 0, 0, 20, 20, fill="none"),
                 ),
             ],
             elements=[
@@ -984,21 +981,17 @@ def test_text_style_markup_and_triangle_helpers_render(tmp_path: Path) -> None:
             defs=[
                 filter_(
                     "shadow_filter",
-                    [
-                        gaussian_blur("shadow_blur", in_="SourceAlpha", stdDeviation="4"),
-                        offset("shadow_offset", dy="2"),
-                        component_transfer(
-                            "shadow_alpha",
-                            [func_a("shadow_alpha_curve", type="linear", slope="0.8")],
-                        ),
-                        merge(
-                            "shadow_merge",
-                            [
-                                merge_node("shadow_merge_shadow"),
-                                merge_node("shadow_merge_graphic", in_="SourceGraphic"),
-                            ],
-                        ),
-                    ],
+                    gaussian_blur("shadow_blur", in_="SourceAlpha", stdDeviation="4"),
+                    offset("shadow_offset", dy="2"),
+                    component_transfer(
+                        "shadow_alpha",
+                        func_a("shadow_alpha_curve", type="linear", slope="0.8"),
+                    ),
+                    merge(
+                        "shadow_merge",
+                        merge_node("shadow_merge_shadow"),
+                        merge_node("shadow_merge_graphic", in_="SourceGraphic"),
+                    ),
                 )
             ],
             elements=[

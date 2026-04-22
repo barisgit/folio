@@ -44,6 +44,14 @@ class ValidationWarning(UserWarning):
 _HEX_COLOR_RE = re.compile(r"#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})")
 
 
+def _structured_defs(
+    defs: str | Markup | tuple[DefNode, ...],
+) -> tuple[DefNode, ...]:
+    if isinstance(defs, str | Markup):
+        return ()
+    return defs
+
+
 def _token_hex_colors() -> frozenset[str]:
     return frozenset(
         value.lower()
@@ -83,12 +91,14 @@ def _resolve_asset(base_dir: Path, reference: str) -> Path:
 def _coerce_document(candidate: object, *, source: str) -> Document:
     if isinstance(candidate, Document):
         return candidate
-    if (
-        isinstance(candidate, Sequence)
-        and not isinstance(candidate, str | bytes)
-        and all(isinstance(page, Page) for page in candidate)
-    ):
-        return Document(pages=tuple(candidate))
+    if isinstance(candidate, Sequence) and not isinstance(candidate, str | bytes):
+        pages: list[Page] = []
+        for item in candidate:
+            if not isinstance(item, Page):
+                break
+            pages.append(item)
+        else:
+            return Document(pages=tuple(pages))
     raise RenderError(
         f"{source} must produce a folio.dsl.Document or a sequence of folio.dsl.Page values"
     )
@@ -117,12 +127,14 @@ def _text_parts(content: object, *, source: str) -> tuple[str | Markup | TextSpa
     if content is None or isinstance(content, str | Markup):
         return None
     if isinstance(content, Sequence) and not isinstance(content, str | bytes):
-        parts = tuple(content)
-        if not all(isinstance(part, str | Markup | TextSpan) for part in parts):
-            raise RenderError(
-                f"{source} content must contain only strings, Markup, or TextSpan instances"
-            )
-        return parts
+        parts: list[str | Markup | TextSpan] = []
+        for item in content:
+            if not isinstance(item, str | Markup | TextSpan):
+                raise RenderError(
+                    f"{source} content must contain only strings, Markup, or TextSpan instances"
+                )
+            parts.append(item)
+        return tuple(parts)
     raise RenderError(
         f"{source} content must be a string, Markup, or a sequence of "
         "strings/Markup/TextSpan"
@@ -207,12 +219,10 @@ def _validate_document(document: Document) -> None:
         filenames.add(page.filename)
 
         seen_ids: set[str] = {page.page_id}
-        if isinstance(document.defs, tuple):
-            for node in document.defs:
-                _validate_def_node(node, seen_ids)
-        if isinstance(page.defs, tuple):
-            for node in page.defs:
-                _validate_def_node(node, seen_ids)
+        for node in _structured_defs(document.defs):
+            _validate_def_node(node, seen_ids)
+        for node in _structured_defs(page.defs):
+            _validate_def_node(node, seen_ids)
         for element in page.elements:
             _validate_element(element, seen_ids)
 
@@ -263,14 +273,12 @@ def _collect_def_node_colors(node: DefNode, colors: set[str]) -> None:
 
 def _warn_on_non_token_hex_colors(document: Document) -> None:
     colors: set[str] = set()
-    if isinstance(document.defs, tuple):
-        for node in document.defs:
-            _collect_def_node_colors(node, colors)
+    for node in _structured_defs(document.defs):
+        _collect_def_node_colors(node, colors)
     for page in document.pages:
         colors.update(_hex_colors_in_attrs(page.attrs))
-        if isinstance(page.defs, tuple):
-            for node in page.defs:
-                _collect_def_node_colors(node, colors)
+        for node in _structured_defs(page.defs):
+            _collect_def_node_colors(node, colors)
         for element in page.elements:
             _collect_element_colors(element, colors)
     if colors:
@@ -299,11 +307,10 @@ def _normalize_svg_attrs(attrs: dict[str, object]) -> dict[str, object]:
     for key, value in attrs.items():
         if value is None:
             continue
-        if key.endswith("_mm"):
-            normalized[_normalize_attr_name(key[:-3])] = m(float(value))
-            continue
-        if key.endswith("_pt"):
-            normalized[_normalize_attr_name(key[:-3])] = float(value)
+        if (key.endswith("_mm") or key.endswith("_pt")) and isinstance(value, int | float | str):
+            stripped = _normalize_attr_name(key[:-3])
+            numeric = float(value)
+            normalized[stripped] = m(numeric) if key.endswith("_mm") else numeric
             continue
         normalized[_normalize_attr_name(key)] = value
     return normalized
@@ -576,9 +583,8 @@ def build_pages(
     config_dir: Path,
     output_dir: Path | None = None,
 ) -> BuildResult:
-    source_path = (
-        Path(dsl_module.__file__).resolve() if getattr(dsl_module, "__file__", None) else None
-    )
+    module_file = getattr(dsl_module, "__file__", None)
+    source_path = Path(module_file).resolve() if isinstance(module_file, str) else None
     result = render_document(
         document_from_module(dsl_module), config_dir=config_dir, source_path=source_path
     )

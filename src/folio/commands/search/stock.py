@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json as _json
+from typing import TypeGuard
 
 import typer
 from rich.console import Console
@@ -15,6 +16,10 @@ from folio.search.providers import (
     fetch_stock,
     fetch_stock_multi,
 )
+
+
+def _is_provider(value: str) -> TypeGuard[Provider]:
+    return value in PROVIDERS
 
 console = Console(width=200)
 
@@ -96,9 +101,8 @@ def _resolve_providers(raw_providers: list[str] | None) -> list[Provider]:
 
     resolved: list[Provider] = []
     for provider_name in raw_providers:
-        provider = provider_name  # provider validity checked above
-        if provider not in resolved:
-            resolved.append(provider)
+        if _is_provider(provider_name) and provider_name not in resolved:
+            resolved.append(provider_name)
     return resolved
 
 

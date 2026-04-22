@@ -73,10 +73,27 @@ section_label = TextStyle(font_size_pt=7.5, font_weight=700, fill=ACCENT_DARK, l
 title = TextStyle(font_size_pt=9.5, font_weight=600)
 title_large = page_title
 
+_extensions: dict[str, str] = {}
+
+
 def extend(**colors: str) -> None:
     for name, value in colors.items():
+        _extensions[name] = value
         globals()[name] = value
         setattr(render_tokens, name, value)
+
+
+def __getattr__(name: str) -> str:
+    try:
+        return _extensions[name]
+    except KeyError as exc:
+        raise AttributeError(
+            f"module 'folio.dsl.tokens' has no attribute {name!r}"
+        ) from exc
+
+
+def __dir__() -> list[str]:
+    return sorted({*globals(), *_extensions})
 
 
 STYLES = SimpleNamespace(

@@ -304,7 +304,13 @@ def _flatten_text_runs(
             )
         ]
     runs: list[_LayoutRun] = []
-    for part in _coerce_text_content(content, source=source):
+    coerced = _coerce_text_content(content, source=source)
+    parts: tuple[str | Markup | TextSpan, ...]
+    if isinstance(coerced, str | Markup):
+        parts = (coerced,)
+    else:
+        parts = coerced
+    for part in parts:
         if isinstance(part, TextSpan):
             child_output_attrs = dict(output_attrs)
             child_output_attrs.update(

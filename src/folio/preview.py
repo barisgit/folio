@@ -6,6 +6,8 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
+from collections.abc import Callable
+from typing import Any
 
 from folio.cache import preview_output_path
 
@@ -14,10 +16,15 @@ class PreviewError(Exception):
     """Raised when preview rendering fails."""
 
 
-try:
-    from playwright.sync_api import sync_playwright
-except ImportError:  # pragma: no cover - optional dependency
-    sync_playwright = None
+def _load_sync_playwright() -> Callable[[], Any] | None:
+    try:
+        module = importlib.import_module("playwright.sync_api")
+    except ImportError:  # pragma: no cover - optional dependency
+        return None
+    return module.sync_playwright
+
+
+sync_playwright = _load_sync_playwright()
 
 
 MM_PER_INCH = 25.4

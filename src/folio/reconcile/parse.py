@@ -38,7 +38,7 @@ class ParsedSvg:
 class _SvgNode:
     tag: str
     attrs: dict[str, str]
-    content: list[object] = field(default_factory=list)
+    content: list[str | _SvgNode] = field(default_factory=list)
 
     @property
     def children(self) -> list[_SvgNode]:
