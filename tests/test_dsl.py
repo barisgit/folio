@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import __future__ as _future
 import re
+import types
 import warnings
 from pathlib import Path
 from typing import cast
 
 import pytest
 
+import folio.dsl as _dsl_module
 from folio.dsl import (
     TextLayoutWarning,
     block,
@@ -46,6 +49,41 @@ from folio.dsl import (
     wrapped_text,
 )
 from folio.dsl.loader import DslError, load_dsl_module
+
+
+def _dsl_public_names() -> set[str]:
+    exposed: set[str] = set()
+    for name, value in vars(_dsl_module).items():
+        if name.startswith("_"):
+            continue
+        if isinstance(value, _future._Feature):
+            continue
+        if isinstance(value, types.ModuleType) and name != "tokens":
+            continue
+        exposed.add(name)
+    return exposed
+
+
+def test_dsl_all_matches_public_surface() -> None:
+    exposed = _dsl_public_names()
+    declared = set(_dsl_module.__all__)
+    missing_from_all = exposed - declared
+    missing_from_module = declared - exposed
+    assert not missing_from_all and not missing_from_module, (
+        f"folio.dsl public surface drift: "
+        f"in module missing from __all__={sorted(missing_from_all)!r}; "
+        f"in __all__ missing from module={sorted(missing_from_module)!r}"
+    )
+
+
+def test_dsl_all_is_sorted_and_unique() -> None:
+    assert _dsl_module.__all__ == sorted(_dsl_module.__all__), (
+        "folio.dsl.__all__ must be alphabetized"
+    )
+    assert len(_dsl_module.__all__) == len(set(_dsl_module.__all__)), (
+        "folio.dsl.__all__ must not contain duplicates"
+    )
+
 from folio.dsl.renderer import (
     RenderError,
     ValidationWarning,

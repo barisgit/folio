@@ -45,6 +45,50 @@ Only template-marked files are rendered (`.j2`, `.jinja`, `.jinja2`); other file
 Defaults live in the template itself, so `folio create my-doc` works without any `--var` flags.
 Starter metadata lives in `src/folio/templates/starter/template.yaml`; keep that file descriptive and let `content.py.j2` remain the source of truth for default values.
 
+## DSL reference (`folio docs`)
+
+The full DSL surface is documented inside the installed package. Agents
+and humans look symbols up through the CLI instead of grepping the
+source:
+
+```bash
+folio docs search text           # find primitives related to text
+folio docs show page             # signature, params, examples, source
+folio docs show folio.dsl.rect   # fully-qualified lookup
+folio docs list --kind=token     # every design token
+folio docs list --kind=style     # every preset TextStyle
+folio docs show page --format=json   # machine-readable view for agents
+```
+
+The index ships inside the installed wheel, so `folio docs` works from
+any working directory regardless of where the Folio source lives.
+Regenerate the committed index with `python -m folio.docs.generate`
+after adding or modifying public DSL symbols.
+
+## Agent skill
+
+Agent-driven work on Folio projects is supported by a bundled skill
+shipped inside the installed package. It installs into the
+agent-neutral `.agents/skills/folio/` directory so it is not tied to any
+one agent tool. Clients that read skills from a different path (for
+example Claude Code's `.claude/skills/`) can symlink it.
+
+`folio create` installs the skill into new projects by default at
+`.agents/skills/folio/`; you can also install it on demand:
+
+```bash
+folio skill install                    # project scope (./.agents/skills/folio)
+folio skill install --scope=user       # ~/.agents/skills/folio
+folio skill install --force            # overwrite divergent installs
+
+# if your agent tool reads from a client-specific path:
+ln -s ~/.agents/skills/folio ~/.claude/skills/folio
+```
+
+The skill tells the agent to use `folio docs show` / `folio docs search`
+for DSL lookups, and to follow the standard
+`check → build → preview → reconcile` pipeline.
+
 ## DSL entrypoint
 
 A starter spec lives at `config/folio.py`.

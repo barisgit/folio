@@ -30,3 +30,30 @@ folio check          # validate + ruff + ty (optionally --fix / --format)
 
 Rendered output lands in `./out/`. The build cache lives in `./.cache/`.
 Both are git-ignored.
+
+## Agent workflow
+
+`folio create` installs the Folio skill under `.agents/skills/folio/` by
+default, so any agent tool that reads from the shared `.agents/skills/`
+convention picks up the canonical
+`check → build → preview → reconcile` workflow and uses
+`folio docs show <symbol>` / `folio docs search <query>` for DSL
+lookups.
+
+If your agent client reads skills from a client-specific path (e.g.
+Claude Code's `.claude/skills/`), symlink it:
+
+```bash
+ln -s .agents/skills/folio .claude/skills/folio
+```
+
+To re-install or upgrade the skill against the currently installed Folio
+version:
+
+```bash
+folio skill install --force               # project scope (default)
+folio skill install --scope=user --force  # ~/.agents/skills/folio/
+```
+
+Pass `folio create --no-skill` when scaffolding if you don't want the
+skill auto-installed.

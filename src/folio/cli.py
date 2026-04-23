@@ -9,8 +9,10 @@ from folio.commands import (
     build_command,
     check_command,
     create_command,
+    docs_app,
     preview_command,
     reconcile_command,
+    skill_app,
     validate_command,
 )
 from folio.commands.search import search_app
@@ -55,3 +57,5 @@ app.command("preview")(preview_command)
 app.command("reconcile")(reconcile_command)
 app.command("check")(check_command)
 app.add_typer(search_app, name="search")
+app.add_typer(docs_app, name="docs")
+app.add_typer(skill_app, name="skill")

@@ -68,6 +68,64 @@ def run_validate(target: CheckTarget) -> StepResult:
     return StepResult(label="validate", success=True)
 
 
+def run_examples(target: CheckTarget) -> StepResult:
+    """Execute every DSL example in the packaged docs index."""
+    import json as _json
+
+    from folio.docs.generate import index_path
+
+    _ = target
+    try:
+        payload = _json.loads(index_path().read_text(encoding="utf-8"))
+    except (FileNotFoundError, OSError) as exc:
+        return StepResult(
+            label="examples",
+            success=False,
+            output=f"docs index unavailable: {exc}",
+            infra_failure=True,
+        )
+    except _json.JSONDecodeError as exc:
+        return StepResult(
+            label="examples",
+            success=False,
+            output=f"docs index unparseable: {exc}",
+            infra_failure=True,
+        )
+
+    failures: list[str] = []
+    executed = 0
+    for symbol in payload.get("symbols", []):
+        for index, example in enumerate(symbol.get("examples", []), start=1):
+            executed += 1
+            failure = _evaluate_example(symbol, example, index)
+            if failure is not None:
+                failures.append(failure)
+
+    if failures:
+        output = "\n".join(failures)
+        return StepResult(
+            label="examples",
+            success=False,
+            output=f"{len(failures)} of {executed} example(s) failed:\n{output}",
+        )
+    return StepResult(label="examples", success=True)
+
+
+def _evaluate_example(symbol: dict, example: dict, index: int) -> str | None:
+    namespace: dict[str, object] = {}
+    setup = example.get("setup") or ""
+    code = example.get("code") or ""
+    label = f"{symbol['id']}[{index}]"
+    runner = __builtins__["exec"] if isinstance(__builtins__, dict) else __builtins__.exec
+    try:
+        if setup:
+            runner(compile(setup, f"<{label}.setup>", "exec"), namespace)
+        runner(compile(code, f"<{label}>", "exec"), namespace)
+    except BaseException as err:  # noqa: BLE001 — caught to surface as diagnostic
+        return f"{label}: {type(err).__name__}: {err}"
+    return None
+
+
 def _run_backend_step(
     label: str,
     chain: list[Backend],
@@ -115,6 +173,8 @@ def run_check(
     result.steps.append(validate_step)
     if not validate_step.success:
         return result
+
+    result.steps.append(run_examples(target))
 
     result.steps.append(
         _run_backend_step("lint", LINT_BACKENDS, target, fix=fix, verbose=verbose)

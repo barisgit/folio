@@ -13,6 +13,19 @@ console = Console()
 
 JINJA_SUFFIXES = (".j2", ".jinja", ".jinja2")
 IGNORED_TEMPLATE_FILES = {"template.yaml"}
+IGNORED_TEMPLATE_DIRS = frozenset(
+    {
+        "__pycache__",
+        ".pytest_cache",
+        ".ruff_cache",
+        ".mypy_cache",
+        ".ty_cache",
+        ".venv",
+        "out",
+        ".cache",
+    }
+)
+IGNORED_TEMPLATE_SUFFIXES = (".pyc", ".pyo")
 
 # Letters/digits/dash only; PyPA project-name style. Matches the characters
 # PyPA recommends for `[project].name`.
@@ -65,9 +78,19 @@ def _builtin_template_root() -> Traversable:
     return resources.files("folio").joinpath("templates").joinpath("starter")
 
 
+def _should_skip_entry(name: str, *, is_dir: bool) -> bool:
+    if is_dir and name in IGNORED_TEMPLATE_DIRS:
+        return True
+    if not is_dir and name in IGNORED_TEMPLATE_FILES:
+        return True
+    if not is_dir and name.endswith(IGNORED_TEMPLATE_SUFFIXES):
+        return True
+    return False
+
+
 def _copy_template(source_dir: Traversable, target_dir: Path, variables: dict[str, str]) -> None:
     for child in sorted(source_dir.iterdir(), key=lambda entry: entry.name):
-        if child.name in IGNORED_TEMPLATE_FILES:
+        if _should_skip_entry(child.name, is_dir=child.is_dir()):
             continue
 
         rendered_name = _strip_suffix(_render_jinja(child.name, variables))
@@ -87,6 +110,24 @@ def _copy_template(source_dir: Traversable, target_dir: Path, variables: dict[st
         console.print(f"created [green]{target_path}[/green]")
 
 
+def _install_starter_skill(target_dir: Path) -> None:
+    """Copy the bundled skill into <target>/.agents/skills/folio/."""
+    import shutil
+
+    from folio.commands.skill import SKILL_DIR_PARTS
+    from folio.skill import skill_assets, skill_root
+
+    source = skill_root()
+    destination = target_dir.joinpath(*SKILL_DIR_PARTS)
+    destination.mkdir(parents=True, exist_ok=True)
+    for asset in skill_assets():
+        relative = asset.relative_to(source)
+        target_path = destination / relative
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(asset, target_path)
+    console.print(f"installed skill at [green]{destination}[/green]")
+
+
 def create_command(
     target_dir: Annotated[
         Path,
@@ -96,6 +137,10 @@ def create_command(
         list[str] | None,
         typer.Option("--var", help="Template variables as key=value pairs"),
     ] = None,
+    no_skill: Annotated[
+        bool,
+        typer.Option("--no-skill", help="Skip installing the bundled Folio skill."),
+    ] = False,
 ) -> None:
     starter_template = _builtin_template_root()
     if not starter_template.is_dir():
@@ -118,6 +163,8 @@ def create_command(
     try:
         target_dir.mkdir(parents=True, exist_ok=True)
         _copy_template(starter_template, target_dir, variables)
+        if not no_skill:
+            _install_starter_skill(target_dir)
     except typer.Exit:
         raise
     except Exception as exc:

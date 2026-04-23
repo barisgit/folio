@@ -91,3 +91,45 @@ def test_create_accepts_project_slug_override(tmp_path: Path) -> None:
     assert command.exit_code == 0
     pyproject = (project_dir / "pyproject.toml").read_text(encoding="utf-8")
     assert 'name = "custom-slug"' in pyproject
+
+
+def test_create_installs_skill_by_default(tmp_path: Path) -> None:
+    project_dir = tmp_path / "my-doc"
+    command = runner.invoke(app, ["create", str(project_dir)])
+    assert command.exit_code == 0
+    skill_file = project_dir / ".agents" / "skills" / "folio" / "SKILL.md"
+    assert skill_file.is_file()
+
+
+def test_create_skips_python_and_tool_caches(tmp_path: Path) -> None:
+    import shutil
+
+    import folio
+
+    template_root = Path(folio.__file__).resolve().parent / "templates" / "starter"
+    cache_dir = template_root / "__pycache__"
+    ruff_dir = template_root / ".ruff_cache"
+    cache_dir.mkdir(exist_ok=True)
+    ruff_dir.mkdir(exist_ok=True)
+    (cache_dir / "build.cpython-312.pyc").write_bytes(b"fake bytecode")
+    (ruff_dir / "CACHEDIR.TAG").write_text(
+        "Signature: 8a477f597d28d172789f06886806bc55\n", encoding="utf-8"
+    )
+    try:
+        result = runner.invoke(app, ["create", str(tmp_path / "my-doc"), "--no-skill"])
+        assert result.exit_code == 0, result.output
+        project_dir = tmp_path / "my-doc"
+        for child in project_dir.rglob("*"):
+            assert child.name not in {"__pycache__", ".ruff_cache", ".pytest_cache"}
+            assert child.suffix not in {".pyc", ".pyo"}
+    finally:
+        shutil.rmtree(cache_dir, ignore_errors=True)
+        shutil.rmtree(ruff_dir, ignore_errors=True)
+
+
+def test_create_no_skill_flag_skips_installation(tmp_path: Path) -> None:
+    project_dir = tmp_path / "my-doc"
+    command = runner.invoke(app, ["create", str(project_dir), "--no-skill"])
+    assert command.exit_code == 0
+    assert not (project_dir / ".agents").exists()
+    assert (project_dir / "build.py").exists()

@@ -1,3 +1,16 @@
+"""Design tokens re-exported for the public DSL.
+
+Exposes the Folio color palette, page presets (``A4``, ``A5``, ``US_LETTER``,
+``DL``, ``ROLLUP_850x2000``), font families, unit conversion factors, and a
+``STYLES`` namespace of preset :class:`TextStyle` presets. Use via
+``tokens.ACCENT``, ``tokens.STYLES.hero``, ``tokens.A4_WIDTH_MM``, etc.
+
+Example:
+    tokens.ACCENT
+
+Tags: tokens, style
+"""
+
 from __future__ import annotations
 
 from types import SimpleNamespace
@@ -77,6 +90,20 @@ _extensions: dict[str, str] = {}
 
 
 def extend(**colors: str) -> None:
+    """Register additional color tokens on :mod:`folio.dsl.tokens`.
+
+    Each keyword becomes a new attribute on both :mod:`folio.dsl.tokens` and
+    :mod:`folio.render.tokens` so the renderer picks up custom palette
+    colors.
+
+    Args:
+        colors: Name/value pairs, where each value is a CSS color string.
+
+    Example:
+        tokens.extend(BRAND_GOLD='#c8a24a')
+
+    Tags: tokens, extension
+    """
     for name, value in colors.items():
         _extensions[name] = value
         globals()[name] = value

@@ -10,6 +10,21 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True)
 class TextStyle:
+    """Reusable text styling preset consumable by text primitives.
+
+    All fields are optional; unset fields inherit from renderer defaults.
+    A ``TextStyle`` is itself callable — ``style(element_id, x_mm, y_mm,
+    content, **attrs)`` produces a text :class:`Element` with the style
+    applied. Methods ``span``, ``multiline``, ``wrapped_text``,
+    ``measure_text``, and ``measure_wrapped_text`` forward to the matching
+    DSL primitives with ``style=self`` bound.
+
+    Example:
+        TextStyle(font_size_pt=12, font_weight=700, fill="#222")
+
+    Tags: model, text, style
+    """
+
     font_size_pt: float | None = None
     font_weight: int | None = None
     fill: str | None = None

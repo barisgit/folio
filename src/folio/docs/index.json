@@ -1,0 +1,4360 @@
+{
+  "version": 1,
+  "generated_at": "2026-04-23T12:37:15Z",
+  "folio_version": "0.1.0",
+  "symbols": [
+    {
+      "id": "folio.dsl.Asset",
+      "name": "Asset",
+      "kind": "helper",
+      "module": "folio.dsl",
+      "signature": "Asset(reference: 'str', width_mm: 'float', height_mm: 'float | None' = None) -> None",
+      "summary": "Reference to an external raster or vector asset with physical size.",
+      "description": "Produced by :func:`image` and embedded in an :class:`Element` of kind\n``IMAGE``. ``reference`` is a project-relative path or URI; the\nrenderer resolves it against the spec directory.",
+      "params": [
+        {
+          "name": "reference",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "width_mm",
+          "type": "float",
+          "doc": ""
+        },
+        {
+          "name": "height_mm",
+          "type": "float | None",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "None",
+        "doc": ""
+      },
+      "examples": [
+        {
+          "code": "Asset(reference=\"assets/hero.png\", width_mm=40, height_mm=30)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "model",
+        "asset"
+      ],
+      "source": "folio.dsl.model:33"
+    },
+    {
+      "id": "folio.dsl.Block",
+      "name": "Block",
+      "kind": "builder",
+      "module": "folio.dsl",
+      "signature": "Block(prefix: 'str', x_mm: 'float' = 0.0, y_mm: 'float' = 0.0) -> None",
+      "summary": "Scoped id and coordinate helper for authoring groups of Elements.",
+      "description": "A ``Block`` carries a stable id prefix and an origin offset in mm.\nShape/text methods on the block delegate to the module-level builtins\nbut automatically prefix ids and translate coordinates by the block\norigin, so nested layouts stay consistent without manual bookkeeping.",
+      "params": [
+        {
+          "name": "prefix",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "x_mm",
+          "type": "float",
+          "doc": ""
+        },
+        {
+          "name": "y_mm",
+          "type": "float",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "None",
+        "doc": ""
+      },
+      "examples": [
+        {
+          "code": "block('hero', at=(10, 20)).rect('bg', 0, 0, 40, 30)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "layout",
+        "builder"
+      ],
+      "source": "folio.dsl.builtins:1030"
+    },
+    {
+      "id": "folio.dsl.ChartHandle",
+      "name": "ChartHandle",
+      "kind": "helper",
+      "module": "folio.dsl",
+      "signature": "ChartHandle(element_id: 'str', *, x_mm: 'float', y_mm: 'float', width_mm: 'float', height_mm: 'float', dpi: 'int', transparent: 'bool', cache_dir: 'Path | None', figure_kwargs: 'dict[str, Any]', image_attrs: 'dict[str, Any]') -> 'None'",
+      "summary": "Builds a folio Element from a matplotlib Figure.",
+      "description": "Obtain one via :func:`chart`. Drive it in whichever form fits:\n\n- ``@handle`` decorator (function takes an Axes)\n- ``with handle as ax:`` context manager\n- ``handle.from_figure(fig)`` for a pre-built Figure\n\nThe underlying Figure is always closed when folio owns it. When you hand\nin a pre-built Figure via :meth:`from_figure`, folio leaves it alone so\nyou can keep using it.",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "x_mm",
+          "type": "float",
+          "doc": ""
+        },
+        {
+          "name": "y_mm",
+          "type": "float",
+          "doc": ""
+        },
+        {
+          "name": "width_mm",
+          "type": "float",
+          "doc": ""
+        },
+        {
+          "name": "height_mm",
+          "type": "float",
+          "doc": ""
+        },
+        {
+          "name": "dpi",
+          "type": "int",
+          "doc": ""
+        },
+        {
+          "name": "transparent",
+          "type": "bool",
+          "doc": ""
+        },
+        {
+          "name": "cache_dir",
+          "type": "Path | None",
+          "doc": ""
+        },
+        {
+          "name": "figure_kwargs",
+          "type": "dict[str, Any]",
+          "doc": ""
+        },
+        {
+          "name": "image_attrs",
+          "type": "dict[str, Any]",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "None",
+        "doc": ""
+      },
+      "examples": [],
+      "tags": [],
+      "source": "folio.dsl.charts:101"
+    },
+    {
+      "id": "folio.dsl.DefNode",
+      "name": "DefNode",
+      "kind": "defs",
+      "module": "folio.dsl",
+      "signature": "DefNode(tag: 'str', element_id: 'str | None' = None, attrs: 'dict[str, Any]' = <factory>, children: 'tuple[DefNode | Element, ...]' = <factory>, content: 'str | Markup | None' = None) -> None",
+      "summary": "Node in the SVG ``<defs>`` section (gradients, filters, clipPaths).",
+      "description": "Unlike :class:`Element`, a ``DefNode`` is positionless and lives in\nthe document or page defs. Primitives like :func:`linear_gradient`,\n:func:`filter_`, :func:`clip_path`, and :func:`svg_node` produce it.",
+      "params": [
+        {
+          "name": "tag",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": ""
+        },
+        {
+          "name": "attrs",
+          "type": "dict[str, Any]",
+          "doc": ""
+        },
+        {
+          "name": "children",
+          "type": "tuple[DefNode | Element, ...]",
+          "doc": ""
+        },
+        {
+          "name": "content",
+          "type": "str | Markup | None",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "None",
+        "doc": ""
+      },
+      "examples": [
+        {
+          "code": "linear_gradient(\"bg\", stop(None, offset=\"0%\"), stop(None, offset=\"100%\"))",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "model",
+        "defs"
+      ],
+      "source": "folio.dsl.model:111"
+    },
+    {
+      "id": "folio.dsl.Document",
+      "name": "Document",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "Document(pages: 'tuple[Page, ...]', defs: 'str | Markup | tuple[DefNode, ...]' = <factory>, config_hash: 'str' = '', metadata: 'dict[str, Any]' = <factory>) -> None",
+      "summary": "Root of a rendered multi-page document, produced by :func:`render`.",
+      "description": "Carries the ordered pages, document-level defs, and optional\nmetadata passed into :func:`render`.",
+      "params": [
+        {
+          "name": "pages",
+          "type": "tuple[Page, ...]",
+          "doc": ""
+        },
+        {
+          "name": "defs",
+          "type": "str | Markup | tuple[DefNode, ...]",
+          "doc": ""
+        },
+        {
+          "name": "config_hash",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "metadata",
+          "type": "dict[str, Any]",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "None",
+        "doc": ""
+      },
+      "examples": [
+        {
+          "code": "render(page(rect(None, 0, 0, 10, 10), page_id=\"p\", filename=\"p.svg\", page_number=1))",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "model",
+        "document"
+      ],
+      "source": "folio.dsl.model:179"
+    },
+    {
+      "id": "folio.dsl.Element",
+      "name": "Element",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "Element(kind: 'ElementKind', element_id: 'str', x_mm: 'float' = 0.0, y_mm: 'float' = 0.0, content: 'Any' = None, attrs: 'dict[str, Any]' = <factory>, children: 'tuple[Element, ...]' = <factory>) -> None",
+      "summary": "Any drawable node in a :class:`Page`, tagged by :class:`ElementKind`.",
+      "description": "This is the canonical runtime shape of every DSL primitive\n(``rect``, ``circle``, ``text``, ``group``, ...). Children are\nordered, and ids are stable so the reconcile layer can map SVG edits\nback to the spec.",
+      "params": [
+        {
+          "name": "kind",
+          "type": "ElementKind",
+          "doc": ""
+        },
+        {
+          "name": "element_id",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "x_mm",
+          "type": "float",
+          "doc": ""
+        },
+        {
+          "name": "y_mm",
+          "type": "float",
+          "doc": ""
+        },
+        {
+          "name": "content",
+          "type": "Any",
+          "doc": ""
+        },
+        {
+          "name": "attrs",
+          "type": "dict[str, Any]",
+          "doc": ""
+        },
+        {
+          "name": "children",
+          "type": "tuple[Element, ...]",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "None",
+        "doc": ""
+      },
+      "examples": [
+        {
+          "code": "rect(None, 0, 0, 10, 10)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "model",
+        "element"
+      ],
+      "source": "folio.dsl.model:87"
+    },
+    {
+      "id": "folio.dsl.ElementKind",
+      "name": "ElementKind",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "ElementKind(*values)",
+      "summary": "Discriminator for every concrete :class:`Element` the DSL produces.",
+      "description": "Each renderer primitive (``rect``, ``circle``, ``text``, etc.) maps to\nexactly one ``ElementKind``. The enum is stable across releases and\nused by the reconcile and renderer layers to pick the right code path.",
+      "params": [
+        {
+          "name": "values",
+          "type": "Any",
+          "doc": ""
+        }
+      ],
+      "returns": null,
+      "examples": [
+        {
+          "code": "ElementKind.RECT",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "model",
+        "enum"
+      ],
+      "source": "folio.dsl.model:8"
+    },
+    {
+      "id": "folio.dsl.Markup",
+      "name": "Markup",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "Markup(value: 'str') -> None",
+      "summary": "Trusted raw SVG markup wrapped so the renderer emits it verbatim.",
+      "description": "Use :func:`markup` to create one; it tells the text/defs pipeline that\nthe content is already valid SVG and must not be escaped.",
+      "params": [
+        {
+          "name": "value",
+          "type": "str",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "None",
+        "doc": ""
+      },
+      "examples": [
+        {
+          "code": "markup('<tspan fill=\"red\">x</tspan>')",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "model",
+        "text"
+      ],
+      "source": "folio.dsl.model:52"
+    },
+    {
+      "id": "folio.dsl.Page",
+      "name": "Page",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "Page(page_number: 'int', page_id: 'str', filename: 'str', elements: 'tuple[Element, ...]', width_mm: 'float' = 210.0, height_mm: 'float' = 297.0, defs: 'str | Markup | tuple[DefNode, ...]' = <factory>, label: 'str | None' = None, attrs: 'dict[str, Any]' = <factory>) -> None",
+      "summary": "Top-level renderable page with a fixed size and ordered elements.",
+      "description": "Produced by :func:`page`. ``page_number`` drives the document order;\n``page_id`` is a stable identifier used by reconcile; ``filename``\ncontrols the output SVG name.",
+      "params": [
+        {
+          "name": "page_number",
+          "type": "int",
+          "doc": ""
+        },
+        {
+          "name": "page_id",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "filename",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "elements",
+          "type": "tuple[Element, ...]",
+          "doc": ""
+        },
+        {
+          "name": "width_mm",
+          "type": "float",
+          "doc": ""
+        },
+        {
+          "name": "height_mm",
+          "type": "float",
+          "doc": ""
+        },
+        {
+          "name": "defs",
+          "type": "str | Markup | tuple[DefNode, ...]",
+          "doc": ""
+        },
+        {
+          "name": "label",
+          "type": "str | None",
+          "doc": ""
+        },
+        {
+          "name": "attrs",
+          "type": "dict[str, Any]",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "None",
+        "doc": ""
+      },
+      "examples": [
+        {
+          "code": "page(rect(None, 0, 0, 10, 10), page_id=\"cover\", filename=\"cover.svg\", page_number=1)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "model",
+        "page"
+      ],
+      "source": "folio.dsl.model:132"
+    },
+    {
+      "id": "folio.dsl.PathBuilder",
+      "name": "PathBuilder",
+      "kind": "builder",
+      "module": "folio.dsl",
+      "signature": "PathBuilder(commands: 'list[str]' = <factory>, origin_x_mm: 'float' = 0.0, origin_y_mm: 'float' = 0.0) -> None",
+      "summary": "Fluent builder for SVG ``path`` data using mm coordinates.",
+      "description": "Chain :meth:`move_to`, :meth:`line_to`, :meth:`curve_to`, :meth:`arc_to`,\n:meth:`close` and related methods; finish with :meth:`build` (or\n``str(builder)``) to obtain the ``d`` string to pass into :func:`path`.",
+      "params": [
+        {
+          "name": "commands",
+          "type": "list[str]",
+          "doc": ""
+        },
+        {
+          "name": "origin_x_mm",
+          "type": "float",
+          "doc": ""
+        },
+        {
+          "name": "origin_y_mm",
+          "type": "float",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "None",
+        "doc": ""
+      },
+      "examples": [
+        {
+          "code": "path_builder().move_to(0, 0).line_to(10, 0).line_to(10, 10).close().build()",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "path",
+        "builder"
+      ],
+      "source": "folio.dsl.builtins:925"
+    },
+    {
+      "id": "folio.dsl.TextLayoutWarning",
+      "name": "TextLayoutWarning",
+      "kind": "helper",
+      "module": "folio.dsl",
+      "signature": "TextLayoutWarning",
+      "summary": "Raised when a text layout helper truncates content.",
+      "description": "Emitted by :func:`wrapped_text` (and related helpers) when the\nrequested content does not fit within the configured ``max_lines`` or\n``width_mm`` and gets ellipsized. Silence via ``warn_on_truncate=False``\nor Python's ``warnings.simplefilter``.",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "issubclass(TextLayoutWarning, UserWarning)",
+          "caption": "Inspect the warning class itself.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "layout"
+      ],
+      "source": "folio.dsl.builtins:111"
+    },
+    {
+      "id": "folio.dsl.TextMetrics",
+      "name": "TextMetrics",
+      "kind": "helper",
+      "module": "folio.dsl",
+      "signature": "TextMetrics(width_mm: 'float', height_mm: 'float', line_count: 'int', line_step_mm: 'float', truncated: 'bool' = False) -> None",
+      "summary": "Measured dimensions of a text run produced by ``measure_*`` helpers.",
+      "description": "Returned by :func:`measure_text` and :func:`measure_wrapped_text`.\nMillimeter units throughout; ``line_step_mm`` is the vertical\nadvance between lines; ``truncated`` is True when an overflow\npolicy dropped content.",
+      "params": [
+        {
+          "name": "width_mm",
+          "type": "float",
+          "doc": ""
+        },
+        {
+          "name": "height_mm",
+          "type": "float",
+          "doc": ""
+        },
+        {
+          "name": "line_count",
+          "type": "int",
+          "doc": ""
+        },
+        {
+          "name": "line_step_mm",
+          "type": "float",
+          "doc": ""
+        },
+        {
+          "name": "truncated",
+          "type": "bool",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "None",
+        "doc": ""
+      },
+      "examples": [
+        {
+          "code": "measure_text(\"Hello\", style=tokens.STYLES.body)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "model",
+        "text",
+        "measurement"
+      ],
+      "source": "folio.dsl.model:157"
+    },
+    {
+      "id": "folio.dsl.TextSpan",
+      "name": "TextSpan",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "TextSpan(element_id: 'str | None' = None, content: 'str | Markup | tuple[str | Markup | TextSpan, ...]' = '', attrs: 'dict[str, Any]' = <factory>) -> None",
+      "summary": "Nested text span within a :class:`Element` of kind ``TEXT``.",
+      "description": "Produced by :func:`tspan` / :func:`span` to style a run of text within\na larger paragraph while inheriting the parent text element's position\nand baseline.",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": ""
+        },
+        {
+          "name": "content",
+          "type": "str | Markup | tuple[str | Markup | TextSpan, ...]",
+          "doc": ""
+        },
+        {
+          "name": "attrs",
+          "type": "dict[str, Any]",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "None",
+        "doc": ""
+      },
+      "examples": [
+        {
+          "code": "tspan(None, \"inline\", fill=\"#333\")",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "model",
+        "text"
+      ],
+      "source": "folio.dsl.model:68"
+    },
+    {
+      "id": "folio.dsl.TextStyle",
+      "name": "TextStyle",
+      "kind": "style",
+      "module": "folio.dsl",
+      "signature": "TextStyle(font_size_pt: 'float | None' = None, font_weight: 'int | None' = None, fill: 'str | None' = None, fill_opacity: 'float | None' = None, letter_spacing: 'float | None' = None, text_anchor: 'str | None' = None, font_family: 'str | None' = None, font_style: 'str | None' = None) -> None",
+      "summary": "Reusable text styling preset consumable by text primitives.",
+      "description": "All fields are optional; unset fields inherit from renderer defaults.\nA ``TextStyle`` is itself callable — ``style(element_id, x_mm, y_mm,\ncontent, **attrs)`` produces a text :class:`Element` with the style\napplied. Methods ``span``, ``multiline``, ``wrapped_text``,\n``measure_text``, and ``measure_wrapped_text`` forward to the matching\nDSL primitives with ``style=self`` bound.",
+      "params": [
+        {
+          "name": "font_size_pt",
+          "type": "float | None",
+          "doc": ""
+        },
+        {
+          "name": "font_weight",
+          "type": "int | None",
+          "doc": ""
+        },
+        {
+          "name": "fill",
+          "type": "str | None",
+          "doc": ""
+        },
+        {
+          "name": "fill_opacity",
+          "type": "float | None",
+          "doc": ""
+        },
+        {
+          "name": "letter_spacing",
+          "type": "float | None",
+          "doc": ""
+        },
+        {
+          "name": "text_anchor",
+          "type": "str | None",
+          "doc": ""
+        },
+        {
+          "name": "font_family",
+          "type": "str | None",
+          "doc": ""
+        },
+        {
+          "name": "font_style",
+          "type": "str | None",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "None",
+        "doc": ""
+      },
+      "examples": [
+        {
+          "code": "TextStyle(font_size_pt=12, font_weight=700, fill=\"#222\")",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "model",
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.styles:11"
+    },
+    {
+      "id": "folio.dsl.TransformBuilder",
+      "name": "TransformBuilder",
+      "kind": "builder",
+      "module": "folio.dsl",
+      "signature": "TransformBuilder(operations: 'list[str]' = <factory>, origin_x_mm: 'float' = 0.0, origin_y_mm: 'float' = 0.0) -> None",
+      "summary": "Fluent builder for SVG ``transform`` strings using mm coordinates.",
+      "description": "Chain ``translate``/``rotate``/``scale``/``skew_x``/``skew_y``/``matrix``\ncalls and finish with :meth:`build` (or ``str(builder)``) to produce a\nvalue suitable for ``transform=`` attributes on any Element.",
+      "params": [
+        {
+          "name": "operations",
+          "type": "list[str]",
+          "doc": ""
+        },
+        {
+          "name": "origin_x_mm",
+          "type": "float",
+          "doc": ""
+        },
+        {
+          "name": "origin_y_mm",
+          "type": "float",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "None",
+        "doc": ""
+      },
+      "examples": [
+        {
+          "code": "transform_builder().translate(10, 20).rotate(45).build()",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "transform",
+        "builder"
+      ],
+      "source": "folio.dsl.builtins:850"
+    },
+    {
+      "id": "folio.dsl.block",
+      "name": "block",
+      "kind": "builder",
+      "module": "folio.dsl",
+      "signature": "block(prefix: 'str', *, at: 'tuple[float, float]' = (0.0, 0.0)) -> 'Block'",
+      "summary": "Create a :class:`Block` scope with an id prefix and origin offset.",
+      "description": "",
+      "params": [
+        {
+          "name": "prefix",
+          "type": "str",
+          "doc": "Id prefix used for every child element produced via the block."
+        },
+        {
+          "name": "at",
+          "type": "tuple[float, float]",
+          "doc": "``(x_mm, y_mm)`` origin applied to all child coordinates."
+        }
+      ],
+      "returns": {
+        "type": "Block",
+        "doc": "Block: A scoped authoring helper."
+      },
+      "examples": [
+        {
+          "code": "block('hero', at=(10, 20))",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "layout",
+        "builder"
+      ],
+      "source": "folio.dsl.builtins:1380"
+    },
+    {
+      "id": "folio.dsl.chart",
+      "name": "chart",
+      "kind": "helper",
+      "module": "folio.dsl",
+      "signature": "chart(element_id: 'str', *, x_mm: 'float', y_mm: 'float', width_mm: 'float', height_mm: 'float', dpi: 'int' = 300, transparent: 'bool' = True, cache_dir: 'Path | None' = None, figure_kwargs: 'dict[str, Any] | None' = None, **image_attrs: 'Any') -> 'ChartHandle'",
+      "summary": "Create a :class:`ChartHandle` for a matplotlib-backed Element.",
+      "description": ":param element_id: Stable DSL id for reconcile.\n:param x_mm, y_mm: Top-left placement on the page (mm).\n:param width_mm, height_mm: Rendered size on the page (mm). The Figure\n    is created with the same aspect so text scales predictably.\n:param dpi: Rasterization DPI. 300 is print-ready; drop to 150 for drafts.\n:param transparent: If True, the Figure background is left transparent\n    so folio page tokens show through.\n:param cache_dir: Override the default ``<spec>/.folio-cache/charts`` path.\n:param figure_kwargs: Extra kwargs forwarded to ``plt.figure(...)``.\n:param image_attrs: Extra attributes forwarded to ``image(...)`` (e.g.\n    ``clip=``, ``opacity=``).",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "x_mm",
+          "type": "float",
+          "doc": ""
+        },
+        {
+          "name": "y_mm",
+          "type": "float",
+          "doc": ""
+        },
+        {
+          "name": "width_mm",
+          "type": "float",
+          "doc": ""
+        },
+        {
+          "name": "height_mm",
+          "type": "float",
+          "doc": ""
+        },
+        {
+          "name": "dpi",
+          "type": "int",
+          "doc": ""
+        },
+        {
+          "name": "transparent",
+          "type": "bool",
+          "doc": ""
+        },
+        {
+          "name": "cache_dir",
+          "type": "Path | None",
+          "doc": ""
+        },
+        {
+          "name": "figure_kwargs",
+          "type": "dict[str, Any] | None",
+          "doc": ""
+        },
+        {
+          "name": "image_attrs",
+          "type": "Any",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "ChartHandle",
+        "doc": ""
+      },
+      "examples": [],
+      "tags": [],
+      "source": "folio.dsl.charts:233"
+    },
+    {
+      "id": "folio.dsl.circle",
+      "name": "circle",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "circle(element_id: 'str | None', cx_mm: 'float', cy_mm: 'float', radius_mm: 'float', **attrs: 'Any') -> 'Element'",
+      "summary": "Create a circle Element at ``(cx_mm, cy_mm)`` with the given radius.",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "cx_mm",
+          "type": "float",
+          "doc": "Center x in mm."
+        },
+        {
+          "name": "cy_mm",
+          "type": "float",
+          "doc": "Center y in mm."
+        },
+        {
+          "name": "radius_mm",
+          "type": "float",
+          "doc": "Radius in mm."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra SVG attributes (``fill``, ``stroke``...)."
+        }
+      ],
+      "returns": {
+        "type": "Element",
+        "doc": "Element: The circle primitive."
+      },
+      "examples": [
+        {
+          "code": "circle(None, 20, 20, 8, fill='#c8a24a')",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "shape",
+        "primitive"
+      ],
+      "source": "folio.dsl.builtins:1496"
+    },
+    {
+      "id": "folio.dsl.clip_path",
+      "name": "clip_path",
+      "kind": "defs",
+      "module": "folio.dsl",
+      "signature": "clip_path(element_id: 'str | None', *children: 'DefNode | Element', **attrs: 'Any') -> 'DefNode'",
+      "summary": "Create a ``<clipPath>`` defs node wrapping child shapes.",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (required for ``url(#id)`` references)."
+        },
+        {
+          "name": "children",
+          "type": "DefNode | Element",
+          "doc": "Shape elements or defs used as the clipping region."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "``clipPathUnits``, etc."
+        }
+      ],
+      "returns": {
+        "type": "DefNode",
+        "doc": "DefNode: The clipPath defs node."
+      },
+      "examples": [
+        {
+          "code": "clip_path('clip', rect(None, 0, 0, 20, 20))",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "defs",
+        "clipping"
+      ],
+      "source": "folio.dsl.builtins:2380"
+    },
+    {
+      "id": "folio.dsl.component_transfer",
+      "name": "component_transfer",
+      "kind": "defs",
+      "module": "folio.dsl",
+      "signature": "component_transfer(element_id: 'str | None', *children: 'DefNode', **attrs: 'Any') -> 'DefNode'",
+      "summary": "Create an ``<feComponentTransfer>`` filter primitive.",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "children",
+          "type": "DefNode",
+          "doc": "Per-channel function nodes (e.g. :func:`func_a`)."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra SVG attributes."
+        }
+      ],
+      "returns": {
+        "type": "DefNode",
+        "doc": "DefNode: The component-transfer defs node."
+      },
+      "examples": [
+        {
+          "code": "component_transfer('ct', func_a(None, type='linear', slope='0.5'))",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "defs",
+        "filter"
+      ],
+      "source": "folio.dsl.builtins:2298"
+    },
+    {
+      "id": "folio.dsl.drop_shadow",
+      "name": "drop_shadow",
+      "kind": "defs",
+      "module": "folio.dsl",
+      "signature": "drop_shadow(element_id: 'str | None', *, blur: 'float' = 10, dx: 'float' = 0, dy: 'float' = 8, alpha: 'float' = 0.75, **attrs: 'Any') -> 'DefNode'",
+      "summary": "Create a preset drop-shadow filter (blur + offset + alpha).",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (required for ``filter=\"url(#id)\"`` references)."
+        },
+        {
+          "name": "blur",
+          "type": "float",
+          "doc": "Gaussian blur standard deviation."
+        },
+        {
+          "name": "dx",
+          "type": "float",
+          "doc": "Horizontal shadow offset."
+        },
+        {
+          "name": "dy",
+          "type": "float",
+          "doc": "Vertical shadow offset."
+        },
+        {
+          "name": "alpha",
+          "type": "float",
+          "doc": "Shadow opacity (0..1)."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra filter-region attributes."
+        }
+      ],
+      "returns": {
+        "type": "DefNode",
+        "doc": "DefNode: A filter node implementing the drop shadow."
+      },
+      "examples": [
+        {
+          "code": "drop_shadow('shadow', blur=8, dy=4, alpha=0.5)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "defs",
+        "filter",
+        "shadow"
+      ],
+      "source": "folio.dsl.builtins:2475"
+    },
+    {
+      "id": "folio.dsl.ellipse",
+      "name": "ellipse",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "ellipse(element_id: 'str | None', cx_mm: 'float', cy_mm: 'float', rx_mm: 'float', ry_mm: 'float', **attrs: 'Any') -> 'Element'",
+      "summary": "Create an ellipse Element centered at ``(cx_mm, cy_mm)``.",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "cx_mm",
+          "type": "float",
+          "doc": "Center x in mm."
+        },
+        {
+          "name": "cy_mm",
+          "type": "float",
+          "doc": "Center y in mm."
+        },
+        {
+          "name": "rx_mm",
+          "type": "float",
+          "doc": "Semi-axis along x in mm."
+        },
+        {
+          "name": "ry_mm",
+          "type": "float",
+          "doc": "Semi-axis along y in mm."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra SVG attributes."
+        }
+      ],
+      "returns": {
+        "type": "Element",
+        "doc": "Element: The ellipse primitive."
+      },
+      "examples": [
+        {
+          "code": "ellipse(None, 20, 20, 10, 5, fill='#1e2c44')",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "shape",
+        "primitive"
+      ],
+      "source": "folio.dsl.builtins:1529"
+    },
+    {
+      "id": "folio.dsl.filter_",
+      "name": "filter_",
+      "kind": "defs",
+      "module": "folio.dsl",
+      "signature": "filter_(element_id: 'str | None', *children: 'DefNode', **attrs: 'Any') -> 'DefNode'",
+      "summary": "Create an SVG ``<filter>`` defs node from its ``fe*`` children.",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (required for ``filter=\"url(#id)\"`` references)."
+        },
+        {
+          "name": "children",
+          "type": "DefNode",
+          "doc": "Filter primitive defs (e.g. :func:`gaussian_blur`)."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Filter region attributes (``x``, ``y``, ``width``, ``height``)."
+        }
+      ],
+      "returns": {
+        "type": "DefNode",
+        "doc": "DefNode: The filter defs node."
+      },
+      "examples": [
+        {
+          "code": "filter_('blur', gaussian_blur(None, stdDeviation='2'))",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "defs",
+        "filter"
+      ],
+      "source": "folio.dsl.builtins:2239"
+    },
+    {
+      "id": "folio.dsl.func_a",
+      "name": "func_a",
+      "kind": "defs",
+      "module": "folio.dsl",
+      "signature": "func_a(element_id: 'str | None' = None, **attrs: 'Any') -> 'DefNode'",
+      "summary": "Create an ``<feFuncA>`` transfer function node.",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "``type``, ``slope``, ``intercept``, etc."
+        }
+      ],
+      "returns": {
+        "type": "DefNode",
+        "doc": "DefNode: The alpha transfer function node."
+      },
+      "examples": [
+        {
+          "code": "func_a(None, type='linear', slope='0.75')",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "defs",
+        "filter"
+      ],
+      "source": "folio.dsl.builtins:2321"
+    },
+    {
+      "id": "folio.dsl.gaussian_blur",
+      "name": "gaussian_blur",
+      "kind": "defs",
+      "module": "folio.dsl",
+      "signature": "gaussian_blur(element_id: 'str | None' = None, **attrs: 'Any') -> 'DefNode'",
+      "summary": "Create an ``<feGaussianBlur>`` filter primitive.",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "``stdDeviation``, ``in_``, ``result``, etc."
+        }
+      ],
+      "returns": {
+        "type": "DefNode",
+        "doc": "DefNode: The blur filter primitive."
+      },
+      "examples": [
+        {
+          "code": "gaussian_blur(None, stdDeviation='2.5')",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "defs",
+        "filter"
+      ],
+      "source": "folio.dsl.builtins:2262"
+    },
+    {
+      "id": "folio.dsl.grain",
+      "name": "grain",
+      "kind": "defs",
+      "module": "folio.dsl",
+      "signature": "grain(element_id: 'str | None', *, base_frequency: 'float' = 0.8, num_octaves: 'int' = 2, seed: 'int' = 7, alpha: 'float' = 0.06, mode: 'str' = 'soft-light', **attrs: 'Any') -> 'DefNode'",
+      "summary": "Create a preset film-grain filter (turbulence + blend).",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (required for ``filter=\"url(#id)\"`` references)."
+        },
+        {
+          "name": "base_frequency",
+          "type": "float",
+          "doc": "Turbulence base frequency."
+        },
+        {
+          "name": "num_octaves",
+          "type": "int",
+          "doc": "Turbulence octaves."
+        },
+        {
+          "name": "seed",
+          "type": "int",
+          "doc": "Random seed for the turbulence."
+        },
+        {
+          "name": "alpha",
+          "type": "float",
+          "doc": "Grain opacity (0..1)."
+        },
+        {
+          "name": "mode",
+          "type": "str",
+          "doc": "Blend mode applied over the source graphic."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra filter-region attributes."
+        }
+      ],
+      "returns": {
+        "type": "DefNode",
+        "doc": "DefNode: A filter node implementing the grain effect."
+      },
+      "examples": [
+        {
+          "code": "grain('grain', alpha=0.08)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "defs",
+        "filter",
+        "texture"
+      ],
+      "source": "folio.dsl.builtins:2522"
+    },
+    {
+      "id": "folio.dsl.group",
+      "name": "group",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "group(element_id: 'str | None', label: 'str', *children: 'Element', **attrs: 'Any') -> 'Element'",
+      "summary": "Create a grouping Element that collects related children.",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "label",
+          "type": "str",
+          "doc": "Human-readable group label (serialized as ``aria-label``)."
+        },
+        {
+          "name": "children",
+          "type": "Element",
+          "doc": "Child Elements to group."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra SVG attributes applied to the ``<g>`` node."
+        }
+      ],
+      "returns": {
+        "type": "Element",
+        "doc": "Element: The group primitive."
+      },
+      "examples": [
+        {
+          "code": "group(None, 'badge', rect(None, 0, 0, 20, 10), circle(None, 10, 5, 3))",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "layout",
+        "primitive"
+      ],
+      "source": "folio.dsl.builtins:1982"
+    },
+    {
+      "id": "folio.dsl.image",
+      "name": "image",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "image(element_id: 'str | None', reference: 'str', x_mm: 'float', y_mm: 'float', width_mm: 'float', height_mm: 'float | None' = None, **attrs: 'Any') -> 'Element'",
+      "summary": "Create an image Element referencing an external asset.",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "reference",
+          "type": "str",
+          "doc": "Asset reference (path, URL, or registered asset id)."
+        },
+        {
+          "name": "x_mm",
+          "type": "float",
+          "doc": "Left edge in mm."
+        },
+        {
+          "name": "y_mm",
+          "type": "float",
+          "doc": "Top edge in mm."
+        },
+        {
+          "name": "width_mm",
+          "type": "float",
+          "doc": "Render width in mm."
+        },
+        {
+          "name": "height_mm",
+          "type": "float | None",
+          "doc": "Optional render height in mm (defaults to asset aspect)."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra SVG attributes; supports ``clip=`` for clipPath."
+        }
+      ],
+      "returns": {
+        "type": "Element",
+        "doc": "Element: The image primitive."
+      },
+      "examples": [
+        {
+          "code": "image(None, 'assets/logo.svg', 0, 0, 40)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "asset",
+        "primitive"
+      ],
+      "source": "folio.dsl.builtins:1823"
+    },
+    {
+      "id": "folio.dsl.line",
+      "name": "line",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "line(element_id: 'str | None', x1_mm: 'float', y1_mm: 'float', x2_mm: 'float', y2_mm: 'float', **attrs: 'Any') -> 'Element'",
+      "summary": "Create a line Element from ``(x1, y1)`` to ``(x2, y2)``.",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "x1_mm",
+          "type": "float",
+          "doc": "Start x in mm."
+        },
+        {
+          "name": "y1_mm",
+          "type": "float",
+          "doc": "Start y in mm."
+        },
+        {
+          "name": "x2_mm",
+          "type": "float",
+          "doc": "End x in mm."
+        },
+        {
+          "name": "y2_mm",
+          "type": "float",
+          "doc": "End y in mm."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra SVG attributes (``stroke``, ``stroke_width``...)."
+        }
+      ],
+      "returns": {
+        "type": "Element",
+        "doc": "Element: The line primitive."
+      },
+      "examples": [
+        {
+          "code": "line(None, 0, 0, 100, 0, stroke='#d9dde6', stroke_width=0.3)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "shape",
+        "primitive"
+      ],
+      "source": "folio.dsl.builtins:2036"
+    },
+    {
+      "id": "folio.dsl.linear_gradient",
+      "name": "linear_gradient",
+      "kind": "defs",
+      "module": "folio.dsl",
+      "signature": "linear_gradient(element_id: 'str | None', *stops: 'DefNode', **attrs: 'Any') -> 'DefNode'",
+      "summary": "Create a ``<linearGradient>`` defs node from its stops.",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (required for ``url(#id)`` references)."
+        },
+        {
+          "name": "stops",
+          "type": "DefNode",
+          "doc": ":func:`stop` nodes defining the gradient."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Gradient attributes (``x1``, ``y1``, ``x2``, ``y2``...)."
+        }
+      ],
+      "returns": {
+        "type": "DefNode",
+        "doc": "DefNode: The gradient defs node."
+      },
+      "examples": [
+        {
+          "code": "linear_gradient('grad', stop(None, offset='0%', stop_color='#000'), stop(None, offset='1', stop_color='#fff'))",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "defs",
+        "gradient"
+      ],
+      "source": "folio.dsl.builtins:2193"
+    },
+    {
+      "id": "folio.dsl.linear_gradient_stops",
+      "name": "linear_gradient_stops",
+      "kind": "defs",
+      "module": "folio.dsl",
+      "signature": "linear_gradient_stops(element_id: 'str | None', stops: 'Sequence[tuple[str, str] | tuple[str, str, float]]', *, angle_deg: 'float | None' = None, **attrs: 'Any') -> 'DefNode'",
+      "summary": "Create a linear gradient from ``(offset, color)`` tuples.",
+      "description": "Convenience wrapper over :func:`linear_gradient` that also converts\n``angle_deg`` into ``x1``/``y1``/``x2``/``y2`` coordinates.",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (required for ``url(#id)`` references)."
+        },
+        {
+          "name": "stops",
+          "type": "Sequence[tuple[str, str] | tuple[str, str, float]]",
+          "doc": "Sequence of ``(offset, color)`` or ``(offset, color, opacity)``."
+        },
+        {
+          "name": "angle_deg",
+          "type": "float | None",
+          "doc": "Optional angle in degrees (``0`` points right)."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra gradient attributes."
+        }
+      ],
+      "returns": {
+        "type": "DefNode",
+        "doc": "DefNode: The linear gradient defs node."
+      },
+      "examples": [
+        {
+          "code": "linear_gradient_stops('grad', [('0%', '#000'), ('100%', '#fff')], angle_deg=90)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "defs",
+        "gradient"
+      ],
+      "source": "folio.dsl.builtins:2428"
+    },
+    {
+      "id": "folio.dsl.markup",
+      "name": "markup",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "markup(content: 'str') -> 'Markup'",
+      "summary": "Wrap a raw SVG/HTML string as trusted :class:`Markup`.",
+      "description": "Bypasses HTML escaping; only use for strings you fully control.",
+      "params": [
+        {
+          "name": "content",
+          "type": "str",
+          "doc": "Trusted markup string."
+        }
+      ],
+      "returns": {
+        "type": "Markup",
+        "doc": "Markup: A wrapper signalling \"do not escape\"."
+      },
+      "examples": [
+        {
+          "code": "markup('<tspan fill=\"#c8a24a\">OK</tspan>')",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text"
+      ],
+      "source": "folio.dsl.builtins:2154"
+    },
+    {
+      "id": "folio.dsl.mask",
+      "name": "mask",
+      "kind": "defs",
+      "module": "folio.dsl",
+      "signature": "mask(element_id: 'str | None', *children: 'DefNode | Element', **attrs: 'Any') -> 'DefNode'",
+      "summary": "Create a ``<mask>`` defs node wrapping child shapes.",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (required for ``url(#id)`` references)."
+        },
+        {
+          "name": "children",
+          "type": "DefNode | Element",
+          "doc": "Shape elements used as the mask payload."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "``maskUnits``, ``maskContentUnits``, etc."
+        }
+      ],
+      "returns": {
+        "type": "DefNode",
+        "doc": "DefNode: The mask defs node."
+      },
+      "examples": [
+        {
+          "code": "mask('m', rect(None, 0, 0, 20, 20, fill='white'))",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "defs",
+        "masking"
+      ],
+      "source": "folio.dsl.builtins:2404"
+    },
+    {
+      "id": "folio.dsl.measure_text",
+      "name": "measure_text",
+      "kind": "helper",
+      "module": "folio.dsl",
+      "signature": "measure_text(content: 'str | Markup | Sequence[str | Markup | TextSpan]', *, style: 'TextStyle | None' = None, **attrs: 'Any') -> 'TextMetrics'",
+      "summary": "Measure single-line text and return its :class:`TextMetrics`.",
+      "description": "",
+      "params": [
+        {
+          "name": "content",
+          "type": "str | Markup | Sequence[str | Markup | TextSpan]",
+          "doc": "Text content or sequence of spans (same as :func:`text`)."
+        },
+        {
+          "name": "style",
+          "type": "TextStyle | None",
+          "doc": "Optional :class:`TextStyle` used for metrics."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra measurement attributes (e.g. ``font_size_pt``)."
+        }
+      ],
+      "returns": {
+        "type": "TextMetrics",
+        "doc": "TextMetrics: Width, height, line count, and line step in mm."
+      },
+      "examples": [
+        {
+          "code": "measure_text('Hello', style=tokens.STYLES.body)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "metrics"
+      ],
+      "source": "folio.dsl.builtins:696"
+    },
+    {
+      "id": "folio.dsl.measure_wrapped_text",
+      "name": "measure_wrapped_text",
+      "kind": "helper",
+      "module": "folio.dsl",
+      "signature": "measure_wrapped_text(content: 'str | Markup | Sequence[str | Markup | TextSpan]', *, width_mm: 'float', line_step_mm: 'float | None' = None, max_lines: 'int | None' = None, overflow: 'str' = 'ellipsis', style: 'TextStyle | None' = None, **attrs: 'Any') -> 'TextMetrics'",
+      "summary": "Measure wrapped text and return its :class:`TextMetrics`.",
+      "description": "Mirrors :func:`wrapped_text` layout without constructing an Element.",
+      "params": [
+        {
+          "name": "content",
+          "type": "str | Markup | Sequence[str | Markup | TextSpan]",
+          "doc": "Text content or sequence of spans."
+        },
+        {
+          "name": "width_mm",
+          "type": "float",
+          "doc": "Maximum line width in mm."
+        },
+        {
+          "name": "line_step_mm",
+          "type": "float | None",
+          "doc": "Vertical step between lines (defaults to style-derived)."
+        },
+        {
+          "name": "max_lines",
+          "type": "int | None",
+          "doc": "Optional cap on the number of lines."
+        },
+        {
+          "name": "overflow",
+          "type": "str",
+          "doc": "``\"ellipsis\"`` (default) or ``\"raise\"``."
+        },
+        {
+          "name": "style",
+          "type": "TextStyle | None",
+          "doc": "Optional :class:`TextStyle`."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra measurement attributes."
+        }
+      ],
+      "returns": {
+        "type": "TextMetrics",
+        "doc": "TextMetrics: Layout metrics including any truncation flag."
+      },
+      "examples": [
+        {
+          "code": "measure_wrapped_text('The quick brown fox', width_mm=20, style=tokens.STYLES.body)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "metrics"
+      ],
+      "source": "folio.dsl.builtins:746"
+    },
+    {
+      "id": "folio.dsl.merge",
+      "name": "merge",
+      "kind": "defs",
+      "module": "folio.dsl",
+      "signature": "merge(element_id: 'str | None', *children: 'DefNode', **attrs: 'Any') -> 'DefNode'",
+      "summary": "Create an ``<feMerge>`` filter primitive combining merge nodes.",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "children",
+          "type": "DefNode",
+          "doc": ":func:`merge_node` children in paint order."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra SVG attributes."
+        }
+      ],
+      "returns": {
+        "type": "DefNode",
+        "doc": "DefNode: The merge defs node."
+      },
+      "examples": [
+        {
+          "code": "merge('m', merge_node(None, in_='SourceGraphic'))",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "defs",
+        "filter"
+      ],
+      "source": "folio.dsl.builtins:2339"
+    },
+    {
+      "id": "folio.dsl.merge_node",
+      "name": "merge_node",
+      "kind": "defs",
+      "module": "folio.dsl",
+      "signature": "merge_node(element_id: 'str | None' = None, **attrs: 'Any') -> 'DefNode'",
+      "summary": "Create an ``<feMergeNode>`` child for :func:`merge`.",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "``in_``, etc."
+        }
+      ],
+      "returns": {
+        "type": "DefNode",
+        "doc": "DefNode: The merge input."
+      },
+      "examples": [
+        {
+          "code": "merge_node(None, in_='SourceGraphic')",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "defs",
+        "filter"
+      ],
+      "source": "folio.dsl.builtins:2362"
+    },
+    {
+      "id": "folio.dsl.multiline",
+      "name": "multiline",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "multiline(element_id: 'str | None', x_mm: 'float', y_mm: 'float', lines: 'Sequence[str | Markup | Sequence[str | Markup | TextSpan]]', *, line_step_mm: 'float', style: 'TextStyle | None' = None, **attrs: 'Any') -> 'Element'",
+      "summary": "Create a multi-line text Element with fixed line stepping.",
+      "description": "Each entry in ``lines`` becomes a child :class:`TextSpan` offset by\n``line_step_mm`` from the previous line. Use :func:`wrapped_text` when\nyou need automatic word wrapping.",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "x_mm",
+          "type": "float",
+          "doc": "Baseline x of the first line in mm."
+        },
+        {
+          "name": "y_mm",
+          "type": "float",
+          "doc": "Baseline y of the first line in mm."
+        },
+        {
+          "name": "lines",
+          "type": "Sequence[str | Markup | Sequence[str | Markup | TextSpan]]",
+          "doc": "Sequence of per-line content."
+        },
+        {
+          "name": "line_step_mm",
+          "type": "float",
+          "doc": "Vertical distance between consecutive baselines (mm)."
+        },
+        {
+          "name": "style",
+          "type": "TextStyle | None",
+          "doc": "Optional :class:`TextStyle`."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra SVG attributes."
+        }
+      ],
+      "returns": {
+        "type": "Element",
+        "doc": "Element: The composed text element."
+      },
+      "examples": [
+        {
+          "code": "multiline(None, 10, 20, ['first', 'second'], line_step_mm=5)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "layout"
+      ],
+      "source": "folio.dsl.builtins:1702"
+    },
+    {
+      "id": "folio.dsl.offset",
+      "name": "offset",
+      "kind": "defs",
+      "module": "folio.dsl",
+      "signature": "offset(element_id: 'str | None' = None, **attrs: 'Any') -> 'DefNode'",
+      "summary": "Create an ``<feOffset>`` filter primitive.",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "``dx``, ``dy``, ``in_``, ``result``."
+        }
+      ],
+      "returns": {
+        "type": "DefNode",
+        "doc": "DefNode: The offset filter primitive."
+      },
+      "examples": [
+        {
+          "code": "offset(None, dx='0', dy='4')",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "defs",
+        "filter"
+      ],
+      "source": "folio.dsl.builtins:2280"
+    },
+    {
+      "id": "folio.dsl.page",
+      "name": "page",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "page(*children: 'Element', page_id: 'str', filename: 'str', page_number: 'int', width_mm: 'float' = 210.0, height_mm: 'float' = 297.0, elements: 'Sequence[Element] | None' = None, defs: 'str | Markup | Sequence[DefNode] | None' = None, label: 'str | None' = None, **attrs: 'Any') -> 'Page'",
+      "summary": "Assemble a :class:`Page` from child elements.",
+      "description": "Elements may be passed positionally or via ``elements=[...]`` (but not\nboth). Defaults to A4 dimensions. Pass ``defs=`` for SVG ``<defs>``\nnodes shared by elements on the page.",
+      "params": [
+        {
+          "name": "children",
+          "type": "Element",
+          "doc": "Positional elements placed on the page."
+        },
+        {
+          "name": "page_id",
+          "type": "str",
+          "doc": "Stable id used for reconcile."
+        },
+        {
+          "name": "filename",
+          "type": "str",
+          "doc": "Output SVG filename."
+        },
+        {
+          "name": "page_number",
+          "type": "int",
+          "doc": "One-based page number within the document."
+        },
+        {
+          "name": "width_mm",
+          "type": "float",
+          "doc": "Page width in mm (defaults to A4 width)."
+        },
+        {
+          "name": "height_mm",
+          "type": "float",
+          "doc": "Page height in mm (defaults to A4 height)."
+        },
+        {
+          "name": "elements",
+          "type": "Sequence[Element] | None",
+          "doc": "Alternative to positional children."
+        },
+        {
+          "name": "defs",
+          "type": "str | Markup | Sequence[DefNode] | None",
+          "doc": "Optional defs payload (string, Markup, or DefNode sequence)."
+        },
+        {
+          "name": "label",
+          "type": "str | None",
+          "doc": "Optional human-readable label."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra SVG attributes applied to the page root."
+        }
+      ],
+      "returns": {
+        "type": "Page",
+        "doc": "Page: The assembled page."
+      },
+      "examples": [
+        {
+          "code": "page(rect(None, 0, 0, 10, 10), page_id='p1', filename='p1.svg', page_number=1)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "page",
+        "layout"
+      ],
+      "source": "folio.dsl.builtins:1400"
+    },
+    {
+      "id": "folio.dsl.path",
+      "name": "path",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "path(element_id: 'str | None', d: 'str | PathBuilder', **attrs: 'Any') -> 'Element'",
+      "summary": "Create a path Element from an SVG ``d`` string or :class:`PathBuilder`.",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "d",
+          "type": "str | PathBuilder",
+          "doc": "Raw SVG path data string or a :class:`PathBuilder` to build from."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra SVG attributes."
+        }
+      ],
+      "returns": {
+        "type": "Element",
+        "doc": "Element: The path primitive."
+      },
+      "examples": [
+        {
+          "code": "path(None, path_builder().move_to(0, 0).line_to(10, 10), stroke='#0a1628')",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "path",
+        "primitive"
+      ],
+      "source": "folio.dsl.builtins:2012"
+    },
+    {
+      "id": "folio.dsl.path_builder",
+      "name": "path_builder",
+      "kind": "builder",
+      "module": "folio.dsl",
+      "signature": "path_builder() -> 'PathBuilder'",
+      "summary": "Return a fresh :class:`PathBuilder` for chaining path commands.",
+      "description": "",
+      "params": [],
+      "returns": {
+        "type": "PathBuilder",
+        "doc": "PathBuilder: A new empty builder."
+      },
+      "examples": [
+        {
+          "code": "path_builder().move_to(0, 0).line_to(10, 10).close().build()",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "path",
+        "builder"
+      ],
+      "source": "folio.dsl.builtins:2606"
+    },
+    {
+      "id": "folio.dsl.polygon",
+      "name": "polygon",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "polygon(element_id: 'str | None', points_mm: 'Sequence[tuple[float, float]] | Iterable[tuple[float, float]]', **attrs: 'Any') -> 'Element'",
+      "summary": "Create a closed polygon Element from a list of ``(x, y)`` points.",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "points_mm",
+          "type": "Sequence[tuple[float, float]] | Iterable[tuple[float, float]]",
+          "doc": "Sequence of ``(x_mm, y_mm)`` vertices."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra SVG attributes."
+        }
+      ],
+      "returns": {
+        "type": "Element",
+        "doc": "Element: The polygon primitive."
+      },
+      "examples": [
+        {
+          "code": "polygon(None, [(0, 0), (20, 0), (10, 18)], fill='#c8a24a')",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "shape",
+        "primitive"
+      ],
+      "source": "folio.dsl.builtins:1565"
+    },
+    {
+      "id": "folio.dsl.polyline",
+      "name": "polyline",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "polyline(element_id: 'str | None', points_mm: 'Sequence[tuple[float, float]] | Iterable[tuple[float, float]]', **attrs: 'Any') -> 'Element'",
+      "summary": "Create an open polyline Element from a list of ``(x, y)`` points.",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "points_mm",
+          "type": "Sequence[tuple[float, float]] | Iterable[tuple[float, float]]",
+          "doc": "Sequence of ``(x_mm, y_mm)`` vertices."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra SVG attributes."
+        }
+      ],
+      "returns": {
+        "type": "Element",
+        "doc": "Element: The polyline primitive."
+      },
+      "examples": [
+        {
+          "code": "polyline(None, [(0, 0), (10, 5), (20, 0)], stroke='#0a1628', fill='none')",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "shape",
+        "primitive"
+      ],
+      "source": "folio.dsl.builtins:1594"
+    },
+    {
+      "id": "folio.dsl.qr",
+      "name": "qr",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "qr(element_id: 'str | None', x_mm: 'float', y_mm: 'float', data: 'str | bytes', *, size_mm: 'float', ecc: 'str' = 'M', border_modules: 'int' = 4, fill: 'str' = '#0a1628', background_fill: 'str | None' = None, padding_mm: 'float' = 0.0, padding_fill: 'str | None' = None, **attrs: 'Any') -> 'Element'",
+      "summary": "Create a QR code Element encoding ``data`` into an SVG path.",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "x_mm",
+          "type": "float",
+          "doc": "Left edge of the QR in mm."
+        },
+        {
+          "name": "y_mm",
+          "type": "float",
+          "doc": "Top edge of the QR in mm."
+        },
+        {
+          "name": "data",
+          "type": "str | bytes",
+          "doc": "Text or bytes payload to encode."
+        },
+        {
+          "name": "size_mm",
+          "type": "float",
+          "doc": "Outer square size in mm (includes padding)."
+        },
+        {
+          "name": "ecc",
+          "type": "str",
+          "doc": "Error-correction level: ``\"L\"``, ``\"M\"``, ``\"Q\"``, or ``\"H\"``."
+        },
+        {
+          "name": "border_modules",
+          "type": "int",
+          "doc": "QR quiet-zone modules on each side."
+        },
+        {
+          "name": "fill",
+          "type": "str",
+          "doc": "Foreground color for modules."
+        },
+        {
+          "name": "background_fill",
+          "type": "str | None",
+          "doc": "Optional background fill beneath modules."
+        },
+        {
+          "name": "padding_mm",
+          "type": "float",
+          "doc": "Padding between outer square and the QR matrix."
+        },
+        {
+          "name": "padding_fill",
+          "type": "str | None",
+          "doc": "Optional fill for the padding band."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra SVG attributes forwarded to the group."
+        }
+      ],
+      "returns": {
+        "type": "Element",
+        "doc": "Element: A group containing the QR path and optional backgrounds."
+      },
+      "examples": [
+        {
+          "code": "qr(None, 0, 0, 'https://example.com', size_mm=20)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "asset",
+        "primitive"
+      ],
+      "source": "folio.dsl.builtins:1878"
+    },
+    {
+      "id": "folio.dsl.radial_gradient",
+      "name": "radial_gradient",
+      "kind": "defs",
+      "module": "folio.dsl",
+      "signature": "radial_gradient(element_id: 'str | None', *stops: 'DefNode', **attrs: 'Any') -> 'DefNode'",
+      "summary": "Create a ``<radialGradient>`` defs node from its stops.",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (required for ``url(#id)`` references)."
+        },
+        {
+          "name": "stops",
+          "type": "DefNode",
+          "doc": ":func:`stop` nodes defining the gradient."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Gradient attributes (``cx``, ``cy``, ``r``, ``fx``, ``fy``)."
+        }
+      ],
+      "returns": {
+        "type": "DefNode",
+        "doc": "DefNode: The gradient defs node."
+      },
+      "examples": [
+        {
+          "code": "radial_gradient('glow', stop(None, offset='0', stop_color='#fff'), stop(None, offset='1', stop_color='#000'))",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "defs",
+        "gradient"
+      ],
+      "source": "folio.dsl.builtins:2216"
+    },
+    {
+      "id": "folio.dsl.rect",
+      "name": "rect",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "rect(element_id: 'str | None', x_mm: 'float', y_mm: 'float', width_mm: 'float', height_mm: 'float', **attrs: 'Any') -> 'Element'",
+      "summary": "Create a rectangle Element at ``(x_mm, y_mm)`` with the given size.",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "x_mm",
+          "type": "float",
+          "doc": "Left edge in mm."
+        },
+        {
+          "name": "y_mm",
+          "type": "float",
+          "doc": "Top edge in mm."
+        },
+        {
+          "name": "width_mm",
+          "type": "float",
+          "doc": "Width in mm."
+        },
+        {
+          "name": "height_mm",
+          "type": "float",
+          "doc": "Height in mm."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra SVG attributes (``fill``, ``rx``, ``opacity``...)."
+        }
+      ],
+      "returns": {
+        "type": "Element",
+        "doc": "Element: The rectangle primitive."
+      },
+      "examples": [
+        {
+          "code": "rect(None, 0, 0, 40, 20, fill='#333')",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "shape",
+        "primitive"
+      ],
+      "source": "folio.dsl.builtins:1461"
+    },
+    {
+      "id": "folio.dsl.render",
+      "name": "render",
+      "kind": "helper",
+      "module": "folio.dsl",
+      "signature": "render(*pages: 'Page', defs: 'str | Markup | Sequence[DefNode] | None' = None, metadata: 'dict[str, Any] | None' = None) -> 'Document'",
+      "summary": "Assemble a :class:`Document` from pages and optional document-level defs.",
+      "description": "",
+      "params": [
+        {
+          "name": "pages",
+          "type": "Page",
+          "doc": "One or more :class:`Page` instances (or a single iterable of pages)."
+        },
+        {
+          "name": "defs",
+          "type": "str | Markup | Sequence[DefNode] | None",
+          "doc": "Document-scoped defs shared across pages."
+        },
+        {
+          "name": "metadata",
+          "type": "dict[str, Any] | None",
+          "doc": "Optional metadata dict stored on the document."
+        }
+      ],
+      "returns": {
+        "type": "Document",
+        "doc": "Document: The assembled document root."
+      },
+      "examples": [
+        {
+          "code": "render(page(rect(None, 0, 0, 10, 10), page_id='p1', filename='p1.svg', page_number=1))",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "document"
+      ],
+      "source": "folio.dsl.builtins:2722"
+    },
+    {
+      "id": "folio.dsl.rule",
+      "name": "rule",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "rule(element_id: 'str | None', x_mm: 'float', y_mm: 'float', width_mm: 'float', *, height_mm: 'float' = 0.3, fill: 'str', opacity: 'float | None' = None, **attrs: 'Any') -> 'Element'",
+      "summary": "Create a horizontal rule (thin filled rectangle).",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "x_mm",
+          "type": "float",
+          "doc": "Left edge in mm."
+        },
+        {
+          "name": "y_mm",
+          "type": "float",
+          "doc": "Top edge in mm."
+        },
+        {
+          "name": "width_mm",
+          "type": "float",
+          "doc": "Rule length in mm."
+        },
+        {
+          "name": "height_mm",
+          "type": "float",
+          "doc": "Rule thickness in mm (default ``0.3``)."
+        },
+        {
+          "name": "fill",
+          "type": "str",
+          "doc": "Rule color."
+        },
+        {
+          "name": "opacity",
+          "type": "float | None",
+          "doc": "Optional opacity."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra SVG attributes."
+        }
+      ],
+      "returns": {
+        "type": "Element",
+        "doc": "Element: A rectangle Element styled as a rule."
+      },
+      "examples": [
+        {
+          "code": "rule(None, 0, 40, 80, fill='#d9dde6')",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "layout",
+        "primitive"
+      ],
+      "source": "folio.dsl.builtins:2073"
+    },
+    {
+      "id": "folio.dsl.span",
+      "name": "span",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "span(element_id: 'str | None', content: 'str | Markup | Sequence[str | Markup | TextSpan]', *, style: 'TextStyle | None' = None, **attrs: 'Any') -> 'TextSpan'",
+      "summary": "Create a :class:`TextSpan` for nesting inside :func:`text`.",
+      "description": "Also exported as ``span`` for ergonomic child-span authoring.",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` leaves the span anonymous)."
+        },
+        {
+          "name": "content",
+          "type": "str | Markup | Sequence[str | Markup | TextSpan]",
+          "doc": "Text content or sequence of nested spans."
+        },
+        {
+          "name": "style",
+          "type": "TextStyle | None",
+          "doc": "Optional :class:`TextStyle` applied to the span."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra SVG attributes (``x``, ``y``, ``dy``...)."
+        }
+      ],
+      "returns": {
+        "type": "TextSpan",
+        "doc": "TextSpan: A span suitable as a child of :func:`text`."
+      },
+      "examples": [
+        {
+          "code": "tspan(None, 'highlighted', style=tokens.STYLES.kicker)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "primitive"
+      ],
+      "source": "folio.dsl.builtins:1666"
+    },
+    {
+      "id": "folio.dsl.stop",
+      "name": "stop",
+      "kind": "defs",
+      "module": "folio.dsl",
+      "signature": "stop(element_id: 'str | None' = None, **attrs: 'Any') -> 'DefNode'",
+      "summary": "Create a gradient ``<stop>`` defs node.",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "``offset``, ``stop_color``, ``stop_opacity``, etc."
+        }
+      ],
+      "returns": {
+        "type": "DefNode",
+        "doc": "DefNode: A stop suitable for :func:`linear_gradient` / :func:`radial_gradient`."
+      },
+      "examples": [
+        {
+          "code": "stop(None, offset='0%', stop_color='#c8a24a')",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "defs",
+        "gradient"
+      ],
+      "source": "folio.dsl.builtins:2175"
+    },
+    {
+      "id": "folio.dsl.svg_node",
+      "name": "svg_node",
+      "kind": "defs",
+      "module": "folio.dsl",
+      "signature": "svg_node(tag: 'str', element_id: 'str | None' = None, *children: 'DefNode | Element', content: 'str | Markup | None' = None, **attrs: 'Any') -> 'DefNode'",
+      "summary": "Create an arbitrary :class:`DefNode` for any SVG tag.",
+      "description": "Use this as an escape hatch when no dedicated helper exists for the\nSVG ``<defs>``-child you need. Prefer the named helpers\n(:func:`linear_gradient`, :func:`filter_`, etc.) when available.",
+      "params": [
+        {
+          "name": "tag",
+          "type": "str",
+          "doc": "SVG tag name (e.g. ``\"feTurbulence\"``)."
+        },
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "children",
+          "type": "DefNode | Element",
+          "doc": "Nested defs or elements."
+        },
+        {
+          "name": "content",
+          "type": "str | Markup | None",
+          "doc": "Optional inline text content."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "SVG attributes."
+        }
+      ],
+      "returns": {
+        "type": "DefNode",
+        "doc": "DefNode: The defs subtree."
+      },
+      "examples": [
+        {
+          "code": "svg_node('feTurbulence', 'noise', type='fractalNoise', baseFrequency='0.8')",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "defs"
+      ],
+      "source": "folio.dsl.builtins:2117"
+    },
+    {
+      "id": "folio.dsl.text",
+      "name": "text",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "text(element_id: 'str | None', x_mm: 'float', y_mm: 'float', content: 'str | Markup | Sequence[str | Markup | TextSpan]', *, style: 'TextStyle | None' = None, **attrs: 'Any') -> 'Element'",
+      "summary": "Create a single-line text Element at ``(x_mm, y_mm)``.",
+      "description": "Accepts a plain string, trusted :class:`Markup`, or a sequence of\nchild ``TextSpan`` / string / ``Markup`` parts for mixed styling.",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "x_mm",
+          "type": "float",
+          "doc": "Baseline x in mm."
+        },
+        {
+          "name": "y_mm",
+          "type": "float",
+          "doc": "Baseline y in mm."
+        },
+        {
+          "name": "content",
+          "type": "str | Markup | Sequence[str | Markup | TextSpan]",
+          "doc": "Text content or sequence of spans."
+        },
+        {
+          "name": "style",
+          "type": "TextStyle | None",
+          "doc": "Optional :class:`TextStyle` applied to the element."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra SVG attributes."
+        }
+      ],
+      "returns": {
+        "type": "Element",
+        "doc": "Element: The text primitive."
+      },
+      "examples": [
+        {
+          "code": "text(None, 10, 20, 'Hello', style=tokens.STYLES.body)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "primitive"
+      ],
+      "source": "folio.dsl.builtins:1623"
+    },
+    {
+      "id": "folio.dsl.tokens",
+      "name": "tokens",
+      "kind": "helper",
+      "module": "folio.dsl",
+      "signature": "tokens",
+      "summary": "Design tokens re-exported for the public DSL.",
+      "description": "Exposes the Folio color palette, page presets (``A4``, ``A5``, ``US_LETTER``,\n``DL``, ``ROLLUP_850x2000``), font families, unit conversion factors, and a\n``STYLES`` namespace of preset :class:`TextStyle` presets. Use via\n``tokens.ACCENT``, ``tokens.STYLES.hero``, ``tokens.A4_WIDTH_MM``, etc.",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.ACCENT",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "tokens",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.A4",
+      "name": "A4",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "A4: tuple",
+      "summary": "A4 page dimensions as (width_mm, height_mm).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.A4",
+          "caption": "Tuple of (width_mm, height_mm).",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "page",
+        "size"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.A4_HEIGHT_MM",
+      "name": "A4_HEIGHT_MM",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "A4_HEIGHT_MM: float = 297.0",
+      "summary": "A4 page height in millimeters.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.A4_HEIGHT_MM",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "page",
+        "size"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.A4_HEIGHT_PT",
+      "name": "A4_HEIGHT_PT",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "A4_HEIGHT_PT: float = 841.89",
+      "summary": "A4 page height in PDF points.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.A4_HEIGHT_PT",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "page",
+        "size"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.A4_WIDTH_MM",
+      "name": "A4_WIDTH_MM",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "A4_WIDTH_MM: float = 210.0",
+      "summary": "A4 page width in millimeters.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.A4_WIDTH_MM",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "page",
+        "size"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.A4_WIDTH_PT",
+      "name": "A4_WIDTH_PT",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "A4_WIDTH_PT: float = 595.28",
+      "summary": "A4 page width in PDF points.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.A4_WIDTH_PT",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "page",
+        "size"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.A5",
+      "name": "A5",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "A5: tuple",
+      "summary": "A5 page dimensions as (width_mm, height_mm).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.A5",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "page",
+        "size"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.ACCENT",
+      "name": "ACCENT",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "ACCENT: str = '#c8a24a'",
+      "summary": "Primary accent color token.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "rect(None, 0, 0, 10, 10, fill=tokens.ACCENT)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "color",
+        "accent"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.ACCENT_DARK",
+      "name": "ACCENT_DARK",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "ACCENT_DARK: str = '#8f7223'",
+      "summary": "Darker accent color token.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "rect(None, 0, 0, 10, 10, fill=tokens.ACCENT_DARK)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "color",
+        "accent"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.BLUE_GLOW",
+      "name": "BLUE_GLOW",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "BLUE_GLOW: str = '#1e50a0'",
+      "summary": "Blue glow accent color token.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "rect(None, 0, 0, 10, 10, fill=tokens.BLUE_GLOW)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "color",
+        "accent"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.DEFAULT_FONT_FAMILY",
+      "name": "DEFAULT_FONT_FAMILY",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "DEFAULT_FONT_FAMILY: str = \"Inter, 'Helvetica Neue', Arial, sans-serif\"",
+      "summary": "Default sans-serif font stack for body text.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.DEFAULT_FONT_FAMILY",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "typography"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.DL",
+      "name": "DL",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "DL: tuple",
+      "summary": "DL envelope dimensions as (width_mm, height_mm).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.DL",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "page",
+        "size"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.INK",
+      "name": "INK",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "INK: str = '#0a1628'",
+      "summary": "Primary ink color token (darkest text color).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "text(None, 10, 10, 'Hi', fill=tokens.INK)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "color",
+        "ink"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.INK_2",
+      "name": "INK_2",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "INK_2: str = '#1e2c44'",
+      "summary": "Secondary ink color token.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "text(None, 10, 10, 'Body', fill=tokens.INK_2)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "color",
+        "ink"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.INK_3",
+      "name": "INK_3",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "INK_3: str = '#162b4e'",
+      "summary": "Tertiary ink color token.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "rect(None, 0, 0, 10, 10, fill=tokens.INK_3)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "color",
+        "ink"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.INK_4",
+      "name": "INK_4",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "INK_4: str = '#1f3a6a'",
+      "summary": "Quaternary ink color token.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "rect(None, 0, 0, 10, 10, fill=tokens.INK_4)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "color",
+        "ink"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.LINE",
+      "name": "LINE",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "LINE: str = '#d9dde6'",
+      "summary": "Neutral rule/divider line color token.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "rule(None, 0, 0, 40, fill=tokens.LINE)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "color",
+        "line"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.MM_TO_PT",
+      "name": "MM_TO_PT",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "MM_TO_PT: float = 2.834645669291339",
+      "summary": "Unit conversion factor from millimeters to PDF points.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "10 * tokens.MM_TO_PT",
+          "caption": "Convert 10 mm to points.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "units"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.MONO_FONT_FAMILY",
+      "name": "MONO_FONT_FAMILY",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "MONO_FONT_FAMILY: str = \"'JetBrains Mono', monospace\"",
+      "summary": "Monospace font stack for tabular/code text.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.MONO_FONT_FAMILY",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "typography"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.MUTED",
+      "name": "MUTED",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "MUTED: str = '#5e6b82'",
+      "summary": "Muted neutral text color token.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "text(None, 10, 10, 'Meta', fill=tokens.MUTED)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "color",
+        "muted"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.MUTED_LIGHT",
+      "name": "MUTED_LIGHT",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "MUTED_LIGHT: str = '#8a99ac'",
+      "summary": "Lighter muted neutral color token.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "text(None, 10, 10, 'Meta', fill=tokens.MUTED_LIGHT)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "color",
+        "muted"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.MUTED_SOFT",
+      "name": "MUTED_SOFT",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "MUTED_SOFT: str = '#99a4b8'",
+      "summary": "Soft muted neutral color token.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "text(None, 10, 10, 'Meta', fill=tokens.MUTED_SOFT)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "color",
+        "muted"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.PT_TO_MM",
+      "name": "PT_TO_MM",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "PT_TO_MM: float = 0.35277777777777775",
+      "summary": "Unit conversion factor from PDF points to millimeters.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "12 * tokens.PT_TO_MM",
+          "caption": "Convert 12 pt to mm.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "units"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.ROLLUP_850x2000",
+      "name": "ROLLUP_850x2000",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "ROLLUP_850x2000: tuple",
+      "summary": "Rollup banner dimensions 850x2000 mm.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.ROLLUP_850x2000",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "page",
+        "size"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.SOFT",
+      "name": "SOFT",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "SOFT: str = '#f3f5f9'",
+      "summary": "Soft panel background color token.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "rect(None, 0, 0, 10, 10, fill=tokens.SOFT)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "color",
+        "surface"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.BODY",
+      "name": "BODY",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "BODY = TextStyle(font_size_pt=8.5, font_weight=400, fill='#1e2c44')",
+      "summary": "Uppercase alias for the body preset.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.BODY(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.BODY_LG",
+      "name": "BODY_LG",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "BODY_LG = TextStyle(font_size_pt=10.5, font_weight=300, fill='#1e2c44')",
+      "summary": "Uppercase alias for the body_large preset.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.BODY_LG(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.CAPTION",
+      "name": "CAPTION",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "CAPTION = TextStyle(font_size_pt=6.8, font_weight=400, fill='#99a4b8', letter_spacing=1.0)",
+      "summary": "Uppercase alias for the caption preset.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.CAPTION(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.DISPLAY",
+      "name": "DISPLAY",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "DISPLAY = TextStyle(font_size_pt=38, font_weight=800, fill='#ffffff', letter_spacing=-0.95)",
+      "summary": "Uppercase alias for the hero display preset.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.DISPLAY(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.KICKER",
+      "name": "KICKER",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "KICKER = TextStyle(font_size_pt=8, font_weight=700, fill='#c8a24a', letter_spacing=2.9)",
+      "summary": "Uppercase alias for the kicker preset.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.KICKER(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.LABEL",
+      "name": "LABEL",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "LABEL = TextStyle(font_size_pt=7.5, font_weight=700, fill='#8f7223', letter_spacing=2.1)",
+      "summary": "Uppercase alias for the section_label preset.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.LABEL(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.LEAD",
+      "name": "LEAD",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "LEAD = TextStyle(font_size_pt=11.5, font_weight=300, fill='#ffffff')",
+      "summary": "Uppercase alias for the hero_subtitle preset.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.LEAD(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.META",
+      "name": "META",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "META = TextStyle(font_size_pt=8, font_weight=400, fill='#8a99ac', letter_spacing=1.0)",
+      "summary": "Uppercase alias for the meta preset.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.META(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.META_MONO",
+      "name": "META_MONO",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "META_MONO = TextStyle(font_size_pt=8, font_weight=400, fill='#5e6b82', letter_spacing=1.1, font_family=\"'JetBrains Mono', monospace\")",
+      "summary": "Uppercase alias for the counter_mono preset.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.META_MONO(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.STAT_VALUE",
+      "name": "STAT_VALUE",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "STAT_VALUE = TextStyle(font_size_pt=13, font_weight=700, fill='#ffffff')",
+      "summary": "Uppercase alias for the stat_value preset.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.STAT_VALUE(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.TITLE",
+      "name": "TITLE",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "TITLE = TextStyle(font_size_pt=9.5, font_weight=600)",
+      "summary": "Uppercase alias for the title preset.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.TITLE(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.TITLE_LG",
+      "name": "TITLE_LG",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "TITLE_LG = TextStyle(font_size_pt=14, font_weight=800, fill='#0a1628', letter_spacing=-0.2)",
+      "summary": "Uppercase alias for the title_large preset.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.TITLE_LG(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.audience_body",
+      "name": "audience_body",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "audience_body = TextStyle(font_size_pt=8.5, font_weight=400, fill='#d1d8e2')",
+      "summary": "Audience section body preset (8.5pt, 400, soft text).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.audience_body(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.audience_title",
+      "name": "audience_title",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "audience_title = TextStyle(font_size_pt=9.5, font_weight=700, fill='#c8a24a', letter_spacing=2.1)",
+      "summary": "Audience section title preset (9.5pt, 700, accent).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.audience_title(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.body",
+      "name": "body",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "body = TextStyle(font_size_pt=8.5, font_weight=400, fill='#1e2c44')",
+      "summary": "Default body copy preset (8.5pt, 400, secondary ink).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.body(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.body_large",
+      "name": "body_large",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "body_large = TextStyle(font_size_pt=10.5, font_weight=300, fill='#1e2c44')",
+      "summary": "Large body copy preset (10.5pt, 300, secondary ink).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.body_large(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.bottom_claim",
+      "name": "bottom_claim",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "bottom_claim = TextStyle(font_size_pt=11, font_weight=500, fill='#ffffff')",
+      "summary": "Bottom closing claim preset (11pt, 500, white).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.bottom_claim(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.brand_name",
+      "name": "brand_name",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "brand_name = TextStyle(font_size_pt=22, font_weight=800, fill='#ffffff', letter_spacing=-0.6)",
+      "summary": "Brand wordmark preset (22pt, 800, white).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.brand_name(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.brand_tagline",
+      "name": "brand_tagline",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "brand_tagline = TextStyle(font_size_pt=8.5, font_weight=700, fill='#c8a24a', letter_spacing=2.4)",
+      "summary": "Brand tagline preset (8.5pt, 700, accent, tracked).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.brand_tagline(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.caption",
+      "name": "caption",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "caption = TextStyle(font_size_pt=6.8, font_weight=400, fill='#99a4b8', letter_spacing=1.0)",
+      "summary": "Caption preset (alias of stat_detail).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.caption(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.capture_body",
+      "name": "capture_body",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "capture_body = TextStyle(font_size_pt=7.5, font_weight=400, fill='#1e2c44')",
+      "summary": "Capture block body preset (7.5pt, 400, secondary ink).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.capture_body(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.capture_title",
+      "name": "capture_title",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "capture_title = TextStyle(font_size_pt=7, font_weight=700, fill='#5e6b82', letter_spacing=1.2)",
+      "summary": "Capture block title preset (7pt, 700, muted, tracked).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.capture_title(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.capture_value",
+      "name": "capture_value",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "capture_value = TextStyle(font_size_pt=9, font_weight=600, fill='#0a1628')",
+      "summary": "Capture block value preset (9pt, 600, ink).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.capture_value(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.counter_mono",
+      "name": "counter_mono",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "counter_mono = TextStyle(font_size_pt=8, font_weight=400, fill='#5e6b82', letter_spacing=1.1, font_family=\"'JetBrains Mono', monospace\")",
+      "summary": "Monospace counter preset (8pt, 400, muted, mono family).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.counter_mono(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.feature_body",
+      "name": "feature_body",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "feature_body = TextStyle(font_size_pt=8.5, font_weight=400, fill='#d1d8e2')",
+      "summary": "Feature card body preset (8.5pt, 400, soft text).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.feature_body(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.feature_title",
+      "name": "feature_title",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "feature_title = TextStyle(font_size_pt=9.5, font_weight=600, fill='#ffffff')",
+      "summary": "Feature card title preset (9.5pt, 600, white).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.feature_title(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.flow_body",
+      "name": "flow_body",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "flow_body = TextStyle(font_size_pt=8.5, font_weight=400, fill='#1e2c44')",
+      "summary": "Flow step body preset (8.5pt, 400, secondary ink).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.flow_body(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.flow_label",
+      "name": "flow_label",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "flow_label = TextStyle(font_size_pt=8, font_weight=700, fill='#8f7223', letter_spacing=1.8)",
+      "summary": "Flow step label preset (8pt, 700, dark accent).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.flow_label(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.hero",
+      "name": "hero",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "hero = TextStyle(font_size_pt=38, font_weight=800, fill='#ffffff', letter_spacing=-0.95)",
+      "summary": "Hero-scale display title preset (38pt, 800, white).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.hero(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.hero_subtitle",
+      "name": "hero_subtitle",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "hero_subtitle = TextStyle(font_size_pt=11.5, font_weight=300, fill='#ffffff')",
+      "summary": "Subtitle paired with hero titles (11.5pt, 300, white).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.hero_subtitle(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.kicker",
+      "name": "kicker",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "kicker = TextStyle(font_size_pt=8, font_weight=700, fill='#c8a24a', letter_spacing=2.9)",
+      "summary": "Kicker/eyebrow label preset (8pt, 700, accent, wide tracking).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.kicker(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.meta",
+      "name": "meta",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "meta = TextStyle(font_size_pt=8, font_weight=400, fill='#8a99ac', letter_spacing=1.0)",
+      "summary": "Page meta/footer preset (8pt, 400, light muted, tracked).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.meta(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.page_title",
+      "name": "page_title",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "page_title = TextStyle(font_size_pt=14, font_weight=800, fill='#0a1628', letter_spacing=-0.2)",
+      "summary": "Page-level title preset (14pt, 800, ink).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.page_title(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.section_label",
+      "name": "section_label",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "section_label = TextStyle(font_size_pt=7.5, font_weight=700, fill='#8f7223', letter_spacing=2.1)",
+      "summary": "Section label preset (7.5pt, 700, dark accent, tracked).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.section_label(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.stat_detail",
+      "name": "stat_detail",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "stat_detail = TextStyle(font_size_pt=6.8, font_weight=400, fill='#99a4b8', letter_spacing=1.0)",
+      "summary": "Small caption under stat values (6.8pt, 400, muted soft).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.stat_detail(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.stat_value",
+      "name": "stat_value",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "stat_value = TextStyle(font_size_pt=13, font_weight=700, fill='#ffffff')",
+      "summary": "Emphatic numeric stat value preset (13pt, 700, white).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.stat_value(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.title",
+      "name": "title",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "title = TextStyle(font_size_pt=9.5, font_weight=600)",
+      "summary": "Generic title preset (9.5pt, 600).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.title(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.STYLES.title_large",
+      "name": "title_large",
+      "kind": "style",
+      "module": "folio.dsl.tokens.STYLES",
+      "signature": "title_large = TextStyle(font_size_pt=14, font_weight=800, fill='#0a1628', letter_spacing=-0.2)",
+      "summary": "Large title preset (alias of page_title).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.STYLES.title_large(None, 0, 0, 'Sample')",
+          "caption": "Render as a text element.",
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "style"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.TEXT_SOFT",
+      "name": "TEXT_SOFT",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "TEXT_SOFT: str = '#d1d8e2'",
+      "summary": "Soft text color token for body copy on dark surfaces.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "text(None, 10, 10, 'Body', fill=tokens.TEXT_SOFT)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "color",
+        "text"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.US_LETTER",
+      "name": "US_LETTER",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "US_LETTER: tuple",
+      "summary": "US Letter page dimensions as (width_mm, height_mm).",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "tokens.US_LETTER",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "page",
+        "size"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.WHITE",
+      "name": "WHITE",
+      "kind": "token",
+      "module": "folio.dsl.tokens",
+      "signature": "WHITE: str = '#ffffff'",
+      "summary": "Pure white color token.",
+      "description": "",
+      "params": [],
+      "returns": null,
+      "examples": [
+        {
+          "code": "rect(None, 0, 0, 10, 10, fill=tokens.WHITE)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "color"
+      ],
+      "source": "folio.dsl.tokens:1"
+    },
+    {
+      "id": "folio.dsl.tokens.extend",
+      "name": "extend",
+      "kind": "helper",
+      "module": "folio.dsl.tokens",
+      "signature": "extend(**colors: 'str') -> 'None'",
+      "summary": "Register additional color tokens on :mod:`folio.dsl.tokens`.",
+      "description": "Each keyword becomes a new attribute on both :mod:`folio.dsl.tokens` and\n:mod:`folio.render.tokens` so the renderer picks up custom palette\ncolors.",
+      "params": [
+        {
+          "name": "colors",
+          "type": "str",
+          "doc": "Name/value pairs, where each value is a CSS color string."
+        }
+      ],
+      "returns": {
+        "type": "None",
+        "doc": ""
+      },
+      "examples": [
+        {
+          "code": "tokens.extend(BRAND_GOLD='#c8a24a')",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "tokens",
+        "extension"
+      ],
+      "source": "folio.dsl.tokens:92"
+    },
+    {
+      "id": "folio.dsl.transform_builder",
+      "name": "transform_builder",
+      "kind": "builder",
+      "module": "folio.dsl",
+      "signature": "transform_builder() -> 'TransformBuilder'",
+      "summary": "Return a fresh :class:`TransformBuilder` for chaining transforms.",
+      "description": "",
+      "params": [],
+      "returns": {
+        "type": "TransformBuilder",
+        "doc": "TransformBuilder: A new empty builder."
+      },
+      "examples": [
+        {
+          "code": "transform_builder().translate(10, 0).rotate(30).build()",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "transform",
+        "builder"
+      ],
+      "source": "folio.dsl.builtins:2591"
+    },
+    {
+      "id": "folio.dsl.triangle",
+      "name": "triangle",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "triangle(element_id: 'str | None', x_mm: 'float | None' = None, y_mm: 'float | None' = None, width_mm: 'float | None' = None, height_mm: 'float | None' = None, *, cx_mm: 'float | None' = None, cy_mm: 'float | None' = None, size_mm: 'float | None' = None, direction: 'str' = 'right', **attrs: 'Any') -> 'Element'",
+      "summary": "Create a triangle path Element pointing in a cardinal direction.",
+      "description": "Positioning accepts either top-left (``x_mm``/``y_mm``/``width_mm``/``height_mm``)\nor centered (``cx_mm``/``cy_mm``/``size_mm``) parameters — not both.",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "x_mm",
+          "type": "float | None",
+          "doc": "Top-left x in mm (top-left mode)."
+        },
+        {
+          "name": "y_mm",
+          "type": "float | None",
+          "doc": "Top-left y in mm (top-left mode)."
+        },
+        {
+          "name": "width_mm",
+          "type": "float | None",
+          "doc": "Width in mm (top-left mode)."
+        },
+        {
+          "name": "height_mm",
+          "type": "float | None",
+          "doc": "Height in mm (top-left mode)."
+        },
+        {
+          "name": "cx_mm",
+          "type": "float | None",
+          "doc": "Center x in mm (centered mode)."
+        },
+        {
+          "name": "cy_mm",
+          "type": "float | None",
+          "doc": "Center y in mm (centered mode)."
+        },
+        {
+          "name": "size_mm",
+          "type": "float | None",
+          "doc": "Equilateral side length in mm (centered mode)."
+        },
+        {
+          "name": "direction",
+          "type": "str",
+          "doc": "One of ``\"up\"``, ``\"down\"``, ``\"left\"``, ``\"right\"``."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra SVG attributes applied to the resulting path."
+        }
+      ],
+      "returns": {
+        "type": "Element",
+        "doc": "Element: A path Element shaped as the requested triangle."
+      },
+      "examples": [
+        {
+          "code": "triangle(None, 0, 0, 20, 16, direction='up', fill='#c8a24a')",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "shape",
+        "primitive"
+      ],
+      "source": "folio.dsl.builtins:2625"
+    },
+    {
+      "id": "folio.dsl.tspan",
+      "name": "tspan",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "tspan(element_id: 'str | None', content: 'str | Markup | Sequence[str | Markup | TextSpan]', *, style: 'TextStyle | None' = None, **attrs: 'Any') -> 'TextSpan'",
+      "summary": "Create a :class:`TextSpan` for nesting inside :func:`text`.",
+      "description": "Also exported as ``span`` for ergonomic child-span authoring.",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` leaves the span anonymous)."
+        },
+        {
+          "name": "content",
+          "type": "str | Markup | Sequence[str | Markup | TextSpan]",
+          "doc": "Text content or sequence of nested spans."
+        },
+        {
+          "name": "style",
+          "type": "TextStyle | None",
+          "doc": "Optional :class:`TextStyle` applied to the span."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra SVG attributes (``x``, ``y``, ``dy``...)."
+        }
+      ],
+      "returns": {
+        "type": "TextSpan",
+        "doc": "TextSpan: A span suitable as a child of :func:`text`."
+      },
+      "examples": [
+        {
+          "code": "tspan(None, 'highlighted', style=tokens.STYLES.kicker)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "primitive"
+      ],
+      "source": "folio.dsl.builtins:1666"
+    },
+    {
+      "id": "folio.dsl.wrapped_text",
+      "name": "wrapped_text",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "wrapped_text(element_id: 'str | None', x_mm: 'float', y_mm: 'float', content: 'str | Markup | Sequence[str | Markup | TextSpan]', *, width_mm: 'float', line_step_mm: 'float | None' = None, max_lines: 'int | None' = None, overflow: 'str' = 'ellipsis', warn_on_truncate: 'bool' = True, style: 'TextStyle | None' = None, **attrs: 'Any') -> 'Element'",
+      "summary": "Create a word-wrapped text Element constrained to ``width_mm``.",
+      "description": "Truncates with an ellipsis (or raises, depending on ``overflow``) when\n``max_lines`` is exceeded. Emits :class:`TextLayoutWarning` on\ntruncation unless ``warn_on_truncate=False``.",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "x_mm",
+          "type": "float",
+          "doc": "Baseline x in mm."
+        },
+        {
+          "name": "y_mm",
+          "type": "float",
+          "doc": "Baseline y in mm."
+        },
+        {
+          "name": "content",
+          "type": "str | Markup | Sequence[str | Markup | TextSpan]",
+          "doc": "Text content or sequence of spans."
+        },
+        {
+          "name": "width_mm",
+          "type": "float",
+          "doc": "Maximum line width in mm."
+        },
+        {
+          "name": "line_step_mm",
+          "type": "float | None",
+          "doc": "Vertical step between lines (defaults to style-derived)."
+        },
+        {
+          "name": "max_lines",
+          "type": "int | None",
+          "doc": "Optional cap on the number of lines."
+        },
+        {
+          "name": "overflow",
+          "type": "str",
+          "doc": "``\"ellipsis\"`` (default) or ``\"raise\"``."
+        },
+        {
+          "name": "warn_on_truncate",
+          "type": "bool",
+          "doc": "Emit :class:`TextLayoutWarning` when truncated."
+        },
+        {
+          "name": "style",
+          "type": "TextStyle | None",
+          "doc": "Optional :class:`TextStyle`."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra SVG attributes."
+        }
+      ],
+      "returns": {
+        "type": "Element",
+        "doc": "Element: The wrapped-text element."
+      },
+      "examples": [
+        {
+          "code": "wrapped_text(None, 10, 20, 'The quick brown fox', width_mm=30, style=tokens.STYLES.body)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "layout"
+      ],
+      "source": "folio.dsl.builtins:1754"
+    }
+  ]
+}

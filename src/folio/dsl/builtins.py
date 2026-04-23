@@ -109,7 +109,19 @@ _WRAP_TOKEN_RE = re.compile(r"\n|[^\S\n]+|[^\s\n]+")
 
 
 class TextLayoutWarning(UserWarning):
-    """Raised when a text layout helper truncates content."""
+    """Raised when a text layout helper truncates content.
+
+    Emitted by :func:`wrapped_text` (and related helpers) when the
+    requested content does not fit within the configured ``max_lines`` or
+    ``width_mm`` and gets ellipsized. Silence via ``warn_on_truncate=False``
+    or Python's ``warnings.simplefilter``.
+
+    Example:
+        # Inspect the warning class itself.
+        issubclass(TextLayoutWarning, UserWarning)
+
+    Tags: text, layout
+    """
 
 
 @dataclass(frozen=True, slots=True)
@@ -687,6 +699,21 @@ def measure_text(
     style: TextStyle | None = None,
     **attrs: Any,
 ) -> TextMetrics:
+    """Measure single-line text and return its :class:`TextMetrics`.
+
+    Args:
+        content: Text content or sequence of spans (same as :func:`text`).
+        style: Optional :class:`TextStyle` used for metrics.
+        attrs: Extra measurement attributes (e.g. ``font_size_pt``).
+
+    Returns:
+        TextMetrics: Width, height, line count, and line step in mm.
+
+    Example:
+        measure_text('Hello', style=tokens.STYLES.body)
+
+    Tags: text, metrics
+    """
     root_measure_attrs = _root_measurement_attrs(style=style, attrs=attrs, source="measure_text()")
     runs = _flatten_text_runs(
         _coerce_text_content(content, source="measure_text()"),
@@ -726,6 +753,27 @@ def measure_wrapped_text(
     style: TextStyle | None = None,
     **attrs: Any,
 ) -> TextMetrics:
+    """Measure wrapped text and return its :class:`TextMetrics`.
+
+    Mirrors :func:`wrapped_text` layout without constructing an Element.
+
+    Args:
+        content: Text content or sequence of spans.
+        width_mm: Maximum line width in mm.
+        line_step_mm: Vertical step between lines (defaults to style-derived).
+        max_lines: Optional cap on the number of lines.
+        overflow: ``"ellipsis"`` (default) or ``"raise"``.
+        style: Optional :class:`TextStyle`.
+        attrs: Extra measurement attributes.
+
+    Returns:
+        TextMetrics: Layout metrics including any truncation flag.
+
+    Example:
+        measure_wrapped_text('The quick brown fox', width_mm=20, style=tokens.STYLES.body)
+
+    Tags: text, metrics
+    """
     return _wrap_layout(
         content,
         width_mm=width_mm,
@@ -801,6 +849,18 @@ def _offset_xy_attrs(attrs: dict[str, Any], *, x_mm: float, y_mm: float) -> dict
 
 @dataclass(slots=True)
 class TransformBuilder:
+    """Fluent builder for SVG ``transform`` strings using mm coordinates.
+
+    Chain ``translate``/``rotate``/``scale``/``skew_x``/``skew_y``/``matrix``
+    calls and finish with :meth:`build` (or ``str(builder)``) to produce a
+    value suitable for ``transform=`` attributes on any Element.
+
+    Example:
+        transform_builder().translate(10, 20).rotate(45).build()
+
+    Tags: transform, builder
+    """
+
     operations: list[str] = field(default_factory=list)
     origin_x_mm: float = 0.0
     origin_y_mm: float = 0.0
@@ -864,6 +924,18 @@ class TransformBuilder:
 
 @dataclass(slots=True)
 class PathBuilder:
+    """Fluent builder for SVG ``path`` data using mm coordinates.
+
+    Chain :meth:`move_to`, :meth:`line_to`, :meth:`curve_to`, :meth:`arc_to`,
+    :meth:`close` and related methods; finish with :meth:`build` (or
+    ``str(builder)``) to obtain the ``d`` string to pass into :func:`path`.
+
+    Example:
+        path_builder().move_to(0, 0).line_to(10, 0).line_to(10, 10).close().build()
+
+    Tags: path, builder
+    """
+
     commands: list[str] = field(default_factory=list)
     origin_x_mm: float = 0.0
     origin_y_mm: float = 0.0
@@ -957,6 +1029,19 @@ class PathBuilder:
 
 @dataclass(frozen=True, slots=True)
 class Block:
+    """Scoped id and coordinate helper for authoring groups of Elements.
+
+    A ``Block`` carries a stable id prefix and an origin offset in mm.
+    Shape/text methods on the block delegate to the module-level builtins
+    but automatically prefix ids and translate coordinates by the block
+    origin, so nested layouts stay consistent without manual bookkeeping.
+
+    Example:
+        block('hero', at=(10, 20)).rect('bg', 0, 0, 40, 30)
+
+    Tags: layout, builder
+    """
+
     prefix: str
     x_mm: float = 0.0
     y_mm: float = 0.0
@@ -1293,6 +1378,20 @@ class Block:
 
 
 def block(prefix: str, *, at: tuple[float, float] = (0.0, 0.0)) -> Block:
+    """Create a :class:`Block` scope with an id prefix and origin offset.
+
+    Args:
+        prefix: Id prefix used for every child element produced via the block.
+        at: ``(x_mm, y_mm)`` origin applied to all child coordinates.
+
+    Returns:
+        Block: A scoped authoring helper.
+
+    Example:
+        block('hero', at=(10, 20))
+
+    Tags: layout, builder
+    """
     x_mm, y_mm = at
     return Block(prefix=prefix, x_mm=x_mm, y_mm=y_mm)
 
@@ -1310,6 +1409,32 @@ def page(
     label: str | None = None,
     **attrs: Any,
 ) -> Page:
+    """Assemble a :class:`Page` from child elements.
+
+    Elements may be passed positionally or via ``elements=[...]`` (but not
+    both). Defaults to A4 dimensions. Pass ``defs=`` for SVG ``<defs>``
+    nodes shared by elements on the page.
+
+    Args:
+        children: Positional elements placed on the page.
+        page_id: Stable id used for reconcile.
+        filename: Output SVG filename.
+        page_number: One-based page number within the document.
+        width_mm: Page width in mm (defaults to A4 width).
+        height_mm: Page height in mm (defaults to A4 height).
+        elements: Alternative to positional children.
+        defs: Optional defs payload (string, Markup, or DefNode sequence).
+        label: Optional human-readable label.
+        attrs: Extra SVG attributes applied to the page root.
+
+    Returns:
+        Page: The assembled page.
+
+    Example:
+        page(rect(None, 0, 0, 10, 10), page_id='p1', filename='p1.svg', page_number=1)
+
+    Tags: page, layout
+    """
     if children and elements is not None:
         raise TypeError("page() accepts either positional elements or elements=[...], not both")
     if elements is None:
@@ -1341,6 +1466,24 @@ def rect(
     height_mm: float,
     **attrs: Any,
 ) -> Element:
+    """Create a rectangle Element at ``(x_mm, y_mm)`` with the given size.
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        x_mm: Left edge in mm.
+        y_mm: Top edge in mm.
+        width_mm: Width in mm.
+        height_mm: Height in mm.
+        attrs: Extra SVG attributes (``fill``, ``rx``, ``opacity``...).
+
+    Returns:
+        Element: The rectangle primitive.
+
+    Example:
+        rect(None, 0, 0, 40, 20, fill='#333')
+
+    Tags: shape, primitive
+    """
     return Element(
         kind=ElementKind.RECT,
         element_id=_element_id("rect", element_id),
@@ -1357,6 +1500,23 @@ def circle(
     radius_mm: float,
     **attrs: Any,
 ) -> Element:
+    """Create a circle Element at ``(cx_mm, cy_mm)`` with the given radius.
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        cx_mm: Center x in mm.
+        cy_mm: Center y in mm.
+        radius_mm: Radius in mm.
+        attrs: Extra SVG attributes (``fill``, ``stroke``...).
+
+    Returns:
+        Element: The circle primitive.
+
+    Example:
+        circle(None, 20, 20, 8, fill='#c8a24a')
+
+    Tags: shape, primitive
+    """
     return Element(
         kind=ElementKind.CIRCLE,
         element_id=_element_id("circle", element_id),
@@ -1374,6 +1534,24 @@ def ellipse(
     ry_mm: float,
     **attrs: Any,
 ) -> Element:
+    """Create an ellipse Element centered at ``(cx_mm, cy_mm)``.
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        cx_mm: Center x in mm.
+        cy_mm: Center y in mm.
+        rx_mm: Semi-axis along x in mm.
+        ry_mm: Semi-axis along y in mm.
+        attrs: Extra SVG attributes.
+
+    Returns:
+        Element: The ellipse primitive.
+
+    Example:
+        ellipse(None, 20, 20, 10, 5, fill='#1e2c44')
+
+    Tags: shape, primitive
+    """
     return Element(
         kind=ElementKind.ELLIPSE,
         element_id=_element_id("ellipse", element_id),
@@ -1389,6 +1567,21 @@ def polygon(
     points_mm: Sequence[tuple[float, float]] | Iterable[tuple[float, float]],
     **attrs: Any,
 ) -> Element:
+    """Create a closed polygon Element from a list of ``(x, y)`` points.
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        points_mm: Sequence of ``(x_mm, y_mm)`` vertices.
+        attrs: Extra SVG attributes.
+
+    Returns:
+        Element: The polygon primitive.
+
+    Example:
+        polygon(None, [(0, 0), (20, 0), (10, 18)], fill='#c8a24a')
+
+    Tags: shape, primitive
+    """
     return Element(
         kind=ElementKind.POLYGON,
         element_id=_element_id("polygon", element_id),
@@ -1403,6 +1596,21 @@ def polyline(
     points_mm: Sequence[tuple[float, float]] | Iterable[tuple[float, float]],
     **attrs: Any,
 ) -> Element:
+    """Create an open polyline Element from a list of ``(x, y)`` points.
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        points_mm: Sequence of ``(x_mm, y_mm)`` vertices.
+        attrs: Extra SVG attributes.
+
+    Returns:
+        Element: The polyline primitive.
+
+    Example:
+        polyline(None, [(0, 0), (10, 5), (20, 0)], stroke='#0a1628', fill='none')
+
+    Tags: shape, primitive
+    """
     return Element(
         kind=ElementKind.POLYLINE,
         element_id=_element_id("polyline", element_id),
@@ -1421,6 +1629,27 @@ def text(
     style: TextStyle | None = None,
     **attrs: Any,
 ) -> Element:
+    """Create a single-line text Element at ``(x_mm, y_mm)``.
+
+    Accepts a plain string, trusted :class:`Markup`, or a sequence of
+    child ``TextSpan`` / string / ``Markup`` parts for mixed styling.
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        x_mm: Baseline x in mm.
+        y_mm: Baseline y in mm.
+        content: Text content or sequence of spans.
+        style: Optional :class:`TextStyle` applied to the element.
+        attrs: Extra SVG attributes.
+
+    Returns:
+        Element: The text primitive.
+
+    Example:
+        text(None, 10, 20, 'Hello', style=tokens.STYLES.body)
+
+    Tags: text, primitive
+    """
     if "raw" in attrs:
         raise TypeError("text() no longer accepts raw=...; use markup() for trusted raw content")
     coerce_text_style(style, source="text()")
@@ -1441,6 +1670,24 @@ def tspan(
     style: TextStyle | None = None,
     **attrs: Any,
 ) -> TextSpan:
+    """Create a :class:`TextSpan` for nesting inside :func:`text`.
+
+    Also exported as ``span`` for ergonomic child-span authoring.
+
+    Args:
+        element_id: Stable id (``None`` leaves the span anonymous).
+        content: Text content or sequence of nested spans.
+        style: Optional :class:`TextStyle` applied to the span.
+        attrs: Extra SVG attributes (``x``, ``y``, ``dy``...).
+
+    Returns:
+        TextSpan: A span suitable as a child of :func:`text`.
+
+    Example:
+        tspan(None, 'highlighted', style=tokens.STYLES.kicker)
+
+    Tags: text, primitive
+    """
     if "raw" in attrs:
         raise TypeError("tspan() no longer accepts raw=...; use markup() for trusted raw content")
     coerce_text_style(style, source="tspan()")
@@ -1462,6 +1709,29 @@ def multiline(
     style: TextStyle | None = None,
     **attrs: Any,
 ) -> Element:
+    """Create a multi-line text Element with fixed line stepping.
+
+    Each entry in ``lines`` becomes a child :class:`TextSpan` offset by
+    ``line_step_mm`` from the previous line. Use :func:`wrapped_text` when
+    you need automatic word wrapping.
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        x_mm: Baseline x of the first line in mm.
+        y_mm: Baseline y of the first line in mm.
+        lines: Sequence of per-line content.
+        line_step_mm: Vertical distance between consecutive baselines (mm).
+        style: Optional :class:`TextStyle`.
+        attrs: Extra SVG attributes.
+
+    Returns:
+        Element: The composed text element.
+
+    Example:
+        multiline(None, 10, 20, ['first', 'second'], line_step_mm=5)
+
+    Tags: text, layout
+    """
     return text(
         element_id,
         x_mm,
@@ -1495,6 +1765,33 @@ def wrapped_text(
     style: TextStyle | None = None,
     **attrs: Any,
 ) -> Element:
+    """Create a word-wrapped text Element constrained to ``width_mm``.
+
+    Truncates with an ellipsis (or raises, depending on ``overflow``) when
+    ``max_lines`` is exceeded. Emits :class:`TextLayoutWarning` on
+    truncation unless ``warn_on_truncate=False``.
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        x_mm: Baseline x in mm.
+        y_mm: Baseline y in mm.
+        content: Text content or sequence of spans.
+        width_mm: Maximum line width in mm.
+        line_step_mm: Vertical step between lines (defaults to style-derived).
+        max_lines: Optional cap on the number of lines.
+        overflow: ``"ellipsis"`` (default) or ``"raise"``.
+        warn_on_truncate: Emit :class:`TextLayoutWarning` when truncated.
+        style: Optional :class:`TextStyle`.
+        attrs: Extra SVG attributes.
+
+    Returns:
+        Element: The wrapped-text element.
+
+    Example:
+        wrapped_text(None, 10, 20, 'The quick brown fox', width_mm=30, style=tokens.STYLES.body)
+
+    Tags: text, layout
+    """
     layout = _wrap_layout(
         content,
         width_mm=width_mm,
@@ -1532,6 +1829,25 @@ def image(
     height_mm: float | None = None,
     **attrs: Any,
 ) -> Element:
+    """Create an image Element referencing an external asset.
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        reference: Asset reference (path, URL, or registered asset id).
+        x_mm: Left edge in mm.
+        y_mm: Top edge in mm.
+        width_mm: Render width in mm.
+        height_mm: Optional render height in mm (defaults to asset aspect).
+        attrs: Extra SVG attributes; supports ``clip=`` for clipPath.
+
+    Returns:
+        Element: The image primitive.
+
+    Example:
+        image(None, 'assets/logo.svg', 0, 0, 40)
+
+    Tags: asset, primitive
+    """
     resolved_id = _element_id("image", element_id)
     clip = attrs.pop("clip", None)
     clip_id = attrs.pop("clip_id", None)
@@ -1574,6 +1890,30 @@ def qr(
     padding_fill: str | None = None,
     **attrs: Any,
 ) -> Element:
+    """Create a QR code Element encoding ``data`` into an SVG path.
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        x_mm: Left edge of the QR in mm.
+        y_mm: Top edge of the QR in mm.
+        data: Text or bytes payload to encode.
+        size_mm: Outer square size in mm (includes padding).
+        ecc: Error-correction level: ``"L"``, ``"M"``, ``"Q"``, or ``"H"``.
+        border_modules: QR quiet-zone modules on each side.
+        fill: Foreground color for modules.
+        background_fill: Optional background fill beneath modules.
+        padding_mm: Padding between outer square and the QR matrix.
+        padding_fill: Optional fill for the padding band.
+        attrs: Extra SVG attributes forwarded to the group.
+
+    Returns:
+        Element: A group containing the QR path and optional backgrounds.
+
+    Example:
+        qr(None, 0, 0, 'https://example.com', size_mm=20)
+
+    Tags: asset, primitive
+    """
     if size_mm <= 0:
         raise TypeError("qr() size_mm must be positive")
     if padding_mm < 0:
@@ -1645,6 +1985,22 @@ def group(
     *children: Element,
     **attrs: Any,
 ) -> Element:
+    """Create a grouping Element that collects related children.
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        label: Human-readable group label (serialized as ``aria-label``).
+        children: Child Elements to group.
+        attrs: Extra SVG attributes applied to the ``<g>`` node.
+
+    Returns:
+        Element: The group primitive.
+
+    Example:
+        group(None, 'badge', rect(None, 0, 0, 20, 10), circle(None, 10, 5, 3))
+
+    Tags: layout, primitive
+    """
     return Element(
         kind=ElementKind.GROUP,
         element_id=_element_id("group", element_id),
@@ -1654,6 +2010,21 @@ def group(
 
 
 def path(element_id: str | None, d: str | PathBuilder, **attrs: Any) -> Element:
+    """Create a path Element from an SVG ``d`` string or :class:`PathBuilder`.
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        d: Raw SVG path data string or a :class:`PathBuilder` to build from.
+        attrs: Extra SVG attributes.
+
+    Returns:
+        Element: The path primitive.
+
+    Example:
+        path(None, path_builder().move_to(0, 0).line_to(10, 10), stroke='#0a1628')
+
+    Tags: path, primitive
+    """
     return Element(
         kind=ElementKind.PATH,
         element_id=_element_id("path", element_id),
@@ -1670,6 +2041,24 @@ def line(
     y2_mm: float,
     **attrs: Any,
 ) -> Element:
+    """Create a line Element from ``(x1, y1)`` to ``(x2, y2)``.
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        x1_mm: Start x in mm.
+        y1_mm: Start y in mm.
+        x2_mm: End x in mm.
+        y2_mm: End y in mm.
+        attrs: Extra SVG attributes (``stroke``, ``stroke_width``...).
+
+    Returns:
+        Element: The line primitive.
+
+    Example:
+        line(None, 0, 0, 100, 0, stroke='#d9dde6', stroke_width=0.3)
+
+    Tags: shape, primitive
+    """
     return Element(
         kind=ElementKind.LINE,
         element_id=_element_id("line", element_id),
@@ -1692,6 +2081,26 @@ def rule(
     opacity: float | None = None,
     **attrs: Any,
 ) -> Element:
+    """Create a horizontal rule (thin filled rectangle).
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        x_mm: Left edge in mm.
+        y_mm: Top edge in mm.
+        width_mm: Rule length in mm.
+        height_mm: Rule thickness in mm (default ``0.3``).
+        fill: Rule color.
+        opacity: Optional opacity.
+        attrs: Extra SVG attributes.
+
+    Returns:
+        Element: A rectangle Element styled as a rule.
+
+    Example:
+        rule(None, 0, 40, 80, fill='#d9dde6')
+
+    Tags: layout, primitive
+    """
     return rect(
         element_id,
         x_mm,
@@ -1712,6 +2121,27 @@ def svg_node(
     content: str | Markup | None = None,
     **attrs: Any,
 ) -> DefNode:
+    """Create an arbitrary :class:`DefNode` for any SVG tag.
+
+    Use this as an escape hatch when no dedicated helper exists for the
+    SVG ``<defs>``-child you need. Prefer the named helpers
+    (:func:`linear_gradient`, :func:`filter_`, etc.) when available.
+
+    Args:
+        tag: SVG tag name (e.g. ``"feTurbulence"``).
+        element_id: Stable id (``None`` auto-generates one).
+        children: Nested defs or elements.
+        content: Optional inline text content.
+        attrs: SVG attributes.
+
+    Returns:
+        DefNode: The defs subtree.
+
+    Example:
+        svg_node('feTurbulence', 'noise', type='fractalNoise', baseFrequency='0.8')
+
+    Tags: defs
+    """
     return DefNode(
         tag=tag,
         element_id=_element_id(tag.replace(":", "_").replace("-", "_"), element_id),
@@ -1722,12 +2152,41 @@ def svg_node(
 
 
 def markup(content: str) -> Markup:
+    """Wrap a raw SVG/HTML string as trusted :class:`Markup`.
+
+    Bypasses HTML escaping; only use for strings you fully control.
+
+    Args:
+        content: Trusted markup string.
+
+    Returns:
+        Markup: A wrapper signalling "do not escape".
+
+    Example:
+        markup('<tspan fill="#c8a24a">OK</tspan>')
+
+    Tags: text
+    """
     if not isinstance(content, str):
         raise TypeError("markup() content must be a string")
     return Markup(value=content)
 
 
 def stop(element_id: str | None = None, **attrs: Any) -> DefNode:
+    """Create a gradient ``<stop>`` defs node.
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        attrs: ``offset``, ``stop_color``, ``stop_opacity``, etc.
+
+    Returns:
+        DefNode: A stop suitable for :func:`linear_gradient` / :func:`radial_gradient`.
+
+    Example:
+        stop(None, offset='0%', stop_color='#c8a24a')
+
+    Tags: defs, gradient
+    """
     return svg_node("stop", element_id, **attrs)
 
 
@@ -1736,6 +2195,21 @@ def linear_gradient(
     *stops: DefNode,
     **attrs: Any,
 ) -> DefNode:
+    """Create a ``<linearGradient>`` defs node from its stops.
+
+    Args:
+        element_id: Stable id (required for ``url(#id)`` references).
+        stops: :func:`stop` nodes defining the gradient.
+        attrs: Gradient attributes (``x1``, ``y1``, ``x2``, ``y2``...).
+
+    Returns:
+        DefNode: The gradient defs node.
+
+    Example:
+        linear_gradient('grad', stop(None, offset='0%', stop_color='#000'), stop(None, offset='1', stop_color='#fff'))
+
+    Tags: defs, gradient
+    """
     return svg_node("linearGradient", element_id, *stops, **attrs)
 
 
@@ -1744,6 +2218,21 @@ def radial_gradient(
     *stops: DefNode,
     **attrs: Any,
 ) -> DefNode:
+    """Create a ``<radialGradient>`` defs node from its stops.
+
+    Args:
+        element_id: Stable id (required for ``url(#id)`` references).
+        stops: :func:`stop` nodes defining the gradient.
+        attrs: Gradient attributes (``cx``, ``cy``, ``r``, ``fx``, ``fy``).
+
+    Returns:
+        DefNode: The gradient defs node.
+
+    Example:
+        radial_gradient('glow', stop(None, offset='0', stop_color='#fff'), stop(None, offset='1', stop_color='#000'))
+
+    Tags: defs, gradient
+    """
     return svg_node("radialGradient", element_id, *stops, **attrs)
 
 
@@ -1752,14 +2241,57 @@ def filter_(
     *children: DefNode,
     **attrs: Any,
 ) -> DefNode:
+    """Create an SVG ``<filter>`` defs node from its ``fe*`` children.
+
+    Args:
+        element_id: Stable id (required for ``filter="url(#id)"`` references).
+        children: Filter primitive defs (e.g. :func:`gaussian_blur`).
+        attrs: Filter region attributes (``x``, ``y``, ``width``, ``height``).
+
+    Returns:
+        DefNode: The filter defs node.
+
+    Example:
+        filter_('blur', gaussian_blur(None, stdDeviation='2'))
+
+    Tags: defs, filter
+    """
     return svg_node("filter", element_id, *children, **attrs)
 
 
 def gaussian_blur(element_id: str | None = None, **attrs: Any) -> DefNode:
+    """Create an ``<feGaussianBlur>`` filter primitive.
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        attrs: ``stdDeviation``, ``in_``, ``result``, etc.
+
+    Returns:
+        DefNode: The blur filter primitive.
+
+    Example:
+        gaussian_blur(None, stdDeviation='2.5')
+
+    Tags: defs, filter
+    """
     return svg_node("feGaussianBlur", element_id, **attrs)
 
 
 def offset(element_id: str | None = None, **attrs: Any) -> DefNode:
+    """Create an ``<feOffset>`` filter primitive.
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        attrs: ``dx``, ``dy``, ``in_``, ``result``.
+
+    Returns:
+        DefNode: The offset filter primitive.
+
+    Example:
+        offset(None, dx='0', dy='4')
+
+    Tags: defs, filter
+    """
     return svg_node("feOffset", element_id, **attrs)
 
 
@@ -1768,10 +2300,39 @@ def component_transfer(
     *children: DefNode,
     **attrs: Any,
 ) -> DefNode:
+    """Create an ``<feComponentTransfer>`` filter primitive.
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        children: Per-channel function nodes (e.g. :func:`func_a`).
+        attrs: Extra SVG attributes.
+
+    Returns:
+        DefNode: The component-transfer defs node.
+
+    Example:
+        component_transfer('ct', func_a(None, type='linear', slope='0.5'))
+
+    Tags: defs, filter
+    """
     return svg_node("feComponentTransfer", element_id, *children, **attrs)
 
 
 def func_a(element_id: str | None = None, **attrs: Any) -> DefNode:
+    """Create an ``<feFuncA>`` transfer function node.
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        attrs: ``type``, ``slope``, ``intercept``, etc.
+
+    Returns:
+        DefNode: The alpha transfer function node.
+
+    Example:
+        func_a(None, type='linear', slope='0.75')
+
+    Tags: defs, filter
+    """
     return svg_node("feFuncA", element_id, **attrs)
 
 
@@ -1780,10 +2341,39 @@ def merge(
     *children: DefNode,
     **attrs: Any,
 ) -> DefNode:
+    """Create an ``<feMerge>`` filter primitive combining merge nodes.
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        children: :func:`merge_node` children in paint order.
+        attrs: Extra SVG attributes.
+
+    Returns:
+        DefNode: The merge defs node.
+
+    Example:
+        merge('m', merge_node(None, in_='SourceGraphic'))
+
+    Tags: defs, filter
+    """
     return svg_node("feMerge", element_id, *children, **attrs)
 
 
 def merge_node(element_id: str | None = None, **attrs: Any) -> DefNode:
+    """Create an ``<feMergeNode>`` child for :func:`merge`.
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        attrs: ``in_``, etc.
+
+    Returns:
+        DefNode: The merge input.
+
+    Example:
+        merge_node(None, in_='SourceGraphic')
+
+    Tags: defs, filter
+    """
     return svg_node("feMergeNode", element_id, **attrs)
 
 
@@ -1792,6 +2382,21 @@ def clip_path(
     *children: DefNode | Element,
     **attrs: Any,
 ) -> DefNode:
+    """Create a ``<clipPath>`` defs node wrapping child shapes.
+
+    Args:
+        element_id: Stable id (required for ``url(#id)`` references).
+        children: Shape elements or defs used as the clipping region.
+        attrs: ``clipPathUnits``, etc.
+
+    Returns:
+        DefNode: The clipPath defs node.
+
+    Example:
+        clip_path('clip', rect(None, 0, 0, 20, 20))
+
+    Tags: defs, clipping
+    """
     return svg_node("clipPath", element_id, *children, **attrs)
 
 
@@ -1801,6 +2406,21 @@ def mask(
     *children: DefNode | Element,
     **attrs: Any,
 ) -> DefNode:
+    """Create a ``<mask>`` defs node wrapping child shapes.
+
+    Args:
+        element_id: Stable id (required for ``url(#id)`` references).
+        children: Shape elements used as the mask payload.
+        attrs: ``maskUnits``, ``maskContentUnits``, etc.
+
+    Returns:
+        DefNode: The mask defs node.
+
+    Example:
+        mask('m', rect(None, 0, 0, 20, 20, fill='white'))
+
+    Tags: defs, masking
+    """
     return svg_node("mask", element_id, *children, **attrs)
 
 
@@ -1812,6 +2432,25 @@ def linear_gradient_stops(
     angle_deg: float | None = None,
     **attrs: Any,
 ) -> DefNode:
+    """Create a linear gradient from ``(offset, color)`` tuples.
+
+    Convenience wrapper over :func:`linear_gradient` that also converts
+    ``angle_deg`` into ``x1``/``y1``/``x2``/``y2`` coordinates.
+
+    Args:
+        element_id: Stable id (required for ``url(#id)`` references).
+        stops: Sequence of ``(offset, color)`` or ``(offset, color, opacity)``.
+        angle_deg: Optional angle in degrees (``0`` points right).
+        attrs: Extra gradient attributes.
+
+    Returns:
+        DefNode: The linear gradient defs node.
+
+    Example:
+        linear_gradient_stops('grad', [('0%', '#000'), ('100%', '#fff')], angle_deg=90)
+
+    Tags: defs, gradient
+    """
     gradient_attrs = dict(attrs)
     if angle_deg is not None:
         radians = math.radians(angle_deg)
@@ -1842,6 +2481,24 @@ def drop_shadow(
     alpha: float = 0.75,
     **attrs: Any,
 ) -> DefNode:
+    """Create a preset drop-shadow filter (blur + offset + alpha).
+
+    Args:
+        element_id: Stable id (required for ``filter="url(#id)"`` references).
+        blur: Gaussian blur standard deviation.
+        dx: Horizontal shadow offset.
+        dy: Vertical shadow offset.
+        alpha: Shadow opacity (0..1).
+        attrs: Extra filter-region attributes.
+
+    Returns:
+        DefNode: A filter node implementing the drop shadow.
+
+    Example:
+        drop_shadow('shadow', blur=8, dy=4, alpha=0.5)
+
+    Tags: defs, filter, shadow
+    """
     filter_attrs = {"x": "-20%", "y": "-20%", "width": "140%", "height": "140%", **attrs}
     shadow_id = element_id or _element_id("drop_shadow", None)
     return filter_(
@@ -1872,6 +2529,25 @@ def grain(
     mode: str = "soft-light",
     **attrs: Any,
 ) -> DefNode:
+    """Create a preset film-grain filter (turbulence + blend).
+
+    Args:
+        element_id: Stable id (required for ``filter="url(#id)"`` references).
+        base_frequency: Turbulence base frequency.
+        num_octaves: Turbulence octaves.
+        seed: Random seed for the turbulence.
+        alpha: Grain opacity (0..1).
+        mode: Blend mode applied over the source graphic.
+        attrs: Extra filter-region attributes.
+
+    Returns:
+        DefNode: A filter node implementing the grain effect.
+
+    Example:
+        grain('grain', alpha=0.08)
+
+    Tags: defs, filter, texture
+    """
     filter_attrs = {"x": "-20%", "y": "-20%", "width": "140%", "height": "140%", **attrs}
     grain_id = element_id or _element_id("grain", None)
     return filter_(
@@ -1913,11 +2589,31 @@ def grain(
 
 
 def transform_builder() -> TransformBuilder:
+    """Return a fresh :class:`TransformBuilder` for chaining transforms.
+
+    Returns:
+        TransformBuilder: A new empty builder.
+
+    Example:
+        transform_builder().translate(10, 0).rotate(30).build()
+
+    Tags: transform, builder
+    """
     return TransformBuilder()
 
 
 
 def path_builder() -> PathBuilder:
+    """Return a fresh :class:`PathBuilder` for chaining path commands.
+
+    Returns:
+        PathBuilder: A new empty builder.
+
+    Example:
+        path_builder().move_to(0, 0).line_to(10, 10).close().build()
+
+    Tags: path, builder
+    """
     return PathBuilder()
 
 
@@ -1939,6 +2635,31 @@ def triangle(
     direction: str = "right",
     **attrs: Any,
 ) -> Element:
+    """Create a triangle path Element pointing in a cardinal direction.
+
+    Positioning accepts either top-left (``x_mm``/``y_mm``/``width_mm``/``height_mm``)
+    or centered (``cx_mm``/``cy_mm``/``size_mm``) parameters — not both.
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        x_mm: Top-left x in mm (top-left mode).
+        y_mm: Top-left y in mm (top-left mode).
+        width_mm: Width in mm (top-left mode).
+        height_mm: Height in mm (top-left mode).
+        cx_mm: Center x in mm (centered mode).
+        cy_mm: Center y in mm (centered mode).
+        size_mm: Equilateral side length in mm (centered mode).
+        direction: One of ``"up"``, ``"down"``, ``"left"``, ``"right"``.
+        attrs: Extra SVG attributes applied to the resulting path.
+
+    Returns:
+        Element: A path Element shaped as the requested triangle.
+
+    Example:
+        triangle(None, 0, 0, 20, 16, direction='up', fill='#c8a24a')
+
+    Tags: shape, primitive
+    """
     if cx_mm is not None or cy_mm is not None or size_mm is not None:
         if x_mm is not None or y_mm is not None:
             raise TypeError(
@@ -2003,6 +2724,21 @@ def render(
     defs: str | Markup | Sequence[DefNode] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> Document:
+    """Assemble a :class:`Document` from pages and optional document-level defs.
+
+    Args:
+        pages: One or more :class:`Page` instances (or a single iterable of pages).
+        defs: Document-scoped defs shared across pages.
+        metadata: Optional metadata dict stored on the document.
+
+    Returns:
+        Document: The assembled document root.
+
+    Example:
+        render(page(rect(None, 0, 0, 10, 10), page_id='p1', filename='p1.svg', page_number=1))
+
+    Tags: document
+    """
     page_list: tuple[Page, ...]
     if len(pages) == 1 and isinstance(pages[0], Sequence) and not isinstance(pages[0], Page):
         page_list = tuple(pages[0])
