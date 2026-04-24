@@ -771,6 +771,17 @@ def test_build_explicit_targets_apply_to_matching_documents_only(
     assert custom_pdf_command.exit_code == 0, custom_pdf_command.stdout
     assert (out_dir / "TM42_tv.pdf").exists()
 
+    all_dir = tmp_path / "all-out"
+    all_command = runner.invoke(
+        app,
+        ["build", str(spec_path), "all", "--out-dir", str(all_dir), "--no-cache"],
+    )
+    assert all_command.exit_code == 0, all_command.stdout
+    assert (all_dir / "brochure_cover_print.png").exists()
+    assert (all_dir / "TM42_brochure.pdf").exists()
+    assert (all_dir / "tv_slide_4k.png").exists()
+    assert (all_dir / "TM42_tv.pdf").exists()
+
 
 def test_build_rejects_unknown_export_target(tmp_path: Path) -> None:
     spec_path = tmp_path / "build.py"

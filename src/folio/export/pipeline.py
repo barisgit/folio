@@ -266,6 +266,8 @@ def _participating_pages(
     plan: ExportPlan,
 ) -> list[RenderedPage]:
     page_models = _page_by_number(rendered_document.document)
+    if preset.name in _dependency_names(plan):
+        return list(rendered_document.pages)
     if preset.name not in plan.public_names:
         return list(rendered_document.pages)
     defaults = default_export_names(rendered_document.document)
@@ -276,6 +278,14 @@ def _participating_pages(
         for page in rendered_document.pages
         if preset.name in page_models[page.page_number].extra_exports
     ]
+
+
+def _dependency_names(plan: ExportPlan) -> frozenset[str]:
+    return frozenset(
+        dependency.preset_name
+        for step in plan.steps
+        for dependency in step.dependencies
+    )
 
 
 def _result_for_pages(
