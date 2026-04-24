@@ -4,8 +4,8 @@
 Folio SHALL allow a document to declare named export presets for supported output types, including optional source dependencies for presets that consume other preset artifacts.
 
 #### Scenario: Built-in preset helpers
-- **WHEN** a spec defines `export_presets=[svg(), png("1080p", viewport=(1920, 1080)), pdf("screen", source="1080p"), idml()]`
-- **THEN** Folio registers the preset names `svg`, `1080p`, `screen`, and `idml`
+- **WHEN** a spec defines `export_presets=[svg(), png("1080p", viewport=(1920, 1080)), pdf(source="1080p"), idml()]`
+- **THEN** Folio registers the preset names `svg`, `1080p`, `pdf`, and `idml`
 - **AND** associates each preset with its output format, scope, and source dependency when present
 
 #### Scenario: Unique preset names
@@ -58,16 +58,26 @@ Folio SHALL write one artifact per document for document-scoped presets and SHAL
 - **THEN** it packages the whole document as an IDML artifact
 - **AND** writes the IDML file to the resolved output directory
 
-#### Scenario: PDF preset output
-- **WHEN** Folio builds a PDF preset sourced from a supported page artifact preset
-- **THEN** it exports the whole document as a PDF artifact from those source artifacts
+#### Scenario: PDF preset output from PNG source
+- **WHEN** Folio builds `pdf(source="1080p")` and `1080p` resolves to a supported page PNG preset
+- **THEN** it exports the whole document as a PDF artifact from those PNG source artifacts
 - **AND** the PDF pages visually contain the rendered Folio page output
 - **AND** writes the PDF file to the resolved output directory
+
+#### Scenario: Legacy PDF preset output
+- **WHEN** Folio builds `pdf()` without an explicit source
+- **THEN** it preserves the existing SVG-rendered raster PDF behavior for compatibility
+- **AND** does not claim to produce true vector PDF output
 
 #### Scenario: PDF page order and count
 - **WHEN** Folio builds the `pdf` preset for a document with multiple pages
 - **THEN** the PDF contains one page for each document page
 - **AND** orders PDF pages by Folio page order
+
+#### Scenario: Future SVG-to-vector PDF route
+- **WHEN** Folio later supports a PDF backend sourced from SVG page artifacts
+- **THEN** that backend converts SVG drawing content into equivalent PDF vector, text, and image operations
+- **AND** does not treat the PDF as a literal SVG wrapper
 
 #### Scenario: PDF export failure
 - **WHEN** Folio cannot produce source artifacts or assemble one or more pages needed for a PDF preset

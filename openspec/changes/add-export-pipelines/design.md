@@ -2,13 +2,13 @@
 
 Folio now has named export presets (`svg`, `png`, `pdf`, `idml`) and target-based builds, but target execution is still mostly direct. The quick PDF backend proves the limitation: PDF needs rendered SVG content and often a raster source, but that dependency is hidden inside the PDF writer instead of being represented as a reusable build graph.
 
-The next step is to make export execution explicit: resolve requested targets, plan their dependencies, and run a deterministic DAG of built-in export steps. This should support immediate quality improvements such as `pdf("screen", source="1080p")`, while leaving plugin pipelines and richer vector PDF backends for later.
+The next step is to make export execution explicit: resolve requested targets, plan their dependencies, and run a deterministic DAG of built-in export steps. This should support immediate quality improvements such as `pdf(source="1080p")` while preserving the `pdf` target name, and it should leave true SVG-to-vector-PDF conversion for later.
 
 ## Goals / Non-Goals
 
 **Goals:**
 - Model export execution as a typed dependency graph with deterministic planning and ordering.
-- Let presets declare a source preset where applicable, e.g. `png("1080p", source="svg")` and `pdf("screen", source="1080p")`.
+- Let presets declare a source preset where applicable, e.g. `png("1080p", source="svg")` and `pdf(source="1080p")`.
 - Validate graph correctness before execution: unknown sources, scope/type incompatibility, cycles, and unsupported backend routes.
 - Reuse intermediate artifacts within a build so dependent targets do not re-render or re-rasterize unnecessarily.
 - Keep CLI behavior stable: `folio build`, `folio build 1080p`, `folio build pdf`, and `folio build all` remain target-based.
@@ -36,10 +36,12 @@ Alternatives considered:
 Add a `source` field for presets that consume another preset. Defaults should be conservative and built-in:
 - SVG page output has no preset source; it is produced from rendered page content.
 - PNG defaults to `source="svg"`.
-- PDF defaults to a supported source according to backend policy. For the first implementation, raster-backed PDF should prefer page PNG sources when explicitly configured and may retain a legacy SVG-rendered fallback only when no source is provided.
+- `pdf()` keeps the existing `pdf` target name and uses the legacy SVG-rendered raster fallback for compatibility.
+- `pdf(source="1080p")` still keeps the target name `pdf`, but routes PDF generation through the named PNG page preset for better raster quality.
+- Future SVG-sourced PDF work means converting SVG drawing content into equivalent PDF vector/text/image operations. PDF is not literally SVG-in-a-wrapper; it is its own page description format with vector capabilities.
 - IDML consumes the document tree and has no page preset source.
 
-Rationale: Users need to express `pdf("screen", source="1080p")`; the system should infer common defaults without hiding important dependency edges.
+Rationale: Users need to express `pdf(source="1080p")` without renaming the common `pdf` target; the system should infer common defaults without hiding important dependency edges.
 
 ### Plan before executing
 
@@ -61,7 +63,7 @@ Rationale: The current pain is built-in export quality and reuse. Plugin API des
 
 ## Risks / Trade-offs
 
-- [Risk] Hidden behavior changes for existing `pdf()` users → Mitigation: preserve a default PDF route and document its quality limits.
+- [Risk] Hidden behavior changes for existing `pdf()` users → Mitigation: preserve `pdf()` as the legacy SVG-rendered raster route and document its quality limits.
 - [Risk] Extra complexity in build command internals → Mitigation: isolate planning/execution in a dedicated module with focused tests.
 - [Risk] Intermediate cache invalidation bugs → Mitigation: first implementation can reuse intermediates only within a single process build, then persist later if needed.
 - [Risk] Too much API surface too early → Mitigation: expose only `source` and built-in helpers now; keep handler abstractions private.
@@ -78,6 +80,6 @@ Rollback is straightforward: keep current direct writer path available until the
 
 ## Open Questions
 
-- Should `pdf()` default to `source="svg"`, `source="1080p"` when a PNG preset exists, or require explicit `source` for non-legacy quality?
+- Should later true SVG-to-vector-PDF conversion be implemented as `pdf(source="svg")`, a separate backend option, or a separate preset helper?
 - Should intermediate PNGs be visible in cache by default, or only retained in memory for the initial implementation?
 - What user-facing diagnostics should be exposed for planned dependency graphs (`--dry-run` / `--plan` later)?

@@ -22,14 +22,22 @@ Folio SHALL plan requested export targets as a dependency graph before executing
 Folio SHALL validate export pipeline edges using built-in artifact types and handler capabilities.
 
 #### Scenario: Supported source route
-- **WHEN** a PDF preset declares a source PNG preset supported by the raster PDF backend
+- **WHEN** `pdf(source="1080p")` declares a source PNG preset supported by the raster PDF backend
 - **THEN** Folio accepts the graph
 - **AND** passes the PNG page artifacts to the PDF step
+- **AND** keeps the requested target name as `pdf`
 
 #### Scenario: Unsupported source route
 - **WHEN** a preset declares a source whose artifact type is not accepted by that preset's handler
 - **THEN** Folio rejects the build plan
 - **AND** reports the source preset, target preset, and unsupported artifact types
+
+#### Scenario: Source compatibility matrix
+- **WHEN** Folio validates built-in preset sources
+- **THEN** `svg` and `idml` reject explicit sources
+- **AND** `png` accepts page-scoped SVG sources
+- **AND** `pdf` accepts page-scoped PNG sources for raster PDF output
+- **AND** unsupported SVG-sourced vector PDF routes remain unavailable until a vector PDF backend exists
 
 #### Scenario: Unknown source preset
 - **WHEN** a preset declares `source="missing"`
