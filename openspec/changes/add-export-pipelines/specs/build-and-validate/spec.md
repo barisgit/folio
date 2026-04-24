@@ -41,3 +41,9 @@ Folio SHALL render validated documents into artifacts selected by named export t
 - **WHEN** a user builds only a terminal target such as `pdf` that depends on a PNG preset
 - **THEN** Folio produces any required dependency artifacts internally
 - **AND** writes only the requested terminal target to the public output directory
+
+#### Scenario: Explicit targets in multi-document collections
+- **WHEN** a collection contains documents with different export preset names
+- **THEN** an explicit target build applies to documents that declare the requested target
+- **AND** skips documents that do not declare that target
+- **AND** reports an unknown target error only when no document declares the requested target

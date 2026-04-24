@@ -9,12 +9,13 @@ from rich.console import Console
 
 from folio.cache import cache_build
 from folio.dsl.loader import DslError, load_dsl_module, resolve_spec_path
-from folio.dsl.model import ExportPreset, ExportScope
+from folio.dsl.model import Document, ExportPreset, ExportScope
 from folio.dsl.renderer import (
     BuildResult,
     RenderedDocument,
     RenderError,
     collection_from_module,
+    export_preset_map,
     render_collection,
 )
 from folio.export.pipeline import execute_export_plan, plan_export_targets
@@ -67,6 +68,25 @@ def _filter_result_by_page(result: BuildResult, page_number: int | None) -> Buil
 
 
 
+def _document_requested_targets(document: Document, requested: tuple[str, ...]) -> tuple[str, ...]:
+    if not requested or tuple(requested) == ("all",) or "all" in requested:
+        return requested
+    presets = export_preset_map(document)
+    return tuple(name for name in requested if name in presets)
+
+
+def _reject_unknown_collection_targets(
+    documents: tuple[Document, ...], requested: tuple[str, ...]
+) -> None:
+    if not requested or tuple(requested) == ("all",) or "all" in requested:
+        return
+    known = set().union(*(export_preset_map(document) for document in documents))
+    missing = tuple(name for name in requested if name not in known)
+    if missing:
+        joined = ", ".join(missing)
+        raise RenderError(f"Unknown export target: {joined}")
+
+
 def _reject_page_with_document_targets(
     targets: tuple[ExportPreset, ...], page_number: int | None
 ) -> None:
@@ -106,9 +126,20 @@ def build_command(
             config_dir=resolved_spec.parent,
             source_path=resolved_spec,
         )
+        _reject_unknown_collection_targets(
+            tuple(rendered_document.document for rendered_document in result.documents),
+            requested_targets,
+        )
         requested_plans = tuple(
-            plan_export_targets(rendered_document.document, requested_targets)
+            plan_export_targets(
+                rendered_document.document,
+                _document_requested_targets(rendered_document.document, requested_targets),
+            )
             for rendered_document in result.documents
+            if _document_requested_targets(rendered_document.document, requested_targets)
+            or not requested_targets
+            or tuple(requested_targets) == ("all",)
+            or "all" in requested_targets
         )
         all_targets = tuple(
             target for plan in requested_plans for target in plan.requested_targets
@@ -118,7 +149,12 @@ def build_command(
 
         written: list[Path] = []
         for rendered_document in output_result.documents:
-            plan = plan_export_targets(rendered_document.document, requested_targets)
+            document_targets = _document_requested_targets(
+                rendered_document.document, requested_targets
+            )
+            if requested_targets and document_targets == ():
+                continue
+            plan = plan_export_targets(rendered_document.document, document_targets)
             written.extend(execute_export_plan(rendered_document, plan, resolved_out_dir))
         cached = None if no_cache else cache_build(result, spec_path=resolved_spec)
     except DslError as exc:

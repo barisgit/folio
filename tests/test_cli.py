@@ -686,6 +686,92 @@ def test_build_pdf_source_uses_internal_png_without_public_png(
     assert calls[0][1] == (1920, 1080)
 
 
+def test_build_explicit_targets_apply_to_matching_documents_only(
+    tmp_path: Path, monkeypatch
+) -> None:
+    spec_path = tmp_path / "build.py"
+    spec_path.write_text(
+        dedent(
+            """
+            from folio.dsl import collection, document, page, pdf, png, rect, svg
+
+            def _page(name, number, extra_exports=None):
+                return page(
+                    rect(f"{name}_bg", 0, 0, 10, 10),
+                    page_id=name,
+                    filename=f"{name}.svg",
+                    page_number=number,
+                    extra_exports=extra_exports,
+                )
+
+            def build():
+                return collection(
+                    document(
+                        "brochure",
+                        pages=[_page("brochure_cover", 1)],
+                        filename="TM42_brochure",
+                        export_presets=[
+                            svg(),
+                            png("print", viewport=(2480, 3508)),
+                            pdf(source="print"),
+                        ],
+                        default_exports=["svg"],
+                    ),
+                    document(
+                        "tv",
+                        pages=[_page("tv_slide", 1, extra_exports=["1080p", "4k"])],
+                        filename="TM42_tv",
+                        export_presets=[
+                            svg(),
+                            png("1080p", viewport=(1920, 1080)),
+                            png("4k", viewport=(3840, 2160)),
+                            pdf("test", source="4k"),
+                        ],
+                        default_exports=["svg"],
+                    ),
+                )
+            """
+        ).strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    out_dir = tmp_path / "out"
+
+    def fake_render(
+        svg_text: str, *, output_path: Path, viewport: tuple[int, int] | None = None
+    ) -> Path:
+        from PIL import Image
+
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        Image.new("RGB", (24, 16), color=(255, 0, 0)).save(output_path)
+        return output_path
+
+    monkeypatch.setattr("folio.export.pipeline._render_svg_preview", fake_render)
+
+    pdf_command = runner.invoke(
+        app,
+        ["build", str(spec_path), "pdf", "--out-dir", str(out_dir), "--no-cache"],
+    )
+    assert pdf_command.exit_code == 0, pdf_command.stdout
+    assert (out_dir / "TM42_brochure.pdf").exists()
+    assert not (out_dir / "TM42_tv.pdf").exists()
+
+    png_command = runner.invoke(
+        app,
+        ["build", str(spec_path), "1080p", "--out-dir", str(out_dir), "--no-cache"],
+    )
+    assert png_command.exit_code == 0, png_command.stdout
+    assert (out_dir / "tv_slide_1080p.png").exists()
+    assert not (out_dir / "brochure_cover_1080p.png").exists()
+
+    custom_pdf_command = runner.invoke(
+        app,
+        ["build", str(spec_path), "test", "--out-dir", str(out_dir), "--no-cache"],
+    )
+    assert custom_pdf_command.exit_code == 0, custom_pdf_command.stdout
+    assert (out_dir / "TM42_tv.pdf").exists()
+
+
 def test_build_rejects_unknown_export_target(tmp_path: Path) -> None:
     spec_path = tmp_path / "build.py"
     spec_path.write_text(
