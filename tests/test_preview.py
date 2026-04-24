@@ -16,6 +16,27 @@ def test_default_viewport_uses_svg_dimensions() -> None:
     assert preview._default_viewport(SVG) == (374, 794)
 
 
+def test_default_viewport_ignores_nested_dimensions() -> None:
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" '
+        'width="240mm" height="135mm" viewBox="0 0 680.31 382.68">'
+        '<defs><filter width="140%" height="140%"></filter></defs>'
+        '<rect width="1" height="31" />'
+        "</svg>"
+    )
+
+    assert preview._default_viewport(svg) == (907, 510)
+
+
+def test_default_viewport_uses_root_viewbox_when_dimensions_are_missing() -> None:
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">'
+        '<rect width="1" height="31" />'
+        "</svg>"
+    )
+
+    assert preview._default_viewport(svg) == (2560, 1440)
+
 
 def test_render_svg_preview_falls_back_between_renderers(
     tmp_path: Path,

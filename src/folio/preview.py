@@ -33,6 +33,7 @@ PT_PER_INCH = 72
 A4_WIDTH_PX = 1191
 A4_HEIGHT_PX = 1684
 DEFAULT_VIEWPORT = (A4_WIDTH_PX, A4_HEIGHT_PX)
+_SVG_TAG_RE = re.compile(r"<svg\b[^>]*>", re.IGNORECASE)
 _DIMENSION_RE = re.compile(r'\b(width|height)="([0-9.]+)(mm|pt|px)?"')
 _VIEWBOX_RE = re.compile(r'\bviewBox="([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)"')
 
@@ -46,9 +47,14 @@ def _pt_to_px(value_pt: float) -> int:
 
 
 def _default_viewport(svg_text: str) -> tuple[int, int]:
+    svg_tag_match = _SVG_TAG_RE.search(svg_text)
+    if svg_tag_match is None:
+        return DEFAULT_VIEWPORT
+
+    svg_tag = svg_tag_match.group(0)
     dimensions = {
         name: (float(value), unit or "px")
-        for name, value, unit in _DIMENSION_RE.findall(svg_text)
+        for name, value, unit in _DIMENSION_RE.findall(svg_tag)
     }
     if "width" in dimensions and "height" in dimensions:
         width, width_unit = dimensions["width"]
@@ -60,7 +66,7 @@ def _default_viewport(svg_text: str) -> tuple[int, int]:
         if width_unit == "px" and height_unit == "px":
             return (max(1, round(width)), max(1, round(height)))
 
-    match = _VIEWBOX_RE.search(svg_text)
+    match = _VIEWBOX_RE.search(svg_tag)
     if match:
         _, _, width, height = match.groups()
         return (_pt_to_px(float(width)), _pt_to_px(float(height)))
