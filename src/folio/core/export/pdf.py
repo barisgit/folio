@@ -80,7 +80,7 @@ def _write_raster_pdf(
         raise PdfExportError("PDF export requires at least one page")
 
     try:
-        from PIL import Image  # type: ignore[import-not-found]
+        from PIL import Image
     except ImportError as exc:  # pragma: no cover - depends on runtime environment
         raise PdfExportError("PDF export requires Pillow to assemble page images") from exc
 

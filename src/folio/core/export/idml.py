@@ -6,7 +6,7 @@ import re
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from folio.core.dsl.styles import merge_text_style_attrs
 from folio.core.model import Document, Element, ElementKind, Markup, Page, TextSpan
@@ -436,6 +436,9 @@ def _bounds_text(bounds: tuple[float, float, float, float]) -> str:
     return f"{_fmt(top)} {_fmt(left)} {_fmt(bottom)} {_fmt(right)}"
 
 
+ContentPart = str | Markup | TextSpan
+
+
 def _text_lines(content: object) -> list[str]:
     if isinstance(content, str):
         return [content]
@@ -444,14 +447,14 @@ def _text_lines(content: object) -> list[str]:
     if isinstance(content, TextSpan):
         return _text_lines(content.content)
     if isinstance(content, tuple):
-        parts = [_text_from_part(part) for part in content]
+        parts = [_text_from_part(part) for part in cast(tuple[ContentPart, ...], content)]
         return [part for part in parts if part]
     if content is None:
         return [""]
     return [str(content)]
 
 
-def _text_from_part(part: str | Markup | TextSpan) -> str:
+def _text_from_part(part: ContentPart) -> str:
     if isinstance(part, str):
         return part
     if isinstance(part, Markup):
@@ -464,7 +467,7 @@ def _strip_markup(value: str) -> str:
     return re.sub(r"<[^>]+>", "", value)
 
 
-def _pop_attr(attrs: dict[str, Any], *names: str, default: object = None) -> object:
+def _pop_attr(attrs: dict[str, Any], *names: str, default: Any = None) -> Any:
     for name in names:
         if name in attrs:
             return attrs.pop(name)

@@ -86,7 +86,7 @@ def test_missing_docstring_fails_generation(monkeypatch: pytest.MonkeyPatch) -> 
         _ = args, kwargs
         return None
 
-    _stub_rect.__doc__ = None  # type: ignore[attr-defined]
+    _stub_rect.__doc__ = None
 
     import folio.dsl
 

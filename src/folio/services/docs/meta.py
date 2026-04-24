@@ -10,6 +10,8 @@ surfaces. Surfaces two (`folio.dsl.tokens`) and three
 
 from __future__ import annotations
 
+from typing import TypedDict
+
 DSL_KINDS: dict[str, str] = {
     # Types and classes
     "Asset": "helper",
@@ -97,7 +99,11 @@ DEFAULT_EXAMPLE_SETUP: str = (
 )
 
 
-TokenEntry = dict[str, object]
+class TokenEntry(TypedDict, total=False):
+    summary: str
+    description: str
+    examples: list[tuple[str, str | None]]
+    tags: tuple[str, ...]
 
 
 TOKEN_DOCS: dict[str, TokenEntry] = {

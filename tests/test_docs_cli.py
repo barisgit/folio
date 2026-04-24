@@ -76,7 +76,7 @@ def test_list_rejects_invalid_kind() -> None:
 
 
 def test_schema_mismatch_exits_three(monkeypatch: pytest.MonkeyPatch, tmp_path: object) -> None:
-    stub = tmp_path  # type: ignore[assignment]
+    stub = tmp_path
     bad_path = stub / "index.json"  # type: ignore[operator]
     bad_path.write_text(json.dumps({"version": 99, "symbols": []}), encoding="utf-8")
 

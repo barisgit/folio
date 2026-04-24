@@ -16,7 +16,9 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from hatchling.builders.hooks.plugin.interface import BuildHookInterface
+from hatchling.builders.hooks.plugin.interface import (  # type: ignore[import-untyped]  # build-time dep, not in type-check env
+    BuildHookInterface,
+)
 
 _INDEX_RELPATH = "src/folio/services/docs/index.json"
 _IGNORED_KEYS = frozenset({"generated_at", "folio_version"})

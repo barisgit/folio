@@ -7,7 +7,7 @@ import warnings
 from collections import defaultdict
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 import folio.core.render.tokens as render_tokens
 from folio.core.dsl.styles import TextStyle, coerce_text_style, merge_text_style_attrs
@@ -2838,7 +2838,7 @@ def collection(
     Tags: document, collection
     """
     if len(documents) == 1 and isinstance(documents[0], Sequence):
-        documents = tuple(documents[0])
+        documents = cast(tuple[Document, ...], tuple(documents[0]))
     if not documents or not all(isinstance(doc, Document) for doc in documents):
         raise TypeError("collection() expects Document instances")
     return DocumentCollection(documents=tuple(documents), metadata=metadata or {})
