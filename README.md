@@ -12,6 +12,7 @@ pip install -e .
 # bundled starter spec
 folio validate config/folio.py
 folio build config/folio.py
+folio build config/folio.py --format idml   # writes out/folio.idml for InDesign handoff
 folio reconcile out/cover.svg --spec config/folio.py
 folio preview out/cover.svg --output out/cover.png
 
@@ -88,6 +89,17 @@ ln -s ~/.agents/skills/folio ~/.claude/skills/folio
 The skill tells the agent to use `folio docs show` / `folio docs search`
 for DSL lookups, and to follow the standard
 `check → build → preview → reconcile` pipeline.
+
+## Build outputs
+
+`folio build` writes one SVG file per page by default. Use `--format idml` to write
+both the normal page SVGs and `out/folio.idml`: a minimal IDML package with native,
+editable layout objects for common Folio primitives such as rectangles, text frames,
+lines, ovals, polygons, and polylines. This is an editable-structure MVP, not a full
+SVG compatibility layer: filters, gradients, defs, arbitrary SVG path commands, and
+image assets need additional mapping work. Uniform page sizes are the safest path for
+this first IDML exporter; mixed-size documents should be opened and checked in the
+target layout app.
 
 ## DSL entrypoint
 

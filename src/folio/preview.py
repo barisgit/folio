@@ -5,8 +5,8 @@ import re
 import shutil
 import subprocess
 import tempfile
-from pathlib import Path
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 from folio.cache import preview_output_path
