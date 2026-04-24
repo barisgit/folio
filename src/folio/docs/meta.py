@@ -20,6 +20,9 @@ DSL_KINDS: dict[str, str] = {
     "DocumentCollection": "primitive",
     "Element": "primitive",
     "ElementKind": "primitive",
+    "ExportFormat": "helper",
+    "ExportPreset": "helper",
+    "ExportScope": "helper",
     "Markup": "primitive",
     "Page": "primitive",
     "PathBuilder": "builder",
@@ -73,9 +76,13 @@ DSL_KINDS: dict[str, str] = {
     "chart": "helper",
     "collection": "helper",
     "document": "helper",
+    "idml": "helper",
     "measure_text": "helper",
     "measure_wrapped_text": "helper",
+    "pdf": "helper",
+    "png": "helper",
     "render": "helper",
+    "svg": "helper",
     # Module re-export
     "tokens": "helper",
 }

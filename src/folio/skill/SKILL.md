@@ -1,6 +1,6 @@
 ---
 name: folio
-description: Build, validate, preview, and reconcile SVG pages with Folio, a Python DSL for page layout. Invoke this skill whenever a task touches a Folio project (build.py / pages.py / layout.py) or mentions the folio CLI.
+description: Build, validate, rasterize, and reconcile SVG pages with Folio, a Python DSL for page layout. Invoke this skill whenever a task touches a Folio project (build.py / pages.py / layout.py) or mentions the folio CLI.
 ---
 
 # Folio workflow skill
@@ -27,7 +27,7 @@ Do NOT attempt to patch around a missing CLI by synthesizing SVGs by hand
 or editing spec files blindly. Every downstream step assumes the CLI is
 available.
 
-## Canonical pipeline: check → build → preview → reconcile
+## Canonical pipeline: check → build → rasterize → reconcile
 
 For any change to a Folio spec, run these steps in order and only proceed
 when each one passes.
@@ -60,15 +60,15 @@ folio build           # renders cwd/build.py
 folio build path/to/spec.py
 ```
 
-### 3. `folio preview`
+### 3. `folio rasterize`
 
 Rasterize the generated SVGs to PNGs for visual inspection. Show the
 preview to the user rather than describing it from memory — rendered
 output is often different from what the spec seems to say.
 
 ```bash
-folio preview         # defaults to the built output dir
-folio preview out/page1.svg --output out/page1.png
+folio rasterize       # defaults to cached last-build pages
+folio rasterize out/page1.svg --output out/page1.png
 ```
 
 ### 4. `folio reconcile`
@@ -150,7 +150,7 @@ After completing a change, summarize:
 
 1. The file(s) you edited.
 2. The `folio check` exit code (and failing step, if any).
-3. Whether you built and previewed, and where the rendered output
+3. Whether you built and rasterized, and where the rendered output
    lives.
 
 Keep the summary to a handful of lines. The user can ask for detail.

@@ -11,12 +11,12 @@ Regenerate the index with `python -m folio.docs.generate` or the equivalent
 from __future__ import annotations
 
 from folio.docs.schema import (
+    VALID_KINDS,
     Example,
     Index,
     Param,
     Returns,
     Symbol,
-    VALID_KINDS,
 )
 
 __all__ = [

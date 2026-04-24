@@ -156,7 +156,7 @@ folio.dsl.tokens  (re-exports from folio.render.tokens)
 ### Consumed By
 - **CLI** (`src/folio/cli.py`) — calls `loader.load_dsl_module()` + `renderer.build_pages()` / `renderer.write_pages()`
 - **Reconcile** (`src/folio/reconcile/`) — consumes `Element` trees to compute layout positions
-- **Preview** (`src/folio/preview.py`) — renders pages for live preview
+- **Rasterize** (`src/folio/preview.py`) — rasterizes pages/SVGs to PNG previews and derivative outputs
 
 ### Depends On
 - `folio.render.tokens` — design tokens (colors, sizes)

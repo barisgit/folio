@@ -16,4 +16,12 @@ app = search_app
 search_app.command("stock")(stock_command)
 search_app.command("svg")(svg_command)
 
-__all__ = ["app", "fetch_stock", "fetch_stock_multi", "search_app", "search_svg_assets", "stock_command", "svg_command"]
+__all__ = [
+    "app",
+    "fetch_stock",
+    "fetch_stock_multi",
+    "search_app",
+    "search_svg_assets",
+    "stock_command",
+    "svg_command",
+]

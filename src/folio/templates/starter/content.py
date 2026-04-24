@@ -106,8 +106,8 @@ TIMELINE = (
         "Extend the token palette and tune TextStyle presets in theme.py.",
     ),
     (
-        "03  Build & preview",
-        "folio build, folio preview — Playwright / Cairo / rsvg fallback.",
+        "03  Build & rasterize",
+        "folio build, folio rasterize — Playwright / Cairo / rsvg fallback.",
     ),
 )
 

@@ -15,7 +15,7 @@ Single-package layout with a flat `src/` directory. The `folio/` package is expo
 ## Entry Points
 
 - `folio/__main__.py` — Enables `python -m folio` invocation; delegates to `cli.app`.
-- `folio/cli.py` — Typer-based CLI root (`folio` command group). Registers all subcommands: `build`, `create`, `validate`, `preview`, `reconcile`, `check`, and the `search` sub-app.
+- `folio/cli.py` — Typer-based CLI root (`folio` command group). Registers all subcommands: `build`, `create`, `validate`, `rasterize`, `reconcile`, `check`, and the `search` sub-app.
 - `folio/config.py` — Reserved compatibility module for project-specific config helpers.
 
 ## Integration

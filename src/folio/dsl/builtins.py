@@ -16,6 +16,9 @@ from folio.dsl.model import (
     DocumentCollection,
     Element,
     ElementKind,
+    ExportFormat,
+    ExportPreset,
+    ExportScope,
     Markup,
     Page,
     TextMetrics,
@@ -82,6 +85,77 @@ def _coerce_defs(
     if not all(isinstance(node, DefNode) for node in coerced):
         raise TypeError("page() defs must be a Markup/string or a sequence of DefNode instances")
     return coerced
+
+
+def _coerce_export_names(names: Sequence[str] | None, *, source: str) -> tuple[str, ...] | None:
+    if names is None:
+        return None
+    coerced = tuple(str(name) for name in names)
+    if not all(name for name in coerced):
+        raise TypeError(f"{source} export names must be non-empty strings")
+    return coerced
+
+
+def _coerce_export_presets(presets: Sequence[ExportPreset] | None) -> tuple[ExportPreset, ...]:
+    if presets is None:
+        return ()
+    coerced = tuple(presets)
+    if not all(isinstance(preset, ExportPreset) for preset in coerced):
+        raise TypeError("document() export_presets must contain ExportPreset instances")
+    return coerced
+
+
+def _validate_viewport(viewport: tuple[int, int]) -> tuple[int, int]:
+    width, height = viewport
+    if width <= 0 or height <= 0:
+        raise TypeError("png() viewport dimensions must be positive")
+    return int(width), int(height)
+
+
+def svg(name: str = "svg", *, filename_pattern: str | None = None) -> ExportPreset:
+    """Create the page-scoped SVG export preset."""
+    return ExportPreset(
+        name=name,
+        format=ExportFormat.SVG,
+        scope=ExportScope.PAGE,
+        filename_pattern=filename_pattern,
+    )
+
+
+def png(
+    name: str,
+    *,
+    viewport: tuple[int, int],
+    filename_pattern: str | None = None,
+) -> ExportPreset:
+    """Create a page-scoped PNG export preset with a fixed viewport."""
+    return ExportPreset(
+        name=name,
+        format=ExportFormat.PNG,
+        scope=ExportScope.PAGE,
+        viewport=_validate_viewport(viewport),
+        filename_pattern=filename_pattern,
+    )
+
+
+def pdf(name: str = "pdf", *, filename_pattern: str | None = None) -> ExportPreset:
+    """Create a document-scoped PDF export preset."""
+    return ExportPreset(
+        name=name,
+        format=ExportFormat.PDF,
+        scope=ExportScope.DOCUMENT,
+        filename_pattern=filename_pattern,
+    )
+
+
+def idml(name: str = "idml", *, filename_pattern: str | None = None) -> ExportPreset:
+    """Create a document-scoped IDML export preset."""
+    return ExportPreset(
+        name=name,
+        format=ExportFormat.IDML,
+        scope=ExportScope.DOCUMENT,
+        filename_pattern=filename_pattern,
+    )
 
 
 def _coerce_text_content(
@@ -1408,6 +1482,7 @@ def page(
     elements: Sequence[Element] | None = None,
     defs: str | Markup | Sequence[DefNode] | None = None,
     label: str | None = None,
+    extra_exports: Sequence[str] | None = None,
     **attrs: Any,
 ) -> Page:
     """Assemble a :class:`Page` from child elements.
@@ -1456,6 +1531,7 @@ def page(
         defs=_coerce_defs(defs),
         label=label,
         attrs=dict(attrs),
+        extra_exports=_coerce_export_names(extra_exports, source="page()") or (),
     )
 
 
@@ -2736,6 +2812,8 @@ def document(
     title: str | None = None,
     defs: str | Markup | Sequence[DefNode] | None = None,
     metadata: dict[str, Any] | None = None,
+    export_presets: Sequence[ExportPreset] | None = None,
+    default_exports: Sequence[str] | None = None,
 ) -> Document:
     """Create one logical publication/output unit.
 
@@ -2768,6 +2846,8 @@ def document(
         document_id=document_id,
         filename=filename,
         title=title,
+        export_presets=_coerce_export_presets(export_presets),
+        default_exports=_coerce_export_names(default_exports, source="document()"),
     )
 
 
@@ -2804,6 +2884,8 @@ def render(
     *pages: Page,
     defs: str | Markup | Sequence[DefNode] | None = None,
     metadata: dict[str, Any] | None = None,
+    export_presets: Sequence[ExportPreset] | None = None,
+    default_exports: Sequence[str] | None = None,
 ) -> Document:
     """Deprecated shorthand for creating one anonymous document.
 
@@ -2821,4 +2903,12 @@ def render(
         page_list = tuple(pages)
     if not all(isinstance(page, Page) for page in page_list):
         raise TypeError("render() expects Page instances")
-    return document("document", pages=page_list, defs=defs, metadata=metadata, filename="folio")
+    return document(
+        "document",
+        pages=page_list,
+        defs=defs,
+        metadata=metadata,
+        filename="folio",
+        export_presets=export_presets,
+        default_exports=default_exports,
+    )

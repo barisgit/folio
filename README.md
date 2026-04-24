@@ -1,6 +1,6 @@
 # folio
 
-CLI for creating, building, previewing, validating, and reconciling SVG pages from a Python DSL.
+CLI for creating, building, rasterizing, validating, and reconciling SVG pages from a Python DSL.
 
 ## Quick start
 
@@ -12,9 +12,9 @@ pip install -e .
 # bundled starter spec
 folio validate config/folio.py
 folio build config/folio.py
-folio build config/folio.py --format idml   # writes one .idml per document
+folio build config/folio.py idml            # writes one .idml per document
 folio reconcile out/cover.svg --spec config/folio.py
-folio preview out/cover.svg --output out/cover.png
+folio rasterize out/cover.svg --output out/cover.png
 
 # scaffold from the built-in starter template
 folio create my-doc \
@@ -28,7 +28,7 @@ folio validate        # resolves ./build.py by default
 folio check           # validate + lint + typecheck (add --format or --fix as needed)
 folio build
 folio reconcile out/page1.svg --spec .
-folio preview --spec .
+folio rasterize --spec .
 ```
 
 ## Template scaffolding
@@ -88,7 +88,7 @@ ln -s ~/.agents/skills/folio ~/.claude/skills/folio
 
 The skill tells the agent to use `folio docs show` / `folio docs search`
 for DSL lookups, and to follow the standard
-`check → build → preview → reconcile` pipeline.
+`check → build → rasterize → reconcile` pipeline.
 
 ## Build outputs
 
@@ -116,12 +116,38 @@ def build():
     )
 ```
 
-Use `--format idml` to write both the normal page SVGs and one native editable IDML
-package per logical document, for example `out/TM42_brochure.idml` and
-`out/TM42_tv_16x9.idml`. The IDML exporter maps common Folio primitives such as
-rectangles, text frames, lines, ovals, polygons, and polylines. This is an
-editable-structure MVP, not a full SVG compatibility layer: filters, gradients, defs,
-arbitrary SVG path commands, and image assets need additional mapping work.
+Declare export presets in the DSL and build them by target name:
+
+```python
+from folio.dsl import collection, document, idml, page, pdf, png, svg
+
+
+def build():
+    return collection(
+        document(
+            "brochure",
+            pages=[build_page1(), build_page2(), build_page3(extra_exports=["1080p", "4k"])],
+            filename="TM42_brochure",
+            title="TM42 Brochure",
+            default_exports=["svg"],
+            export_presets=[
+                svg(),
+                png("1080p", viewport=(1920, 1080)),
+                png("4k", viewport=(3840, 2160)),
+                pdf(),
+                idml(),
+            ],
+        )
+    )
+```
+
+`folio build` writes default exports, `folio build 1080p pdf` writes only those
+named targets, and `folio build all` writes every declared preset. IDML and PDF
+are document-scoped outputs; SVG and PNG are page-scoped outputs. The IDML
+exporter maps common Folio primitives such as rectangles, text frames, lines,
+ovals, polygons, and polylines. This is an editable-structure MVP, not a full
+SVG compatibility layer: filters, gradients, defs, arbitrary SVG path commands,
+and image assets need additional mapping work.
 
 ## DSL entrypoint
 
@@ -194,8 +220,8 @@ Recommended structure:
 - `my-doc/layout.py` — reusable helpers, components, defs, and layout utilities
 - `my-doc/pages.py` — page-level assembly helpers that return `page(...)` nodes when a spec grows large
 - `my-doc/assets/` — source images referenced by the spec
-- `my-doc/.cache/` — build/reconcile/preview cache written beside the spec
-- `my-doc/out/` — rendered SVG or PNG output (default when building that spec, even if the CLI is invoked elsewhere)
+- `my-doc/.cache/` — build/reconcile/raster cache written beside the spec
+- `my-doc/out/` — rendered SVG, PNG, PDF, or IDML output (default when building that spec, even if the CLI is invoked elsewhere)
 
 Layout helpers are available both as classes and convenience builders:
 
@@ -241,5 +267,5 @@ Rendered PNGs are content-addressed by SHA-256 of the PNG bytes, so builds that 
 
 - Images are embedded as base64 data URIs.
 - Cache lives beside the spec at `.cache/folio/<spec-cache-key>/` so multiple specs in one directory do not collide.
-- `folio preview <svg>` rasterizes an arbitrary SVG to PNG; without an SVG argument it still previews cached last-build pages for a spec.
-- `folio preview` prefers Playwright, then falls back to CairoSVG, `rsvg-convert`, or Inkscape when available.
+- `folio rasterize <svg>` rasterizes an arbitrary SVG to PNG; without an SVG argument it rasterizes cached last-build pages for a spec.
+- `folio rasterize` prefers Playwright, then falls back to CairoSVG, `rsvg-convert`, or Inkscape when available.

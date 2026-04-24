@@ -19,7 +19,7 @@ def _write_spec(path: Path) -> None:
     path.write_text(
         dedent(
             """
-            from folio.dsl import line, page, rect, render, text
+            from folio.dsl import idml, page, line, rect, render, text
 
             def build():
                 return render(
@@ -42,6 +42,8 @@ def _write_spec(path: Path) -> None:
                         width_mm=100,
                         height_mm=50,
                     ),
+                    export_presets=[idml()],
+                    default_exports=["idml"],
                 )
             """
         ).strip()
@@ -124,7 +126,7 @@ def test_write_idml_references_native_spreads_stories_and_colors(tmp_path: Path)
     assert 'Folio_112233' in graphic
 
 
-def test_build_format_idml_writes_svgs_and_native_package(tmp_path: Path) -> None:
+def test_build_idml_target_writes_native_package(tmp_path: Path) -> None:
     spec_path = tmp_path / "build.py"
     _write_spec(spec_path)
     out_dir = tmp_path / "out"
@@ -134,7 +136,6 @@ def test_build_format_idml_writes_svgs_and_native_package(tmp_path: Path) -> Non
         [
             "build",
             str(spec_path),
-            "--format",
             "idml",
             "--out-dir",
             str(out_dir),
@@ -143,20 +144,19 @@ def test_build_format_idml_writes_svgs_and_native_package(tmp_path: Path) -> Non
     )
 
     assert command.exit_code == 0, command.stdout
-    assert (out_dir / "cover.svg").exists()
-    assert (out_dir / "inside.svg").exists()
+    assert not (out_dir / "cover.svg").exists()
+    assert not (out_dir / "inside.svg").exists()
     assert (out_dir / "folio.idml").exists()
     assert not (out_dir / "Links").exists()
-    assert "cover.svg" in command.stdout
     assert "folio.idml" in command.stdout
 
 
-def test_build_format_idml_writes_one_package_per_document(tmp_path: Path) -> None:
+def test_build_idml_target_writes_one_package_per_document(tmp_path: Path) -> None:
     spec_path = tmp_path / "build.py"
     spec_path.write_text(
         dedent(
             """
-            from folio.dsl import collection, document, page, rect, text
+            from folio.dsl import collection, document, idml, page, rect, text
 
             def build():
                 return collection(
@@ -175,6 +175,8 @@ def test_build_format_idml_writes_one_package_per_document(tmp_path: Path) -> No
                         ],
                         filename="TM42_brochure",
                         title="TM42 Brochure",
+                        export_presets=[idml()],
+                        default_exports=["idml"],
                     ),
                     document(
                         "tv",
@@ -191,6 +193,8 @@ def test_build_format_idml_writes_one_package_per_document(tmp_path: Path) -> No
                         ],
                         filename="TM42_tv_16x9",
                         title="TM42 TV 16:9",
+                        export_presets=[idml()],
+                        default_exports=["idml"],
                     ),
                 )
             """
@@ -205,7 +209,6 @@ def test_build_format_idml_writes_one_package_per_document(tmp_path: Path) -> No
         [
             "build",
             str(spec_path),
-            "--format",
             "idml",
             "--out-dir",
             str(out_dir),
@@ -214,14 +217,14 @@ def test_build_format_idml_writes_one_package_per_document(tmp_path: Path) -> No
     )
 
     assert command.exit_code == 0, command.stdout
-    assert (out_dir / "brochure-cover.svg").exists()
-    assert (out_dir / "tv.svg").exists()
+    assert not (out_dir / "brochure-cover.svg").exists()
+    assert not (out_dir / "tv.svg").exists()
     assert (out_dir / "TM42_brochure.idml").exists()
     assert (out_dir / "TM42_tv_16x9.idml").exists()
     assert not (out_dir / "folio.idml").exists()
 
 
-def test_build_format_idml_respects_page_filter(tmp_path: Path) -> None:
+def test_build_idml_target_rejects_page_filter(tmp_path: Path) -> None:
     spec_path = tmp_path / "build.py"
     _write_spec(spec_path)
     out_dir = tmp_path / "out"
@@ -231,7 +234,6 @@ def test_build_format_idml_respects_page_filter(tmp_path: Path) -> None:
         [
             "build",
             str(spec_path),
-            "--format",
             "idml",
             "--page",
             "2",
@@ -241,22 +243,14 @@ def test_build_format_idml_respects_page_filter(tmp_path: Path) -> None:
         ],
     )
 
-    assert command.exit_code == 0, command.stdout
-    assert not (out_dir / "cover.svg").exists()
-    assert (out_dir / "inside.svg").exists()
-    with zipfile.ZipFile(out_dir / "folio.idml") as package:
-        names = package.namelist()
-        spread_names = [name for name in names if name.startswith("Spreads/Spread_")]
-        assert len(spread_names) == 1
-        spread = package.read(spread_names[0]).decode()
-    assert 'Name="inside_bg"' in spread
-    assert 'Name="bg"' not in spread
+    assert command.exit_code == 2
+    assert "--page applies only to page-scoped export targets" in command.stdout
 
 
-def test_build_rejects_unknown_format(tmp_path: Path) -> None:
+def test_build_rejects_unknown_target(tmp_path: Path) -> None:
     spec_path = tmp_path / "build.py"
     _write_spec(spec_path)
 
-    command = runner.invoke(app, ["build", str(spec_path), "--format", "pdf"])
+    command = runner.invoke(app, ["build", str(spec_path), "missing"])
 
     assert command.exit_code == 2

@@ -51,13 +51,13 @@ build_command(spec_path)
   → cache_build()                [cache.py]  (unless --no-cache)
 ```
 
-### Preview Pipeline
+### Rasterize Pipeline
 ```
-preview_command(svg_path | spec_path)
+rasterize_command(svg_path | spec_path)
   → cached_pages() / render_preview_file()
     → _render_svg_preview()
       → [Playwright | CairoSVG | rsvg-convert | Inkscape]
-    → preview_output_path()      [cache.py]
+    → raster_output_path()       [cache.py]
 ```
 
 ### Reconcile Pipeline
@@ -75,8 +75,8 @@ reconcile_command(edited_svg | --all)
 validate_command(spec_path)
   → resolve_spec_path()
   → load_dsl_module()
-  → document_from_module()
-  → validate_document()
+  → collection_from_module()
+  → validate_document() for each document
 ```
 
 ### Check Pipeline

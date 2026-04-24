@@ -15,6 +15,9 @@ from folio.dsl.model import (
     DocumentCollection,
     Element,
     ElementKind,
+    ExportFormat,
+    ExportPreset,
+    ExportScope,
     Markup,
     Page,
     TextSpan,
@@ -52,6 +55,11 @@ class ValidationWarning(UserWarning):
 
 
 _HEX_COLOR_RE = re.compile(r"#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})")
+_LEGACY_SVG_PRESET = ExportPreset(
+    name="svg",
+    format=ExportFormat.SVG,
+    scope=ExportScope.PAGE,
+)
 
 
 def _structured_defs(
@@ -226,9 +234,90 @@ def _validate_def_node(node: DefNode, seen_ids: set[str]) -> None:
         raise RenderError(f"Unsupported defs child in {node.tag}: {type(child)!r}")
 
 
+def effective_export_presets(document: Document) -> tuple[ExportPreset, ...]:
+    """Return declared export presets, or the legacy implicit SVG preset."""
+    return document.export_presets or (_LEGACY_SVG_PRESET,)
+
+
+def export_preset_map(document: Document) -> dict[str, ExportPreset]:
+    presets = effective_export_presets(document)
+    result: dict[str, ExportPreset] = {}
+    duplicates: set[str] = set()
+    for preset in presets:
+        if not preset.name:
+            raise RenderError("Export preset names must not be empty")
+        if preset.name in result:
+            duplicates.add(preset.name)
+            continue
+        result[preset.name] = preset
+    if duplicates:
+        joined = ", ".join(sorted(duplicates))
+        raise RenderError(f"Duplicate export preset name: {joined}")
+    return result
+
+
+def default_export_names(document: Document) -> tuple[str, ...]:
+    presets = export_preset_map(document)
+    if document.default_exports is not None:
+        return document.default_exports
+    if "svg" in presets:
+        return ("svg",)
+    raise RenderError("Document default_exports is required when no svg preset exists")
+
+
+def _validate_export_presets(document: Document) -> None:
+    presets = export_preset_map(document)
+
+    for name in default_export_names(document):
+        if name not in presets:
+            raise RenderError(f"Unknown default export preset: {name}")
+
+    for page in document.pages:
+        for name in page.extra_exports:
+            preset = presets.get(name)
+            if preset is None:
+                raise RenderError(
+                    f"Page {page.page_id or page.page_number} references unknown export preset: "
+                    f"{name}"
+                )
+            if preset.scope is not ExportScope.PAGE:
+                raise RenderError(
+                    f"Page {page.page_id or page.page_number} extra_exports may only reference "
+                    f"page-scoped presets: {name} is {preset.scope.value}-scoped"
+                )
+
+
+def resolve_export_targets(
+    document: Document, requested: Sequence[str]
+) -> tuple[ExportPreset, ...]:
+    presets = export_preset_map(document)
+    if not requested:
+        names = default_export_names(document)
+    elif tuple(requested) == ("all",):
+        names = tuple(preset.name for preset in effective_export_presets(document))
+    elif "all" in requested:
+        raise RenderError("Build target 'all' cannot be combined with other targets")
+    else:
+        names = tuple(requested)
+
+    resolved: list[ExportPreset] = []
+    seen: set[str] = set()
+    for name in names:
+        preset = presets.get(name)
+        if preset is None:
+            raise RenderError(f"Unknown export target: {name}")
+        if name in seen:
+            continue
+        seen.add(name)
+        resolved.append(preset)
+    return tuple(resolved)
+
+
 def _validate_document(document: Document) -> None:
     if not document.pages:
         raise RenderError("Document defines no pages")
+
+    _validate_export_presets(document)
 
     page_numbers: set[int] = set()
     page_ids: set[str] = set()

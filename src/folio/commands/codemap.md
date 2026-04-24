@@ -1,7 +1,7 @@
 # src/folio/commands/
 
 ## Responsibility
-Command-layer CLI interface built on [Typer](https://typer.tiangolo.com/). Each subcommand maps to a discrete workflow: building specs into SVG files, validating DSL source, previewing renders, reconciling edited SVGs against cached baselines, running lint/type checks, scaffolding new projects, and searching for assets.
+Command-layer CLI interface built on [Typer](https://typer.tiangolo.com/). Each subcommand maps to a discrete workflow: building specs into declared export targets, validating DSL source, rasterizing SVGs, reconciling edited SVGs against cached baselines, running lint/type checks, scaffolding new projects, and searching for assets.
 
 ## Design
 
@@ -14,9 +14,9 @@ Command-layer CLI interface built on [Typer](https://typer.tiangolo.com/). Each 
 
 | Module | CLI Entry | Purpose |
 |--------|-----------|---------|
-| `build.py` | `folio build` | Load DSL spec, build pages, write SVGs, update cache |
+| `build.py` | `folio build` | Load DSL spec, build requested export targets, update cache |
 | `validate.py` | `folio validate` | Load DSL module, build document, assert validity |
-| `preview.py` | `folio preview` | Rasterize cached SVGs to PNG via `preview.py` backend |
+| `rasterize.py` | `folio rasterize` | Rasterize explicit or cached SVGs to PNG via `preview.py` backend |
 | `reconcile.py` | `folio reconcile` | Parse edited SVG, diff against cached baseline, write JSON report |
 | `check.py` | `folio check` | Run lint, typecheck, format checks via `folio.check` runner |
 | `create.py` | `folio create` | Scaffold new project from Jinja2 starter template |
@@ -50,7 +50,7 @@ CLI invocation (folio <cmd>)
   → typer resolves subcommand
   → calls command function with Annotated[typer.Argument/Option] params
   → resolves spec_path via folio.dsl.loader.resolve_spec_path()
-  → delegates to domain layer (dsl, render, cache, check, reconcile, preview, search)
+  → delegates to domain layer (dsl, render, cache, check, reconcile, rasterize/preview, search)
   → catches domain exceptions → prints styled error → exits with code
 ```
 
@@ -62,7 +62,7 @@ CLI invocation (folio <cmd>)
   - `folio.dsl.renderer` — `build_pages`, `validate_document`, `document_from_module`
   - `folio.cache` — `cache_build`, `cached_pages`, `last_build_svg`, `reconcile_report_path`
   - `folio.check.runner` — `run_check`, `CheckResult`
-  - `folio.preview` — `render_preview`, `render_preview_file`
+  - `folio.preview` — raster rendering backend used by `render_raster` / `render_preview_file`
   - `folio.reconcile.diff` — `diff_svgs`
   - `folio.reconcile.parse` — `parse_svg`, `ParsedSvg`, `ParseError`
   - `folio.reconcile.report` — `print_report`, `report_payload`, `write_report`

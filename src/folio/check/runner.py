@@ -58,11 +58,12 @@ class CheckResult:
 def run_validate(target: CheckTarget) -> StepResult:
     """Run Folio validation on the resolved spec path."""
     from folio.dsl.loader import DslError, load_dsl_module
-    from folio.dsl.renderer import RenderError, document_from_module, validate_document
+    from folio.dsl.renderer import RenderError, collection_from_module, validate_document
 
     try:
         module = load_dsl_module(target.spec_path)
-        validate_document(document_from_module(module))
+        for document in collection_from_module(module).documents:
+            validate_document(document)
     except (DslError, RenderError) as exc:
         return StepResult(label="validate", success=False, output=str(exc))
     return StepResult(label="validate", success=True)

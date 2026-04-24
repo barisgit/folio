@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum, auto
+from enum import Enum, StrEnum, auto
 from typing import Any
 
 
@@ -28,6 +28,37 @@ class ElementKind(Enum):
     POLYGON = auto()
     POLYLINE = auto()
     LINE = auto()
+
+
+class ExportFormat(StrEnum):
+    """Supported export artifact formats."""
+
+    SVG = "svg"
+    PNG = "png"
+    PDF = "pdf"
+    IDML = "idml"
+
+
+class ExportScope(StrEnum):
+    """Whether an export produces page artifacts or one document artifact."""
+
+    PAGE = "page"
+    DOCUMENT = "document"
+
+
+@dataclass(frozen=True)
+class ExportPreset:
+    """Named build target declared by a document."""
+
+    name: str
+    format: ExportFormat
+    scope: ExportScope
+    viewport: tuple[int, int] | None = None
+    filename_pattern: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "format", ExportFormat(self.format))
+        object.__setattr__(self, "scope", ExportScope(self.scope))
 
 
 @dataclass(frozen=True)
@@ -152,6 +183,7 @@ class Page:
     defs: str | Markup | tuple[DefNode, ...] = field(default_factory=tuple)
     label: str | None = None
     attrs: dict[str, Any] = field(default_factory=dict)
+    extra_exports: tuple[str, ...] = field(default_factory=tuple)
 
 
 @dataclass(frozen=True)
@@ -196,6 +228,8 @@ class Document:
     document_id: str = "document"
     filename: str | None = None
     title: str | None = None
+    export_presets: tuple[ExportPreset, ...] = field(default_factory=tuple)
+    default_exports: tuple[str, ...] | None = None
 
 
 @dataclass(frozen=True)

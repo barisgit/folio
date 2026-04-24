@@ -8,7 +8,7 @@ from typing import Any
 
 from folio.docs.docstring_parser import ParsedDoc, parse_docstring
 from folio.docs.meta import DEFAULT_EXAMPLE_SETUP, DSL_KINDS
-from folio.docs.schema import Example, Param, Returns, Symbol, VALID_KINDS
+from folio.docs.schema import VALID_KINDS, Example, Param, Returns, Symbol
 from folio.docs.source_info import public_module_for, resolve_source
 
 

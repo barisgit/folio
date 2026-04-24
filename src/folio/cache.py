@@ -16,7 +16,11 @@ class CachePaths:
     root: Path
     last_build: Path
     reconcile: Path
-    preview: Path
+    raster: Path
+
+    @property
+    def preview(self) -> Path:
+        return self.raster
 
 
 @dataclass(frozen=True)
@@ -50,14 +54,14 @@ def cache_paths(spec_path: Path) -> CachePaths:
         root=root,
         last_build=root / "last_build",
         reconcile=root / "reconcile",
-        preview=root / "preview",
+        raster=root / "raster",
     )
 
 
 def ensure_cache_dirs(paths: CachePaths) -> None:
     paths.last_build.mkdir(parents=True, exist_ok=True)
     paths.reconcile.mkdir(parents=True, exist_ok=True)
-    paths.preview.mkdir(parents=True, exist_ok=True)
+    paths.raster.mkdir(parents=True, exist_ok=True)
 
 
 def _hash_text(content: str) -> str:
@@ -156,6 +160,10 @@ def reconcile_report_path(spec_path: Path, page_number: int) -> Path:
 
 
 def preview_output_path(spec_path: Path, page_number: int) -> Path:
+    return raster_output_path(spec_path, page_number)
+
+
+def raster_output_path(spec_path: Path, page_number: int) -> Path:
     paths = cache_paths(spec_path)
     ensure_cache_dirs(paths)
-    return paths.preview / f"p{page_number}.png"
+    return paths.raster / f"p{page_number}.png"

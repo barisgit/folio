@@ -8,7 +8,7 @@ from rich.console import Console
 
 from folio.cache import CacheError, cached_pages, last_build_svg
 from folio.dsl.loader import resolve_spec_path
-from folio.preview import PreviewError, render_preview, render_preview_file
+from folio.preview import PreviewError, render_preview_file, render_raster
 
 console = Console()
 
@@ -25,14 +25,14 @@ def _parse_viewport(value: str) -> tuple[int, int]:
     return width, height
 
 
-def preview_command(
+def rasterize_command(
     svg_path: Annotated[Path | None, typer.Argument(help="SVG file to rasterize")] = None,
     spec_path: Annotated[
         Path | None, typer.Option("--spec", help="Spec file used for cache location")
     ] = None,
     output_path: Annotated[
         Path | None,
-        typer.Option("--output", help="PNG output path when previewing a specific SVG"),
+        typer.Option("--output", help="PNG output path when rasterizing a specific SVG"),
     ] = None,
     viewport: Annotated[
         str | None,
@@ -59,7 +59,7 @@ def preview_command(
             for page in cached_pages(resolved_spec):
                 cached_svg = last_build_svg(resolved_spec, page.page_number)
                 outputs.append(
-                    render_preview(
+                    render_raster(
                         cached_svg,
                         spec_path=resolved_spec,
                         page_number=page.page_number,
@@ -67,7 +67,7 @@ def preview_command(
                     )
                 )
     except (CacheError, FileNotFoundError, PreviewError) as exc:
-        console.print(f"[red]Preview error:[/red] {exc}")
+        console.print(f"[red]Rasterize error:[/red] {exc}")
         raise typer.Exit(2) from exc
 
     for output in outputs:

@@ -10,7 +10,7 @@ from folio.commands import (
     check_command,
     create_command,
     docs_app,
-    preview_command,
+    rasterize_command,
     reconcile_command,
     skill_app,
     validate_command,
@@ -21,7 +21,7 @@ console = Console()
 
 app = typer.Typer(
     name="folio",
-    help="Create, check, build, preview, validate, and reconcile page SVGs.",
+    help="Create, check, build, rasterize, validate, and reconcile page SVGs.",
     no_args_is_help=True,
     rich_markup_mode="rich",
     context_settings={"help_option_names": ["-h", "--help"]},
@@ -53,7 +53,7 @@ def main(
 app.command("build")(build_command)
 app.command("create")(create_command)
 app.command("validate")(validate_command)
-app.command("preview")(preview_command)
+app.command("rasterize")(rasterize_command)
 app.command("reconcile")(reconcile_command)
 app.command("check")(check_command)
 app.add_typer(search_app, name="search")

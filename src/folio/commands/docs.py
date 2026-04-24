@@ -19,8 +19,7 @@ from __future__ import annotations
 import json
 import sys
 from difflib import get_close_matches
-from enum import Enum
-from pathlib import Path
+from enum import StrEnum
 from typing import Any
 
 import typer
@@ -30,7 +29,8 @@ from rich.panel import Panel
 from rich.table import Table
 
 from folio.docs import VALID_KINDS
-from folio.docs.generate import index_path, main as _generate_main
+from folio.docs.generate import index_path
+from folio.docs.generate import main as _generate_main
 
 _EXIT_OK = 0
 _EXIT_USER_ERROR = 1
@@ -38,7 +38,7 @@ _EXIT_NOT_FOUND = 2
 _EXIT_SCHEMA_MISMATCH = 3
 
 
-class _Format(str, Enum):
+class _Format(StrEnum):
     TEXT = "text"
     JSON = "json"
     MD = "md"
@@ -57,7 +57,9 @@ _error_console = Console(stderr=True)
 
 @docs_app.command("show")
 def show_command(
-    symbol: str = typer.Argument(..., help="Symbol id or bare name, e.g. `page` or `folio.dsl.page`."),
+    symbol: str = typer.Argument(
+        ..., help="Symbol id or bare name, e.g. `page` or `folio.dsl.page`."
+    ),
     format: _Format = typer.Option(  # noqa: A002 — CLI name
         _Format.TEXT, "--format", case_sensitive=False, help="Output format."
     ),

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import importlib.metadata
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from folio.docs.discovery import DiscoveryError, discover_all
@@ -60,7 +60,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _utcnow_iso() -> str:
-    return datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(tz=UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 if __name__ == "__main__":

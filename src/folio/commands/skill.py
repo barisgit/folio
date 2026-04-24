@@ -22,7 +22,7 @@ differs, the command exits 3 and lists the conflicting paths unless
 from __future__ import annotations
 
 import shutil
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 
 import typer
@@ -35,7 +35,7 @@ _EXIT_OS_ERROR = 1
 _EXIT_CONFLICT = 3
 
 
-class _Scope(str, Enum):
+class _Scope(StrEnum):
     USER = "user"
     PROJECT = "project"
 

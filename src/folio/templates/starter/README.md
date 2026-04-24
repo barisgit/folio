@@ -18,7 +18,7 @@ pip install -e /path/to/folio   # until folio is published to PyPI
 ```bash
 folio validate       # parse + DSL tree validation
 folio build          # render SVGs into ./out/
-folio preview        # rasterize cached last build to PNG
+folio rasterize      # rasterize cached last build to PNG
 folio check          # validate + ruff + ty (optionally --fix / --format)
 ```
 
@@ -36,7 +36,7 @@ Both are git-ignored.
 `folio create` installs the Folio skill under `.agents/skills/folio/` by
 default, so any agent tool that reads from the shared `.agents/skills/`
 convention picks up the canonical
-`check → build → preview → reconcile` workflow and uses
+`check → build → rasterize → reconcile` workflow and uses
 `folio docs show <symbol>` / `folio docs search <query>` for DSL
 lookups.
 

@@ -125,6 +125,36 @@ class TestFallbackChains:
 
 
 class TestRunnerBehavior:
+    def test_validate_accepts_document_collection(self, tmp_path: Path) -> None:
+        from folio.check import runner as runner_mod
+
+        spec_path = tmp_path / "build.py"
+        spec_path.write_text(
+            """
+from folio.dsl import collection, document, page, rect
+
+
+def build():
+    return collection(
+        document(
+            "one",
+            pages=[page(rect("one_bg", 0, 0, 10, 10), page_id="one", filename="one.svg")],
+        ),
+        document(
+            "two",
+            pages=[page(rect("two_bg", 0, 0, 10, 10), page_id="two", filename="two.svg")],
+        ),
+    )
+""".strip()
+            + "\n",
+            encoding="utf-8",
+        )
+        target = CheckTarget(spec_path=spec_path, project_root=tmp_path)
+
+        result = runner_mod.run_validate(target)
+
+        assert result.success
+
     def test_first_backend_with_diagnostics_stops_fallback(
         self,
         tmp_path: Path,

@@ -616,7 +616,7 @@ def _features_cta():
                     letter_spacing=1.0,
                     font_family=tokens.MONO_FONT_FAMILY,
                 ),
-                "folio build & preview",
+                "folio build & rasterize",
             ),
             size_pt=7.4,
             weight=500,

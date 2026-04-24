@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
-import sys
 import tarfile
 from pathlib import Path
 
@@ -61,7 +60,9 @@ def test_sdist_contains_current_index(repo_copy: Path) -> None:
     committed = (repo_copy / INDEX_RELPATH).read_bytes()
     with tarfile.open(sdist_paths[0], "r:gz") as tf:
         inner = next(
-            member for member in tf.getmembers() if member.name.endswith("/src/folio/docs/index.json")
+            member
+            for member in tf.getmembers()
+            if member.name.endswith("/src/folio/docs/index.json")
         )
         fobj = tf.extractfile(inner)
         assert fobj is not None

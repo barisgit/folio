@@ -82,9 +82,10 @@ def test_examples_step_uses_setup_when_provided(
 def test_examples_step_runs_between_validate_and_lint(
     target: CheckTarget, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    from unittest.mock import MagicMock
+
     from folio.check import runner as runner_mod
     from folio.check.backends import BackendResult
-    from unittest.mock import MagicMock
 
     ok_backend = MagicMock()
     ok_backend.name = "mock"

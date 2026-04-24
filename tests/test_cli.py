@@ -6,7 +6,7 @@ from textwrap import dedent
 
 from typer.testing import CliRunner
 
-import folio.commands.preview as preview_command_module
+import folio.commands.rasterize as rasterize_command_module
 import folio.commands.search.stock as stock_mod
 from folio.cache import cache_build, cache_paths
 from folio.cli import app
@@ -16,7 +16,7 @@ from folio.search.providers import SearchResult
 
 runner = CliRunner()
 
-def test_preview_can_render_arbitrary_svg_path(
+def test_rasterize_can_render_arbitrary_svg_path(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -39,7 +39,7 @@ def test_preview_can_render_arbitrary_svg_path(
         return target
 
     monkeypatch.setattr(
-        preview_command_module,
+        rasterize_command_module,
         "render_preview_file",
         fake_render_preview_file,
     )
@@ -47,7 +47,7 @@ def test_preview_can_render_arbitrary_svg_path(
     command = runner.invoke(
         app,
         [
-            "preview",
+            "rasterize",
             str(svg_path),
             "--output",
             str(output_path),
@@ -65,11 +65,17 @@ def test_preview_can_render_arbitrary_svg_path(
     }
 
 
-def test_preview_rejects_output_without_svg_path(tmp_path: Path) -> None:
+def test_rasterize_rejects_output_without_svg_path(tmp_path: Path) -> None:
     command = runner.invoke(
         app,
-        ["preview", "--output", str(tmp_path / "preview.png")],
+        ["rasterize", "--output", str(tmp_path / "preview.png")],
     )
+
+    assert command.exit_code == 2
+
+
+def test_preview_command_is_removed() -> None:
+    command = runner.invoke(app, ["preview"])
 
     assert command.exit_code == 2
 
@@ -502,3 +508,173 @@ def test_search_stock_no_args_shows_help() -> None:
     assert result.exit_code in (0, 2)  # Typer exits 0 or 2 depending on version
     assert "stock" in result.stdout
 
+
+
+def test_build_explicit_png_target_writes_only_participating_pages(
+    tmp_path: Path, monkeypatch
+) -> None:
+    spec_path = tmp_path / "build.py"
+    spec_path.write_text(
+        dedent(
+            """
+            from folio.dsl import collection, document, page, png, rect, svg
+
+            def build():
+                return collection(document(
+                    "brochure",
+                    pages=[
+                        page(
+                            rect("one_bg", 0, 0, 10, 10),
+                            page_id="one",
+                            filename="one.svg",
+                            page_number=1,
+                        ),
+                        page(
+                            rect("two_bg", 0, 0, 10, 10),
+                            page_id="two",
+                            filename="two.svg",
+                            page_number=2,
+                            extra_exports=["1080p"],
+                        ),
+                    ],
+                    export_presets=[svg(), png("1080p", viewport=(1920, 1080))],
+                    default_exports=["svg"],
+                ))
+            """
+        ).strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    out_dir = tmp_path / "out"
+    calls: list[tuple[Path, tuple[int, int] | None]] = []
+
+    def fake_render(
+        svg_text: str, *, output_path: Path, viewport: tuple[int, int] | None = None
+    ) -> Path:
+        calls.append((output_path, viewport))
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(b"PNG")
+        return output_path
+
+    monkeypatch.setattr("folio.commands.build._render_svg_preview", fake_render)
+
+    command = runner.invoke(
+        app,
+        ["build", str(spec_path), "1080p", "--out-dir", str(out_dir), "--no-cache"],
+    )
+
+    assert command.exit_code == 0, command.stdout
+    assert not (out_dir / "one.svg").exists()
+    assert not (out_dir / "two.svg").exists()
+    assert not (out_dir / "one_1080p.png").exists()
+    assert (out_dir / "two_1080p.png").exists()
+    assert calls == [(out_dir / "two_1080p.png", (1920, 1080))]
+
+
+def test_build_all_writes_declared_svg_png_pdf_and_idml(tmp_path: Path, monkeypatch) -> None:
+    spec_path = tmp_path / "build.py"
+    spec_path.write_text(
+        dedent(
+            """
+            from folio.dsl import collection, document, idml, page, pdf, png, rect, svg
+
+            def build():
+                return collection(document(
+                    "brochure",
+                    pages=[
+                        page(
+                            rect("cover_bg", 0, 0, 10, 10),
+                            page_id="cover",
+                            filename="cover.svg",
+                            page_number=1,
+                            extra_exports=["1080p"],
+                        )
+                    ],
+                    filename="TM42_brochure",
+                    export_presets=[svg(), png("1080p", viewport=(1920, 1080)), pdf(), idml()],
+                    default_exports=["svg"],
+                ))
+            """
+        ).strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    out_dir = tmp_path / "out"
+
+    def fake_render(
+        svg_text: str, *, output_path: Path, viewport: tuple[int, int] | None = None
+    ) -> Path:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(b"PNG")
+        return output_path
+
+    monkeypatch.setattr("folio.commands.build._render_svg_preview", fake_render)
+
+    command = runner.invoke(
+        app,
+        ["build", str(spec_path), "all", "--out-dir", str(out_dir), "--no-cache"],
+    )
+
+    assert command.exit_code == 0, command.stdout
+    assert (out_dir / "cover.svg").exists()
+    assert (out_dir / "cover_1080p.png").exists()
+    assert (out_dir / "TM42_brochure.pdf").exists()
+    assert (out_dir / "TM42_brochure.idml").exists()
+
+
+def test_build_rejects_unknown_export_target(tmp_path: Path) -> None:
+    spec_path = tmp_path / "build.py"
+    spec_path.write_text(
+        dedent(
+            """
+            from folio.dsl import page, render, text
+
+            def build():
+                return render(page(
+                    page_id="p1",
+                    filename="p1.svg",
+                    page_number=1,
+                    elements=[text("t", 0, 0, "Hi")],
+                ))
+            """
+        ).strip()
+        + "\n",
+        encoding="utf-8",
+    )
+
+    command = runner.invoke(app, ["build", str(spec_path), "missing", "--no-cache"])
+
+    assert command.exit_code == 2
+    assert "Unknown export target: missing" in command.stdout
+
+
+def test_build_rejects_page_with_document_scoped_target(tmp_path: Path) -> None:
+    spec_path = tmp_path / "build.py"
+    spec_path.write_text(
+        dedent(
+            """
+            from folio.dsl import collection, document, page, pdf, rect, svg
+
+            def build():
+                return collection(document(
+                    "brochure",
+                    pages=[
+                        page(
+                            rect("bg", 0, 0, 10, 10),
+                            page_id="p1",
+                            filename="p1.svg",
+                            page_number=1,
+                        )
+                    ],
+                    export_presets=[svg(), pdf()],
+                ))
+            """
+        ).strip()
+        + "\n",
+        encoding="utf-8",
+    )
+
+    command = runner.invoke(app, ["build", str(spec_path), "pdf", "--page", "1", "--no-cache"])
+
+    assert command.exit_code == 2
+    assert "--page applies only to page-scoped export targets" in command.stdout

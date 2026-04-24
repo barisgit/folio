@@ -9,7 +9,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from folio.cache import preview_output_path
+from folio.cache import raster_output_path
 
 
 class PreviewError(Exception):
@@ -190,7 +190,7 @@ def _render_svg_preview(
 
     attempts = "; ".join(errors)
     raise PreviewError(
-        "Could not rasterize preview. Tried Playwright, CairoSVG, rsvg-convert, and Inkscape. "
+        "Could not rasterize SVG. Tried Playwright, CairoSVG, rsvg-convert, and Inkscape. "
         f"Failures: {attempts}"
     )
 
@@ -210,7 +210,7 @@ def render_preview_file(
     )
 
 
-def render_preview(
+def render_raster(
     svg_path: Path,
     *,
     spec_path: Path,
@@ -219,6 +219,21 @@ def render_preview(
 ) -> Path:
     return render_preview_file(
         svg_path,
-        output_path=preview_output_path(spec_path, page_number),
+        output_path=raster_output_path(spec_path, page_number),
+        viewport=viewport,
+    )
+
+
+def render_preview(
+    svg_path: Path,
+    *,
+    spec_path: Path,
+    page_number: int,
+    viewport: tuple[int, int] | None = None,
+) -> Path:
+    return render_raster(
+        svg_path,
+        spec_path=spec_path,
+        page_number=page_number,
         viewport=viewport,
     )

@@ -15,7 +15,7 @@ Provides a pluggable, multi-tool check pipeline for Folio build specs: validatio
 
 1. `resolve_check_target(target)` resolves a CLI target path → `CheckTarget` (spec_path + project_root).
 2. `run_check(target)` orchestrates the pipeline:
-   - `run_validate(target)` — loads the DSL module via `load_dsl_module`, builds the document tree via `document_from_module`, and calls `validate_document`. Raises `DslError` or `RenderError` on failure. Halts pipeline on failure.
+   - `run_validate(target)` — loads the DSL module via `load_dsl_module`, builds the document collection via `collection_from_module`, and calls `validate_document` for every document. Raises `DslError` or `RenderError` on failure. Halts pipeline on failure.
    - `_run_backend_step("lint", LINT_BACKENDS, target)` — `select_backend` picks first available lint backend; calls `backend.run(project_root, fix=fix, verbose=verbose)` → `BackendResult`.
    - `_run_backend_step("format", FORMAT_BACKENDS, target)` — skipped unless `fmt=True` or `fix=True`.
    - `_run_backend_step("typecheck", TYPECHECK_BACKENDS, target)` — always runs last.
@@ -32,6 +32,6 @@ Provides a pluggable, multi-tool check pipeline for Folio build specs: validatio
 - **Consumed by**: `folio.check` CLI command group (via `folio/commands/check.py`).
 - **Depends on**:
   - `folio.dsl.loader` — `load_dsl_module`, `resolve_spec_path`
-  - `folio.dsl.renderer` — `document_from_module`, `validate_document`, `RenderError`, `DslError`
+  - `folio.dsl.renderer` — `collection_from_module`, `validate_document`, `RenderError`, `DslError`
   - External tools: `ruff`, `black`, `ty`, `pyright` (resolved at runtime via `shutil.which`)
 - **Exports**: `run_check` (the primary public API via `__init__.py`).

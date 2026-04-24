@@ -1,6 +1,6 @@
 from __future__ import annotations
-
 import __future__ as _future
+
 import re
 import types
 import warnings
@@ -51,6 +51,14 @@ from folio.dsl import (
     wrapped_text,
 )
 from folio.dsl.loader import DslError, load_dsl_module
+from folio.dsl.renderer import (
+    RenderError,
+    ValidationWarning,
+    build_pages,
+    render_collection,
+    render_document,
+    validate_document,
+)
 
 
 def _dsl_public_names() -> set[str]:
@@ -85,16 +93,6 @@ def test_dsl_all_is_sorted_and_unique() -> None:
     assert len(_dsl_module.__all__) == len(set(_dsl_module.__all__)), (
         "folio.dsl.__all__ must not contain duplicates"
     )
-
-from folio.dsl.renderer import (
-    RenderError,
-    ValidationWarning,
-    build_pages,
-    collection_from_module,
-    render_collection,
-    render_document,
-    validate_document,
-)
 
 SPEC = """from folio.dsl import group, image, page, rect, render, text, tokens
 

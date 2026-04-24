@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-04-24T07:53:59Z",
+  "generated_at": "2026-04-24T10:44:34Z",
   "folio_version": "0.1.0",
   "symbols": [
     {
@@ -43,7 +43,7 @@
         "model",
         "asset"
       ],
-      "source": "folio.dsl.model:33"
+      "source": "folio.dsl.model:64"
     },
     {
       "id": "folio.dsl.Block",
@@ -85,7 +85,7 @@
         "layout",
         "builder"
       ],
-      "source": "folio.dsl.builtins:1031"
+      "source": "folio.dsl.builtins:1105"
     },
     {
       "id": "folio.dsl.ChartHandle",
@@ -205,14 +205,14 @@
         "model",
         "defs"
       ],
-      "source": "folio.dsl.model:111"
+      "source": "folio.dsl.model:142"
     },
     {
       "id": "folio.dsl.Document",
       "name": "Document",
       "kind": "primitive",
       "module": "folio.dsl",
-      "signature": "Document(pages: 'tuple[Page, ...]', defs: 'str | Markup | tuple[DefNode, ...]' = <factory>, config_hash: 'str' = '', metadata: 'dict[str, Any]' = <factory>, document_id: 'str' = 'document', filename: 'str | None' = None, title: 'str | None' = None) -> None",
+      "signature": "Document(pages: 'tuple[Page, ...]', defs: 'str | Markup | tuple[DefNode, ...]' = <factory>, config_hash: 'str' = '', metadata: 'dict[str, Any]' = <factory>, document_id: 'str' = 'document', filename: 'str | None' = None, title: 'str | None' = None, export_presets: 'tuple[ExportPreset, ...]' = <factory>, default_exports: 'tuple[str, ...] | None' = None) -> None",
       "summary": "Root of a rendered multi-page document, produced by :func:`render`.",
       "description": "Carries the ordered pages, document-level defs, and optional\nmetadata passed into :func:`render`.",
       "params": [
@@ -250,6 +250,16 @@
           "name": "title",
           "type": "str | None",
           "doc": ""
+        },
+        {
+          "name": "export_presets",
+          "type": "tuple[ExportPreset, ...]",
+          "doc": ""
+        },
+        {
+          "name": "default_exports",
+          "type": "tuple[str, ...] | None",
+          "doc": ""
         }
       ],
       "returns": {
@@ -267,7 +277,7 @@
         "model",
         "document"
       ],
-      "source": "folio.dsl.model:179"
+      "source": "folio.dsl.model:211"
     },
     {
       "id": "folio.dsl.DocumentCollection",
@@ -305,7 +315,7 @@
         "document",
         "collection"
       ],
-      "source": "folio.dsl.model:201"
+      "source": "folio.dsl.model:235"
     },
     {
       "id": "folio.dsl.Element",
@@ -367,19 +377,49 @@
         "model",
         "element"
       ],
-      "source": "folio.dsl.model:87"
+      "source": "folio.dsl.model:118"
     },
     {
       "id": "folio.dsl.ElementKind",
       "name": "ElementKind",
       "kind": "primitive",
       "module": "folio.dsl",
-      "signature": "ElementKind(*values)",
+      "signature": "ElementKind(value, names=None, *, module=None, qualname=None, type=None, start=1, boundary=None)",
       "summary": "Discriminator for every concrete :class:`Element` the DSL produces.",
       "description": "Each renderer primitive (``rect``, ``circle``, ``text``, etc.) maps to\nexactly one ``ElementKind``. The enum is stable across releases and\nused by the reconcile and renderer layers to pick the right code path.",
       "params": [
         {
-          "name": "values",
+          "name": "value",
+          "type": "Any",
+          "doc": ""
+        },
+        {
+          "name": "names",
+          "type": "Any",
+          "doc": ""
+        },
+        {
+          "name": "module",
+          "type": "Any",
+          "doc": ""
+        },
+        {
+          "name": "qualname",
+          "type": "Any",
+          "doc": ""
+        },
+        {
+          "name": "type",
+          "type": "Any",
+          "doc": ""
+        },
+        {
+          "name": "start",
+          "type": "Any",
+          "doc": ""
+        },
+        {
+          "name": "boundary",
           "type": "Any",
           "doc": ""
         }
@@ -397,6 +437,149 @@
         "enum"
       ],
       "source": "folio.dsl.model:8"
+    },
+    {
+      "id": "folio.dsl.ExportFormat",
+      "name": "ExportFormat",
+      "kind": "helper",
+      "module": "folio.dsl",
+      "signature": "ExportFormat(value, names=None, *, module=None, qualname=None, type=None, start=1, boundary=None)",
+      "summary": "Supported export artifact formats.",
+      "description": "",
+      "params": [
+        {
+          "name": "value",
+          "type": "Any",
+          "doc": ""
+        },
+        {
+          "name": "names",
+          "type": "Any",
+          "doc": ""
+        },
+        {
+          "name": "module",
+          "type": "Any",
+          "doc": ""
+        },
+        {
+          "name": "qualname",
+          "type": "Any",
+          "doc": ""
+        },
+        {
+          "name": "type",
+          "type": "Any",
+          "doc": ""
+        },
+        {
+          "name": "start",
+          "type": "Any",
+          "doc": ""
+        },
+        {
+          "name": "boundary",
+          "type": "Any",
+          "doc": ""
+        }
+      ],
+      "returns": null,
+      "examples": [],
+      "tags": [],
+      "source": "folio.dsl.model:33"
+    },
+    {
+      "id": "folio.dsl.ExportPreset",
+      "name": "ExportPreset",
+      "kind": "helper",
+      "module": "folio.dsl",
+      "signature": "ExportPreset(name: 'str', format: 'ExportFormat', scope: 'ExportScope', viewport: 'tuple[int, int] | None' = None, filename_pattern: 'str | None' = None) -> None",
+      "summary": "Named build target declared by a document.",
+      "description": "",
+      "params": [
+        {
+          "name": "name",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "format",
+          "type": "ExportFormat",
+          "doc": ""
+        },
+        {
+          "name": "scope",
+          "type": "ExportScope",
+          "doc": ""
+        },
+        {
+          "name": "viewport",
+          "type": "tuple[int, int] | None",
+          "doc": ""
+        },
+        {
+          "name": "filename_pattern",
+          "type": "str | None",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "None",
+        "doc": ""
+      },
+      "examples": [],
+      "tags": [],
+      "source": "folio.dsl.model:49"
+    },
+    {
+      "id": "folio.dsl.ExportScope",
+      "name": "ExportScope",
+      "kind": "helper",
+      "module": "folio.dsl",
+      "signature": "ExportScope(value, names=None, *, module=None, qualname=None, type=None, start=1, boundary=None)",
+      "summary": "Whether an export produces page artifacts or one document artifact.",
+      "description": "",
+      "params": [
+        {
+          "name": "value",
+          "type": "Any",
+          "doc": ""
+        },
+        {
+          "name": "names",
+          "type": "Any",
+          "doc": ""
+        },
+        {
+          "name": "module",
+          "type": "Any",
+          "doc": ""
+        },
+        {
+          "name": "qualname",
+          "type": "Any",
+          "doc": ""
+        },
+        {
+          "name": "type",
+          "type": "Any",
+          "doc": ""
+        },
+        {
+          "name": "start",
+          "type": "Any",
+          "doc": ""
+        },
+        {
+          "name": "boundary",
+          "type": "Any",
+          "doc": ""
+        }
+      ],
+      "returns": null,
+      "examples": [],
+      "tags": [],
+      "source": "folio.dsl.model:42"
     },
     {
       "id": "folio.dsl.Markup",
@@ -428,14 +611,14 @@
         "model",
         "text"
       ],
-      "source": "folio.dsl.model:52"
+      "source": "folio.dsl.model:83"
     },
     {
       "id": "folio.dsl.Page",
       "name": "Page",
       "kind": "primitive",
       "module": "folio.dsl",
-      "signature": "Page(page_number: 'int', page_id: 'str', filename: 'str', elements: 'tuple[Element, ...]', width_mm: 'float' = 210.0, height_mm: 'float' = 297.0, defs: 'str | Markup | tuple[DefNode, ...]' = <factory>, label: 'str | None' = None, attrs: 'dict[str, Any]' = <factory>) -> None",
+      "signature": "Page(page_number: 'int', page_id: 'str', filename: 'str', elements: 'tuple[Element, ...]', width_mm: 'float' = 210.0, height_mm: 'float' = 297.0, defs: 'str | Markup | tuple[DefNode, ...]' = <factory>, label: 'str | None' = None, attrs: 'dict[str, Any]' = <factory>, extra_exports: 'tuple[str, ...]' = <factory>) -> None",
       "summary": "Top-level renderable page with a fixed size and ordered elements.",
       "description": "Produced by :func:`page`. ``page_number`` drives the document order;\n``page_id`` is a stable identifier used by reconcile; ``filename``\ncontrols the output SVG name.",
       "params": [
@@ -483,6 +666,11 @@
           "name": "attrs",
           "type": "dict[str, Any]",
           "doc": ""
+        },
+        {
+          "name": "extra_exports",
+          "type": "tuple[str, ...]",
+          "doc": ""
         }
       ],
       "returns": {
@@ -500,7 +688,7 @@
         "model",
         "page"
       ],
-      "source": "folio.dsl.model:132"
+      "source": "folio.dsl.model:163"
     },
     {
       "id": "folio.dsl.PathBuilder",
@@ -542,7 +730,7 @@
         "path",
         "builder"
       ],
-      "source": "folio.dsl.builtins:926"
+      "source": "folio.dsl.builtins:1000"
     },
     {
       "id": "folio.dsl.TextLayoutWarning",
@@ -565,7 +753,7 @@
         "text",
         "layout"
       ],
-      "source": "folio.dsl.builtins:112"
+      "source": "folio.dsl.builtins:186"
     },
     {
       "id": "folio.dsl.TextMetrics",
@@ -618,7 +806,7 @@
         "text",
         "measurement"
       ],
-      "source": "folio.dsl.model:157"
+      "source": "folio.dsl.model:189"
     },
     {
       "id": "folio.dsl.TextSpan",
@@ -660,7 +848,7 @@
         "model",
         "text"
       ],
-      "source": "folio.dsl.model:68"
+      "source": "folio.dsl.model:99"
     },
     {
       "id": "folio.dsl.TextStyle",
@@ -770,7 +958,7 @@
         "transform",
         "builder"
       ],
-      "source": "folio.dsl.builtins:851"
+      "source": "folio.dsl.builtins:925"
     },
     {
       "id": "folio.dsl.block",
@@ -807,7 +995,7 @@
         "layout",
         "builder"
       ],
-      "source": "folio.dsl.builtins:1381"
+      "source": "folio.dsl.builtins:1455"
     },
     {
       "id": "folio.dsl.chart",
@@ -927,7 +1115,7 @@
         "shape",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:1497"
+      "source": "folio.dsl.builtins:1573"
     },
     {
       "id": "folio.dsl.clip_path",
@@ -969,7 +1157,7 @@
         "defs",
         "clipping"
       ],
-      "source": "folio.dsl.builtins:2389"
+      "source": "folio.dsl.builtins:2465"
     },
     {
       "id": "folio.dsl.collection",
@@ -1006,7 +1194,7 @@
         "document",
         "collection"
       ],
-      "source": "folio.dsl.builtins:2774"
+      "source": "folio.dsl.builtins:2854"
     },
     {
       "id": "folio.dsl.component_transfer",
@@ -1048,14 +1236,14 @@
         "defs",
         "filter"
       ],
-      "source": "folio.dsl.builtins:2307"
+      "source": "folio.dsl.builtins:2383"
     },
     {
       "id": "folio.dsl.document",
       "name": "document",
       "kind": "helper",
       "module": "folio.dsl",
-      "signature": "document(document_id: 'str', *, pages: 'Sequence[Page]', filename: 'str | None' = None, title: 'str | None' = None, defs: 'str | Markup | Sequence[DefNode] | None' = None, metadata: 'dict[str, Any] | None' = None) -> 'Document'",
+      "signature": "document(document_id: 'str', *, pages: 'Sequence[Page]', filename: 'str | None' = None, title: 'str | None' = None, defs: 'str | Markup | Sequence[DefNode] | None' = None, metadata: 'dict[str, Any] | None' = None, export_presets: 'Sequence[ExportPreset] | None' = None, default_exports: 'Sequence[str] | None' = None) -> 'Document'",
       "summary": "Create one logical publication/output unit.",
       "description": "",
       "params": [
@@ -1088,6 +1276,16 @@
           "name": "metadata",
           "type": "dict[str, Any] | None",
           "doc": "Optional metadata dict stored on the document."
+        },
+        {
+          "name": "export_presets",
+          "type": "Sequence[ExportPreset] | None",
+          "doc": ""
+        },
+        {
+          "name": "default_exports",
+          "type": "Sequence[str] | None",
+          "doc": ""
         }
       ],
       "returns": {
@@ -1104,7 +1302,7 @@
       "tags": [
         "document"
       ],
-      "source": "folio.dsl.builtins:2731"
+      "source": "folio.dsl.builtins:2807"
     },
     {
       "id": "folio.dsl.drop_shadow",
@@ -1162,7 +1360,7 @@
         "filter",
         "shadow"
       ],
-      "source": "folio.dsl.builtins:2484"
+      "source": "folio.dsl.builtins:2560"
     },
     {
       "id": "folio.dsl.ellipse",
@@ -1219,7 +1417,7 @@
         "shape",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:1530"
+      "source": "folio.dsl.builtins:1606"
     },
     {
       "id": "folio.dsl.filter_",
@@ -1261,7 +1459,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.dsl.builtins:2248"
+      "source": "folio.dsl.builtins:2324"
     },
     {
       "id": "folio.dsl.func_a",
@@ -1298,7 +1496,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.dsl.builtins:2330"
+      "source": "folio.dsl.builtins:2406"
     },
     {
       "id": "folio.dsl.gaussian_blur",
@@ -1335,7 +1533,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.dsl.builtins:2271"
+      "source": "folio.dsl.builtins:2347"
     },
     {
       "id": "folio.dsl.grain",
@@ -1398,7 +1596,7 @@
         "filter",
         "texture"
       ],
-      "source": "folio.dsl.builtins:2531"
+      "source": "folio.dsl.builtins:2607"
     },
     {
       "id": "folio.dsl.group",
@@ -1445,7 +1643,35 @@
         "layout",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:1983"
+      "source": "folio.dsl.builtins:2059"
+    },
+    {
+      "id": "folio.dsl.idml",
+      "name": "idml",
+      "kind": "helper",
+      "module": "folio.dsl",
+      "signature": "idml(name: 'str' = 'idml', *, filename_pattern: 'str | None' = None) -> 'ExportPreset'",
+      "summary": "Create a document-scoped IDML export preset.",
+      "description": "",
+      "params": [
+        {
+          "name": "name",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "filename_pattern",
+          "type": "str | None",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "ExportPreset",
+        "doc": ""
+      },
+      "examples": [],
+      "tags": [],
+      "source": "folio.dsl.builtins:151"
     },
     {
       "id": "folio.dsl.image",
@@ -1507,7 +1733,7 @@
         "asset",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:1824"
+      "source": "folio.dsl.builtins:1900"
     },
     {
       "id": "folio.dsl.line",
@@ -1564,7 +1790,7 @@
         "shape",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:2037"
+      "source": "folio.dsl.builtins:2113"
     },
     {
       "id": "folio.dsl.linear_gradient",
@@ -1606,7 +1832,7 @@
         "defs",
         "gradient"
       ],
-      "source": "folio.dsl.builtins:2194"
+      "source": "folio.dsl.builtins:2270"
     },
     {
       "id": "folio.dsl.linear_gradient_stops",
@@ -1653,7 +1879,7 @@
         "defs",
         "gradient"
       ],
-      "source": "folio.dsl.builtins:2437"
+      "source": "folio.dsl.builtins:2513"
     },
     {
       "id": "folio.dsl.markup",
@@ -1684,7 +1910,7 @@
       "tags": [
         "text"
       ],
-      "source": "folio.dsl.builtins:2155"
+      "source": "folio.dsl.builtins:2231"
     },
     {
       "id": "folio.dsl.mask",
@@ -1726,7 +1952,7 @@
         "defs",
         "masking"
       ],
-      "source": "folio.dsl.builtins:2413"
+      "source": "folio.dsl.builtins:2489"
     },
     {
       "id": "folio.dsl.measure_text",
@@ -1768,7 +1994,7 @@
         "text",
         "metrics"
       ],
-      "source": "folio.dsl.builtins:697"
+      "source": "folio.dsl.builtins:771"
     },
     {
       "id": "folio.dsl.measure_wrapped_text",
@@ -1830,7 +2056,7 @@
         "text",
         "metrics"
       ],
-      "source": "folio.dsl.builtins:747"
+      "source": "folio.dsl.builtins:821"
     },
     {
       "id": "folio.dsl.merge",
@@ -1872,7 +2098,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.dsl.builtins:2348"
+      "source": "folio.dsl.builtins:2424"
     },
     {
       "id": "folio.dsl.merge_node",
@@ -1909,7 +2135,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.dsl.builtins:2371"
+      "source": "folio.dsl.builtins:2447"
     },
     {
       "id": "folio.dsl.multiline",
@@ -1971,7 +2197,7 @@
         "text",
         "layout"
       ],
-      "source": "folio.dsl.builtins:1703"
+      "source": "folio.dsl.builtins:1779"
     },
     {
       "id": "folio.dsl.offset",
@@ -2008,14 +2234,14 @@
         "defs",
         "filter"
       ],
-      "source": "folio.dsl.builtins:2289"
+      "source": "folio.dsl.builtins:2365"
     },
     {
       "id": "folio.dsl.page",
       "name": "page",
       "kind": "primitive",
       "module": "folio.dsl",
-      "signature": "page(*children: 'Element', page_id: 'str', filename: 'str', page_number: 'int', width_mm: 'float' = 210.0, height_mm: 'float' = 297.0, elements: 'Sequence[Element] | None' = None, defs: 'str | Markup | Sequence[DefNode] | None' = None, label: 'str | None' = None, **attrs: 'Any') -> 'Page'",
+      "signature": "page(*children: 'Element', page_id: 'str', filename: 'str', page_number: 'int', width_mm: 'float' = 210.0, height_mm: 'float' = 297.0, elements: 'Sequence[Element] | None' = None, defs: 'str | Markup | Sequence[DefNode] | None' = None, label: 'str | None' = None, extra_exports: 'Sequence[str] | None' = None, **attrs: 'Any') -> 'Page'",
       "summary": "Assemble a :class:`Page` from child elements.",
       "description": "Elements may be passed positionally or via ``elements=[...]`` (but not\nboth). Defaults to A4 dimensions. Pass ``defs=`` for SVG ``<defs>``\nnodes shared by elements on the page.",
       "params": [
@@ -2065,6 +2291,11 @@
           "doc": "Optional human-readable label."
         },
         {
+          "name": "extra_exports",
+          "type": "Sequence[str] | None",
+          "doc": ""
+        },
+        {
           "name": "attrs",
           "type": "Any",
           "doc": "Extra SVG attributes applied to the page root."
@@ -2085,7 +2316,7 @@
         "page",
         "layout"
       ],
-      "source": "folio.dsl.builtins:1401"
+      "source": "folio.dsl.builtins:1475"
     },
     {
       "id": "folio.dsl.path",
@@ -2127,7 +2358,7 @@
         "path",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:2013"
+      "source": "folio.dsl.builtins:2089"
     },
     {
       "id": "folio.dsl.path_builder",
@@ -2153,7 +2384,68 @@
         "path",
         "builder"
       ],
-      "source": "folio.dsl.builtins:2615"
+      "source": "folio.dsl.builtins:2691"
+    },
+    {
+      "id": "folio.dsl.pdf",
+      "name": "pdf",
+      "kind": "helper",
+      "module": "folio.dsl",
+      "signature": "pdf(name: 'str' = 'pdf', *, filename_pattern: 'str | None' = None) -> 'ExportPreset'",
+      "summary": "Create a document-scoped PDF export preset.",
+      "description": "",
+      "params": [
+        {
+          "name": "name",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "filename_pattern",
+          "type": "str | None",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "ExportPreset",
+        "doc": ""
+      },
+      "examples": [],
+      "tags": [],
+      "source": "folio.dsl.builtins:141"
+    },
+    {
+      "id": "folio.dsl.png",
+      "name": "png",
+      "kind": "helper",
+      "module": "folio.dsl",
+      "signature": "png(name: 'str', *, viewport: 'tuple[int, int]', filename_pattern: 'str | None' = None) -> 'ExportPreset'",
+      "summary": "Create a page-scoped PNG export preset with a fixed viewport.",
+      "description": "",
+      "params": [
+        {
+          "name": "name",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "viewport",
+          "type": "tuple[int, int]",
+          "doc": ""
+        },
+        {
+          "name": "filename_pattern",
+          "type": "str | None",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "ExportPreset",
+        "doc": ""
+      },
+      "examples": [],
+      "tags": [],
+      "source": "folio.dsl.builtins:125"
     },
     {
       "id": "folio.dsl.polygon",
@@ -2195,7 +2487,7 @@
         "shape",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:1566"
+      "source": "folio.dsl.builtins:1642"
     },
     {
       "id": "folio.dsl.polyline",
@@ -2237,7 +2529,7 @@
         "shape",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:1595"
+      "source": "folio.dsl.builtins:1671"
     },
     {
       "id": "folio.dsl.qr",
@@ -2324,7 +2616,7 @@
         "asset",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:1879"
+      "source": "folio.dsl.builtins:1955"
     },
     {
       "id": "folio.dsl.radial_gradient",
@@ -2366,7 +2658,7 @@
         "defs",
         "gradient"
       ],
-      "source": "folio.dsl.builtins:2221"
+      "source": "folio.dsl.builtins:2297"
     },
     {
       "id": "folio.dsl.rect",
@@ -2423,14 +2715,14 @@
         "shape",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:1462"
+      "source": "folio.dsl.builtins:1538"
     },
     {
       "id": "folio.dsl.render",
       "name": "render",
       "kind": "helper",
       "module": "folio.dsl",
-      "signature": "render(*pages: 'Page', defs: 'str | Markup | Sequence[DefNode] | None' = None, metadata: 'dict[str, Any] | None' = None) -> 'Document'",
+      "signature": "render(*pages: 'Page', defs: 'str | Markup | Sequence[DefNode] | None' = None, metadata: 'dict[str, Any] | None' = None, export_presets: 'Sequence[ExportPreset] | None' = None, default_exports: 'Sequence[str] | None' = None) -> 'Document'",
       "summary": "Deprecated shorthand for creating one anonymous document.",
       "description": "Prefer ``collection(document(\"...\", pages=[...]))`` for new specs.",
       "params": [
@@ -2448,6 +2740,16 @@
           "name": "metadata",
           "type": "dict[str, Any] | None",
           "doc": ""
+        },
+        {
+          "name": "export_presets",
+          "type": "Sequence[ExportPreset] | None",
+          "doc": ""
+        },
+        {
+          "name": "default_exports",
+          "type": "Sequence[str] | None",
+          "doc": ""
         }
       ],
       "returns": {
@@ -2456,7 +2758,7 @@
       },
       "examples": [],
       "tags": [],
-      "source": "folio.dsl.builtins:2803"
+      "source": "folio.dsl.builtins:2883"
     },
     {
       "id": "folio.dsl.rule",
@@ -2523,7 +2825,7 @@
         "layout",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:2074"
+      "source": "folio.dsl.builtins:2150"
     },
     {
       "id": "folio.dsl.span",
@@ -2570,7 +2872,7 @@
         "text",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:1667"
+      "source": "folio.dsl.builtins:1743"
     },
     {
       "id": "folio.dsl.stop",
@@ -2607,7 +2909,35 @@
         "defs",
         "gradient"
       ],
-      "source": "folio.dsl.builtins:2176"
+      "source": "folio.dsl.builtins:2252"
+    },
+    {
+      "id": "folio.dsl.svg",
+      "name": "svg",
+      "kind": "helper",
+      "module": "folio.dsl",
+      "signature": "svg(name: 'str' = 'svg', *, filename_pattern: 'str | None' = None) -> 'ExportPreset'",
+      "summary": "Create the page-scoped SVG export preset.",
+      "description": "",
+      "params": [
+        {
+          "name": "name",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "filename_pattern",
+          "type": "str | None",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "ExportPreset",
+        "doc": ""
+      },
+      "examples": [],
+      "tags": [],
+      "source": "folio.dsl.builtins:115"
     },
     {
       "id": "folio.dsl.svg_node",
@@ -2658,7 +2988,7 @@
       "tags": [
         "defs"
       ],
-      "source": "folio.dsl.builtins:2118"
+      "source": "folio.dsl.builtins:2194"
     },
     {
       "id": "folio.dsl.text",
@@ -2715,7 +3045,7 @@
         "text",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:1624"
+      "source": "folio.dsl.builtins:1700"
     },
     {
       "id": "folio.dsl.tokens",
@@ -4286,7 +4616,7 @@
         "transform",
         "builder"
       ],
-      "source": "folio.dsl.builtins:2600"
+      "source": "folio.dsl.builtins:2676"
     },
     {
       "id": "folio.dsl.triangle",
@@ -4363,7 +4693,7 @@
         "shape",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:2634"
+      "source": "folio.dsl.builtins:2710"
     },
     {
       "id": "folio.dsl.tspan",
@@ -4410,7 +4740,7 @@
         "text",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:1667"
+      "source": "folio.dsl.builtins:1743"
     },
     {
       "id": "folio.dsl.wrapped_text",
@@ -4492,7 +4822,7 @@
         "text",
         "layout"
       ],
-      "source": "folio.dsl.builtins:1755"
+      "source": "folio.dsl.builtins:1831"
     }
   ]
 }

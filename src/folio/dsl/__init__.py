@@ -10,6 +10,9 @@ from .model import (
     DocumentCollection,
     Element,
     ElementKind,
+    ExportFormat,
+    ExportPreset,
+    ExportScope,
     Markup,
     Page,
     TextMetrics,
@@ -32,6 +35,7 @@ grain = _builtins.grain
 func_a = _builtins.func_a
 gaussian_blur = _builtins.gaussian_blur
 group = _builtins.group
+idml = _builtins.idml
 image = _builtins.image
 line = _builtins.line
 linear_gradient = _builtins.linear_gradient
@@ -47,6 +51,8 @@ offset = _builtins.offset
 page = _builtins.page
 path = _builtins.path
 path_builder = _builtins.path_builder
+pdf = _builtins.pdf
+png = _builtins.png
 polygon = _builtins.polygon
 polyline = _builtins.polyline
 qr = _builtins.qr
@@ -57,6 +63,7 @@ render = _builtins.render
 rule = _builtins.rule
 span = _builtins.tspan
 stop = _builtins.stop
+svg = _builtins.svg
 svg_node = _builtins.svg_node
 text = _builtins.text
 triangle = _builtins.triangle
@@ -75,6 +82,9 @@ __all__ = [
     "DocumentCollection",
     "Element",
     "ElementKind",
+    "ExportFormat",
+    "ExportPreset",
+    "ExportScope",
     "Markup",
     "Page",
     "PathBuilder",
@@ -97,6 +107,7 @@ __all__ = [
     "gaussian_blur",
     "grain",
     "group",
+    "idml",
     "image",
     "line",
     "linear_gradient",
@@ -112,6 +123,8 @@ __all__ = [
     "page",
     "path",
     "path_builder",
+    "pdf",
+    "png",
     "polygon",
     "polyline",
     "qr",
@@ -121,6 +134,7 @@ __all__ = [
     "rule",
     "span",
     "stop",
+    "svg",
     "svg_node",
     "text",
     "tokens",
