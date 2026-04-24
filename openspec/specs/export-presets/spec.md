@@ -7,12 +7,12 @@ Describe Folio's named export preset system for page-scoped and document-scoped 
 ## Requirements
 
 ### Requirement: Export preset DSL
-Folio SHALL allow a document to declare named export presets for supported output types.
+Folio SHALL allow a document to declare named export presets for supported output types, including optional source dependencies for presets that consume other preset artifacts.
 
 #### Scenario: Built-in preset helpers
-- **WHEN** a spec defines `export_presets=[svg(), png("1080p", viewport=(1920, 1080)), pdf(), idml()]`
+- **WHEN** a spec defines `export_presets=[svg(), png("1080p", viewport=(1920, 1080)), pdf(source="1080p"), idml()]`
 - **THEN** Folio registers the preset names `svg`, `1080p`, `pdf`, and `idml`
-- **AND** associates each preset with its output format and scope
+- **AND** associates each preset with its output format, scope, and source dependency when present
 
 #### Scenario: Unique preset names
 - **WHEN** two export presets in the same document use the same name
@@ -20,9 +20,14 @@ Folio SHALL allow a document to declare named export presets for supported outpu
 - **AND** does not build ambiguous outputs
 
 #### Scenario: Unknown preset references
-- **WHEN** a document default, CLI build target, or page extra export references an unknown preset name
+- **WHEN** a document default, CLI build target, page extra export, or preset source references an unknown preset name
 - **THEN** Folio reports a validation error
 - **AND** includes the unknown preset name in the diagnostic
+
+#### Scenario: Source metadata storage
+- **WHEN** a preset helper is called with `source="1080p"`
+- **THEN** Folio stores that source name on the export preset model
+- **AND** makes it available to export validation and build planning
 
 ### Requirement: Document-level default exports
 Folio SHALL define default build behavior at the document level rather than on individual presets.
@@ -84,7 +89,7 @@ Folio SHALL build named export targets from the DSL rather than requiring format
 - **AND** preserves deterministic output ordering by document order, page order, and preset declaration order
 
 ### Requirement: Page-scoped export outputs
-Folio SHALL write one artifact per participating page for page-scoped presets.
+Folio SHALL write one artifact per participating page for page-scoped presets and SHALL use pipeline sources to produce dependent page artifacts.
 
 #### Scenario: SVG preset output
 - **WHEN** Folio builds the `svg` preset for a page
@@ -93,7 +98,7 @@ Folio SHALL write one artifact per participating page for page-scoped presets.
 
 #### Scenario: PNG preset output
 - **WHEN** Folio builds a PNG preset for a participating page
-- **THEN** it rasterizes that page's rendered SVG using the preset viewport
+- **THEN** it rasterizes that page from the preset's resolved SVG source
 - **AND** writes a PNG artifact using the page SVG stem plus the preset name by default
 
 #### Scenario: PNG output naming
@@ -105,27 +110,42 @@ Folio SHALL write one artifact per participating page for page-scoped presets.
 - **THEN** Folio reports a build error for that preset
 - **AND** does not silently emit a partial or empty PNG
 
+#### Scenario: PNG source compatibility
+- **WHEN** a PNG preset declares a source preset
+- **THEN** Folio accepts the source only if it resolves to a page-scoped SVG artifact
+- **AND** rejects incompatible sources before rasterization starts
+
 ### Requirement: Document-scoped export outputs
-Folio SHALL write one artifact per document for document-scoped presets.
+Folio SHALL write one artifact per document for document-scoped presets and SHALL use pipeline sources to produce dependent document artifacts.
 
 #### Scenario: IDML preset output
 - **WHEN** Folio builds the `idml` preset
 - **THEN** it packages the whole document as an IDML artifact
 - **AND** writes the IDML file to the resolved output directory
 
-#### Scenario: PDF preset output
-- **WHEN** Folio builds the `pdf` preset
-- **THEN** it exports the whole document as a PDF artifact
+#### Scenario: PDF preset output from PNG source
+- **WHEN** Folio builds `pdf(source="1080p")` and `1080p` resolves to a supported page PNG preset
+- **THEN** it exports the whole document as a PDF artifact from those PNG source artifacts
 - **AND** the PDF pages visually contain the rendered Folio page output
 - **AND** writes the PDF file to the resolved output directory
+
+#### Scenario: Legacy PDF preset output
+- **WHEN** Folio builds `pdf()` without an explicit source
+- **THEN** it preserves the existing SVG-rendered raster PDF behavior for compatibility
+- **AND** does not claim to produce true vector PDF output
 
 #### Scenario: PDF page order and count
 - **WHEN** Folio builds the `pdf` preset for a document with multiple pages
 - **THEN** the PDF contains one page for each document page
 - **AND** orders PDF pages by Folio page order
 
+#### Scenario: Future SVG-to-vector PDF route
+- **WHEN** Folio later supports a PDF backend sourced from SVG page artifacts
+- **THEN** that backend converts SVG drawing content into equivalent PDF vector, text, and image operations
+- **AND** does not treat the PDF as a literal SVG wrapper
+
 #### Scenario: PDF export failure
-- **WHEN** Folio cannot rasterize or assemble one or more pages needed for a PDF preset
+- **WHEN** Folio cannot produce source artifacts or assemble one or more pages needed for a PDF preset
 - **THEN** it reports a build/render error for the PDF target
 - **AND** does not silently emit a blank, partial, or misleading PDF artifact
 
