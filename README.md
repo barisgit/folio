@@ -12,7 +12,7 @@ pip install -e .
 # bundled starter spec
 folio validate config/folio.py
 folio build config/folio.py
-folio build config/folio.py --format idml   # writes out/folio.idml for InDesign handoff
+folio build config/folio.py --format idml   # writes one .idml per document
 folio reconcile out/cover.svg --spec config/folio.py
 folio preview out/cover.svg --output out/cover.png
 
@@ -92,14 +92,36 @@ for DSL lookups, and to follow the standard
 
 ## Build outputs
 
-`folio build` writes one SVG file per page by default. Use `--format idml` to write
-both the normal page SVGs and `out/folio.idml`: a minimal IDML package with native,
-editable layout objects for common Folio primitives such as rectangles, text frames,
-lines, ovals, polygons, and polylines. This is an editable-structure MVP, not a full
-SVG compatibility layer: filters, gradients, defs, arbitrary SVG path commands, and
-image assets need additional mapping work. Uniform page sizes are the safest path for
-this first IDML exporter; mixed-size documents should be opened and checked in the
-target layout app.
+`folio build` writes one SVG file per page by default. Specs can return a multi-document
+collection so document-oriented formats can emit one artifact per publication:
+
+```python
+from folio.dsl import collection, document
+
+
+def build():
+    return collection(
+        document(
+            "brochure",
+            pages=[build_page1(), build_page2()],
+            filename="TM42_brochure",
+            title="TM42 Brochure",
+        ),
+        document(
+            "tv_16x9",
+            pages=[build_page3()],
+            filename="TM42_tv_16x9",
+            title="TM42 TV 16:9",
+        ),
+    )
+```
+
+Use `--format idml` to write both the normal page SVGs and one native editable IDML
+package per logical document, for example `out/TM42_brochure.idml` and
+`out/TM42_tv_16x9.idml`. The IDML exporter maps common Folio primitives such as
+rectangles, text frames, lines, ovals, polygons, and polylines. This is an
+editable-structure MVP, not a full SVG compatibility layer: filters, gradients, defs,
+arbitrary SVG path commands, and image assets need additional mapping work.
 
 ## DSL entrypoint
 

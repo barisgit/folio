@@ -193,3 +193,28 @@ class Document:
     defs: str | Markup | tuple[DefNode, ...] = field(default_factory=tuple)
     config_hash: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
+    document_id: str = "document"
+    filename: str | None = None
+    title: str | None = None
+
+
+@dataclass(frozen=True)
+class DocumentCollection:
+    """Top-level build value containing one or more logical documents.
+
+    SVG/PNG outputs can still be page-oriented, but document-oriented formats
+    such as IDML and PDF use this grouping to write one artifact per document.
+
+    Example:
+        collection(
+            document(
+                "brochure",
+                pages=[page(page_id="p1", filename="p1.svg", page_number=1, elements=[])],
+            )
+        )
+
+    Tags: model, document, collection
+    """
+
+    documents: tuple[Document, ...]
+    metadata: dict[str, Any] = field(default_factory=dict)

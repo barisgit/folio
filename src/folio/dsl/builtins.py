@@ -13,6 +13,7 @@ from folio.dsl.model import (
     Asset,
     DefNode,
     Document,
+    DocumentCollection,
     Element,
     ElementKind,
     Markup,
@@ -2206,7 +2207,11 @@ def linear_gradient(
         DefNode: The gradient defs node.
 
     Example:
-        linear_gradient('grad', stop(None, offset='0%', stop_color='#000'), stop(None, offset='1', stop_color='#fff'))
+        linear_gradient(
+            'grad',
+            stop(None, offset='0%', stop_color='#000'),
+            stop(None, offset='1', stop_color='#fff'),
+        )
 
     Tags: defs, gradient
     """
@@ -2229,7 +2234,11 @@ def radial_gradient(
         DefNode: The gradient defs node.
 
     Example:
-        radial_gradient('glow', stop(None, offset='0', stop_color='#fff'), stop(None, offset='1', stop_color='#000'))
+        radial_gradient(
+            'glow',
+            stop(None, offset='0', stop_color='#fff'),
+            stop(None, offset='1', stop_color='#000'),
+        )
 
     Tags: defs, gradient
     """
@@ -2719,26 +2728,92 @@ def triangle(
     return path(element_id, builder.close(), **attrs)
 
 
+def document(
+    document_id: str,
+    *,
+    pages: Sequence[Page],
+    filename: str | None = None,
+    title: str | None = None,
+    defs: str | Markup | Sequence[DefNode] | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> Document:
+    """Create one logical publication/output unit.
+
+    Args:
+        document_id: Stable id for the document inside a build collection.
+        pages: Ordered pages that belong to this output unit.
+        filename: Base filename for document-oriented outputs such as IDML/PDF.
+        title: Human-readable document title.
+        defs: Document-scoped defs shared across pages.
+        metadata: Optional metadata dict stored on the document.
+
+    Example:
+        document(
+            "brochure",
+            pages=[page(page_id="p1", filename="p1.svg", page_number=1, elements=[])],
+            filename="TM42_brochure",
+        )
+
+    Tags: document
+    """
+    if not document_id:
+        raise TypeError("document() requires a non-empty document_id")
+    page_list = tuple(pages)
+    if not page_list or not all(isinstance(page, Page) for page in page_list):
+        raise TypeError("document() expects pages=[Page, ...]")
+    return Document(
+        pages=page_list,
+        defs=_coerce_defs(defs),
+        metadata=metadata or {},
+        document_id=document_id,
+        filename=filename,
+        title=title,
+    )
+
+
+def collection(
+    *documents: Document,
+    metadata: dict[str, Any] | None = None,
+) -> DocumentCollection:
+    """Create a multi-document build collection.
+
+    Example:
+        collection(
+            document(
+                "brochure",
+                pages=[page(page_id="p1", filename="p1.svg", page_number=1, elements=[])],
+                filename="TM42_brochure",
+            ),
+            document(
+                "tv",
+                pages=[page(page_id="tv", filename="tv.svg", page_number=1, elements=[])],
+                filename="TM42_tv_16x9",
+            ),
+        )
+
+    Tags: document, collection
+    """
+    if len(documents) == 1 and isinstance(documents[0], Sequence):
+        documents = tuple(documents[0])
+    if not documents or not all(isinstance(doc, Document) for doc in documents):
+        raise TypeError("collection() expects Document instances")
+    return DocumentCollection(documents=tuple(documents), metadata=metadata or {})
+
+
 def render(
     *pages: Page,
     defs: str | Markup | Sequence[DefNode] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> Document:
-    """Assemble a :class:`Document` from pages and optional document-level defs.
+    """Deprecated shorthand for creating one anonymous document.
 
-    Args:
-        pages: One or more :class:`Page` instances (or a single iterable of pages).
-        defs: Document-scoped defs shared across pages.
-        metadata: Optional metadata dict stored on the document.
-
-    Returns:
-        Document: The assembled document root.
-
-    Example:
-        render(page(rect(None, 0, 0, 10, 10), page_id='p1', filename='p1.svg', page_number=1))
-
-    Tags: document
+    Prefer ``collection(document("...", pages=[...]))`` for new specs.
     """
+    warnings.warn(
+        "render(...) is deprecated; use collection(document(..., pages=[...]))",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     page_list: tuple[Page, ...]
     if len(pages) == 1 and isinstance(pages[0], Sequence) and not isinstance(pages[0], Page):
         page_list = tuple(pages[0])
@@ -2746,4 +2821,4 @@ def render(
         page_list = tuple(pages)
     if not all(isinstance(page, Page) for page in page_list):
         raise TypeError("render() expects Page instances")
-    return Document(pages=page_list, defs=_coerce_defs(defs), metadata=metadata or {})
+    return document("document", pages=page_list, defs=defs, metadata=metadata, filename="folio")

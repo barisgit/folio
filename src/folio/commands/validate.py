@@ -7,7 +7,7 @@ import typer
 from rich.console import Console
 
 from folio.dsl.loader import DslError, load_dsl_module, resolve_spec_path
-from folio.dsl.renderer import RenderError, document_from_module, validate_document
+from folio.dsl.renderer import RenderError, collection_from_module, validate_document
 
 console = Console()
 
@@ -18,7 +18,8 @@ def validate_command(
     resolved_spec = resolve_spec_path(spec_path)
     try:
         module = load_dsl_module(resolved_spec)
-        validate_document(document_from_module(module))
+        for document in collection_from_module(module).documents:
+            validate_document(document)
     except (DslError, RenderError) as exc:
         console.print(f"[red]Validation error:[/red] {exc}")
         raise typer.Exit(1) from exc

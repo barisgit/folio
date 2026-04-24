@@ -12,9 +12,10 @@ from folio.cache import cache_build
 from folio.dsl.loader import DslError, load_dsl_module, resolve_spec_path
 from folio.dsl.renderer import (
     BuildResult,
+    RenderedDocument,
     RenderError,
-    document_from_module,
-    render_document,
+    collection_from_module,
+    render_collection,
     write_pages,
 )
 from folio.export import write_idml
@@ -25,6 +26,42 @@ console = Console()
 class BuildFormat(StrEnum):
     SVG = "svg"
     IDML = "idml"
+
+
+def _filter_result_by_page(result: BuildResult, page_number: int | None) -> BuildResult:
+    if page_number is None:
+        return result
+
+    selected_documents: list[RenderedDocument] = []
+    selected_pages = []
+    for rendered_document in result.documents:
+        document_pages = [
+            page for page in rendered_document.document.pages if page.page_number == page_number
+        ]
+        rendered_pages = [
+            page for page in rendered_document.pages if page.page_number == page_number
+        ]
+        if not document_pages:
+            continue
+        selected_document = replace(rendered_document.document, pages=tuple(document_pages))
+        selected_documents.append(
+            RenderedDocument(document=selected_document, pages=rendered_pages)
+        )
+        selected_pages.extend(rendered_pages)
+
+    if not selected_pages:
+        raise RenderError(f"Page {page_number} not found in spec")
+    return BuildResult(
+        pages=selected_pages,
+        config_hash=result.config_hash,
+        documents=selected_documents,
+    )
+
+
+def _idml_package_name(rendered_document: RenderedDocument) -> str:
+    document = rendered_document.document
+    base = document.filename or document.document_id or "folio"
+    return f"{base}.idml"
 
 
 def build_command(
@@ -49,26 +86,23 @@ def build_command(
     resolved_out_dir = (out_dir or (resolved_spec.parent / "out")).expanduser().resolve()
     try:
         dsl_module = load_dsl_module(resolved_spec)
-        document = document_from_module(dsl_module)
-        result = render_document(
-            document,
+        collection = collection_from_module(dsl_module)
+        result = render_collection(
+            collection,
             config_dir=resolved_spec.parent,
             source_path=resolved_spec,
         )
-        output_result = result
-        output_document = document
-        if page_number is not None:
-            selected_pages = [page for page in result.pages if page.page_number == page_number]
-            selected_document_pages = [
-                page for page in document.pages if page.page_number == page_number
-            ]
-            if not selected_pages or not selected_document_pages:
-                raise RenderError(f"Page {page_number} not found in spec")
-            output_result = BuildResult(pages=selected_pages, config_hash=result.config_hash)
-            output_document = replace(document, pages=tuple(selected_document_pages))
+        output_result = _filter_result_by_page(result, page_number)
         written = write_pages(output_result, resolved_out_dir)
         if output_format is BuildFormat.IDML:
-            written.append(write_idml(output_document, resolved_out_dir))
+            for rendered_document in output_result.documents:
+                written.append(
+                    write_idml(
+                        rendered_document.document,
+                        resolved_out_dir,
+                        package_name=_idml_package_name(rendered_document),
+                    )
+                )
         cached = None if no_cache else cache_build(result, spec_path=resolved_spec)
     except DslError as exc:
         console.print(f"[red]Build error:[/red] {exc}")

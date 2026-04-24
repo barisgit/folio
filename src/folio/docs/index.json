@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-04-23T12:37:15Z",
+  "generated_at": "2026-04-24T07:53:59Z",
   "folio_version": "0.1.0",
   "symbols": [
     {
@@ -85,7 +85,7 @@
         "layout",
         "builder"
       ],
-      "source": "folio.dsl.builtins:1030"
+      "source": "folio.dsl.builtins:1031"
     },
     {
       "id": "folio.dsl.ChartHandle",
@@ -212,7 +212,7 @@
       "name": "Document",
       "kind": "primitive",
       "module": "folio.dsl",
-      "signature": "Document(pages: 'tuple[Page, ...]', defs: 'str | Markup | tuple[DefNode, ...]' = <factory>, config_hash: 'str' = '', metadata: 'dict[str, Any]' = <factory>) -> None",
+      "signature": "Document(pages: 'tuple[Page, ...]', defs: 'str | Markup | tuple[DefNode, ...]' = <factory>, config_hash: 'str' = '', metadata: 'dict[str, Any]' = <factory>, document_id: 'str' = 'document', filename: 'str | None' = None, title: 'str | None' = None) -> None",
       "summary": "Root of a rendered multi-page document, produced by :func:`render`.",
       "description": "Carries the ordered pages, document-level defs, and optional\nmetadata passed into :func:`render`.",
       "params": [
@@ -235,6 +235,21 @@
           "name": "metadata",
           "type": "dict[str, Any]",
           "doc": ""
+        },
+        {
+          "name": "document_id",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "filename",
+          "type": "str | None",
+          "doc": ""
+        },
+        {
+          "name": "title",
+          "type": "str | None",
+          "doc": ""
         }
       ],
       "returns": {
@@ -253,6 +268,44 @@
         "document"
       ],
       "source": "folio.dsl.model:179"
+    },
+    {
+      "id": "folio.dsl.DocumentCollection",
+      "name": "DocumentCollection",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "DocumentCollection(documents: 'tuple[Document, ...]', metadata: 'dict[str, Any]' = <factory>) -> None",
+      "summary": "Top-level build value containing one or more logical documents.",
+      "description": "SVG/PNG outputs can still be page-oriented, but document-oriented formats\nsuch as IDML and PDF use this grouping to write one artifact per document.",
+      "params": [
+        {
+          "name": "documents",
+          "type": "tuple[Document, ...]",
+          "doc": ""
+        },
+        {
+          "name": "metadata",
+          "type": "dict[str, Any]",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "None",
+        "doc": ""
+      },
+      "examples": [
+        {
+          "code": "collection(\n    document(\n        \"brochure\",\n        pages=[page(page_id=\"p1\", filename=\"p1.svg\", page_number=1, elements=[])],\n    )\n)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "model",
+        "document",
+        "collection"
+      ],
+      "source": "folio.dsl.model:201"
     },
     {
       "id": "folio.dsl.Element",
@@ -489,7 +542,7 @@
         "path",
         "builder"
       ],
-      "source": "folio.dsl.builtins:925"
+      "source": "folio.dsl.builtins:926"
     },
     {
       "id": "folio.dsl.TextLayoutWarning",
@@ -512,7 +565,7 @@
         "text",
         "layout"
       ],
-      "source": "folio.dsl.builtins:111"
+      "source": "folio.dsl.builtins:112"
     },
     {
       "id": "folio.dsl.TextMetrics",
@@ -717,7 +770,7 @@
         "transform",
         "builder"
       ],
-      "source": "folio.dsl.builtins:850"
+      "source": "folio.dsl.builtins:851"
     },
     {
       "id": "folio.dsl.block",
@@ -754,7 +807,7 @@
         "layout",
         "builder"
       ],
-      "source": "folio.dsl.builtins:1380"
+      "source": "folio.dsl.builtins:1381"
     },
     {
       "id": "folio.dsl.chart",
@@ -874,7 +927,7 @@
         "shape",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:1496"
+      "source": "folio.dsl.builtins:1497"
     },
     {
       "id": "folio.dsl.clip_path",
@@ -916,7 +969,44 @@
         "defs",
         "clipping"
       ],
-      "source": "folio.dsl.builtins:2380"
+      "source": "folio.dsl.builtins:2389"
+    },
+    {
+      "id": "folio.dsl.collection",
+      "name": "collection",
+      "kind": "helper",
+      "module": "folio.dsl",
+      "signature": "collection(*documents: 'Document', metadata: 'dict[str, Any] | None' = None) -> 'DocumentCollection'",
+      "summary": "Create a multi-document build collection.",
+      "description": "",
+      "params": [
+        {
+          "name": "documents",
+          "type": "Document",
+          "doc": ""
+        },
+        {
+          "name": "metadata",
+          "type": "dict[str, Any] | None",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "DocumentCollection",
+        "doc": ""
+      },
+      "examples": [
+        {
+          "code": "collection(\n    document(\n        \"brochure\",\n        pages=[page(page_id=\"p1\", filename=\"p1.svg\", page_number=1, elements=[])],\n        filename=\"TM42_brochure\",\n    ),\n    document(\n        \"tv\",\n        pages=[page(page_id=\"tv\", filename=\"tv.svg\", page_number=1, elements=[])],\n        filename=\"TM42_tv_16x9\",\n    ),\n)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "document",
+        "collection"
+      ],
+      "source": "folio.dsl.builtins:2774"
     },
     {
       "id": "folio.dsl.component_transfer",
@@ -958,7 +1048,63 @@
         "defs",
         "filter"
       ],
-      "source": "folio.dsl.builtins:2298"
+      "source": "folio.dsl.builtins:2307"
+    },
+    {
+      "id": "folio.dsl.document",
+      "name": "document",
+      "kind": "helper",
+      "module": "folio.dsl",
+      "signature": "document(document_id: 'str', *, pages: 'Sequence[Page]', filename: 'str | None' = None, title: 'str | None' = None, defs: 'str | Markup | Sequence[DefNode] | None' = None, metadata: 'dict[str, Any] | None' = None) -> 'Document'",
+      "summary": "Create one logical publication/output unit.",
+      "description": "",
+      "params": [
+        {
+          "name": "document_id",
+          "type": "str",
+          "doc": "Stable id for the document inside a build collection."
+        },
+        {
+          "name": "pages",
+          "type": "Sequence[Page]",
+          "doc": "Ordered pages that belong to this output unit."
+        },
+        {
+          "name": "filename",
+          "type": "str | None",
+          "doc": "Base filename for document-oriented outputs such as IDML/PDF."
+        },
+        {
+          "name": "title",
+          "type": "str | None",
+          "doc": "Human-readable document title."
+        },
+        {
+          "name": "defs",
+          "type": "str | Markup | Sequence[DefNode] | None",
+          "doc": "Document-scoped defs shared across pages."
+        },
+        {
+          "name": "metadata",
+          "type": "dict[str, Any] | None",
+          "doc": "Optional metadata dict stored on the document."
+        }
+      ],
+      "returns": {
+        "type": "Document",
+        "doc": ""
+      },
+      "examples": [
+        {
+          "code": "document(\n    \"brochure\",\n    pages=[page(page_id=\"p1\", filename=\"p1.svg\", page_number=1, elements=[])],\n    filename=\"TM42_brochure\",\n)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "document"
+      ],
+      "source": "folio.dsl.builtins:2731"
     },
     {
       "id": "folio.dsl.drop_shadow",
@@ -1016,7 +1162,7 @@
         "filter",
         "shadow"
       ],
-      "source": "folio.dsl.builtins:2475"
+      "source": "folio.dsl.builtins:2484"
     },
     {
       "id": "folio.dsl.ellipse",
@@ -1073,7 +1219,7 @@
         "shape",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:1529"
+      "source": "folio.dsl.builtins:1530"
     },
     {
       "id": "folio.dsl.filter_",
@@ -1115,7 +1261,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.dsl.builtins:2239"
+      "source": "folio.dsl.builtins:2248"
     },
     {
       "id": "folio.dsl.func_a",
@@ -1152,7 +1298,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.dsl.builtins:2321"
+      "source": "folio.dsl.builtins:2330"
     },
     {
       "id": "folio.dsl.gaussian_blur",
@@ -1189,7 +1335,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.dsl.builtins:2262"
+      "source": "folio.dsl.builtins:2271"
     },
     {
       "id": "folio.dsl.grain",
@@ -1252,7 +1398,7 @@
         "filter",
         "texture"
       ],
-      "source": "folio.dsl.builtins:2522"
+      "source": "folio.dsl.builtins:2531"
     },
     {
       "id": "folio.dsl.group",
@@ -1299,7 +1445,7 @@
         "layout",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:1982"
+      "source": "folio.dsl.builtins:1983"
     },
     {
       "id": "folio.dsl.image",
@@ -1361,7 +1507,7 @@
         "asset",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:1823"
+      "source": "folio.dsl.builtins:1824"
     },
     {
       "id": "folio.dsl.line",
@@ -1418,7 +1564,7 @@
         "shape",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:2036"
+      "source": "folio.dsl.builtins:2037"
     },
     {
       "id": "folio.dsl.linear_gradient",
@@ -1451,7 +1597,7 @@
       },
       "examples": [
         {
-          "code": "linear_gradient('grad', stop(None, offset='0%', stop_color='#000'), stop(None, offset='1', stop_color='#fff'))",
+          "code": "linear_gradient(\n    'grad',\n    stop(None, offset='0%', stop_color='#000'),\n    stop(None, offset='1', stop_color='#fff'),\n)",
           "caption": null,
           "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
         }
@@ -1460,7 +1606,7 @@
         "defs",
         "gradient"
       ],
-      "source": "folio.dsl.builtins:2193"
+      "source": "folio.dsl.builtins:2194"
     },
     {
       "id": "folio.dsl.linear_gradient_stops",
@@ -1507,7 +1653,7 @@
         "defs",
         "gradient"
       ],
-      "source": "folio.dsl.builtins:2428"
+      "source": "folio.dsl.builtins:2437"
     },
     {
       "id": "folio.dsl.markup",
@@ -1538,7 +1684,7 @@
       "tags": [
         "text"
       ],
-      "source": "folio.dsl.builtins:2154"
+      "source": "folio.dsl.builtins:2155"
     },
     {
       "id": "folio.dsl.mask",
@@ -1580,7 +1726,7 @@
         "defs",
         "masking"
       ],
-      "source": "folio.dsl.builtins:2404"
+      "source": "folio.dsl.builtins:2413"
     },
     {
       "id": "folio.dsl.measure_text",
@@ -1622,7 +1768,7 @@
         "text",
         "metrics"
       ],
-      "source": "folio.dsl.builtins:696"
+      "source": "folio.dsl.builtins:697"
     },
     {
       "id": "folio.dsl.measure_wrapped_text",
@@ -1684,7 +1830,7 @@
         "text",
         "metrics"
       ],
-      "source": "folio.dsl.builtins:746"
+      "source": "folio.dsl.builtins:747"
     },
     {
       "id": "folio.dsl.merge",
@@ -1726,7 +1872,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.dsl.builtins:2339"
+      "source": "folio.dsl.builtins:2348"
     },
     {
       "id": "folio.dsl.merge_node",
@@ -1763,7 +1909,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.dsl.builtins:2362"
+      "source": "folio.dsl.builtins:2371"
     },
     {
       "id": "folio.dsl.multiline",
@@ -1825,7 +1971,7 @@
         "text",
         "layout"
       ],
-      "source": "folio.dsl.builtins:1702"
+      "source": "folio.dsl.builtins:1703"
     },
     {
       "id": "folio.dsl.offset",
@@ -1862,7 +2008,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.dsl.builtins:2280"
+      "source": "folio.dsl.builtins:2289"
     },
     {
       "id": "folio.dsl.page",
@@ -1939,7 +2085,7 @@
         "page",
         "layout"
       ],
-      "source": "folio.dsl.builtins:1400"
+      "source": "folio.dsl.builtins:1401"
     },
     {
       "id": "folio.dsl.path",
@@ -1981,7 +2127,7 @@
         "path",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:2012"
+      "source": "folio.dsl.builtins:2013"
     },
     {
       "id": "folio.dsl.path_builder",
@@ -2007,7 +2153,7 @@
         "path",
         "builder"
       ],
-      "source": "folio.dsl.builtins:2606"
+      "source": "folio.dsl.builtins:2615"
     },
     {
       "id": "folio.dsl.polygon",
@@ -2049,7 +2195,7 @@
         "shape",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:1565"
+      "source": "folio.dsl.builtins:1566"
     },
     {
       "id": "folio.dsl.polyline",
@@ -2091,7 +2237,7 @@
         "shape",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:1594"
+      "source": "folio.dsl.builtins:1595"
     },
     {
       "id": "folio.dsl.qr",
@@ -2178,7 +2324,7 @@
         "asset",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:1878"
+      "source": "folio.dsl.builtins:1879"
     },
     {
       "id": "folio.dsl.radial_gradient",
@@ -2211,7 +2357,7 @@
       },
       "examples": [
         {
-          "code": "radial_gradient('glow', stop(None, offset='0', stop_color='#fff'), stop(None, offset='1', stop_color='#000'))",
+          "code": "radial_gradient(\n    'glow',\n    stop(None, offset='0', stop_color='#fff'),\n    stop(None, offset='1', stop_color='#000'),\n)",
           "caption": null,
           "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
         }
@@ -2220,7 +2366,7 @@
         "defs",
         "gradient"
       ],
-      "source": "folio.dsl.builtins:2216"
+      "source": "folio.dsl.builtins:2221"
     },
     {
       "id": "folio.dsl.rect",
@@ -2277,7 +2423,7 @@
         "shape",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:1461"
+      "source": "folio.dsl.builtins:1462"
     },
     {
       "id": "folio.dsl.render",
@@ -2285,40 +2431,32 @@
       "kind": "helper",
       "module": "folio.dsl",
       "signature": "render(*pages: 'Page', defs: 'str | Markup | Sequence[DefNode] | None' = None, metadata: 'dict[str, Any] | None' = None) -> 'Document'",
-      "summary": "Assemble a :class:`Document` from pages and optional document-level defs.",
-      "description": "",
+      "summary": "Deprecated shorthand for creating one anonymous document.",
+      "description": "Prefer ``collection(document(\"...\", pages=[...]))`` for new specs.",
       "params": [
         {
           "name": "pages",
           "type": "Page",
-          "doc": "One or more :class:`Page` instances (or a single iterable of pages)."
+          "doc": ""
         },
         {
           "name": "defs",
           "type": "str | Markup | Sequence[DefNode] | None",
-          "doc": "Document-scoped defs shared across pages."
+          "doc": ""
         },
         {
           "name": "metadata",
           "type": "dict[str, Any] | None",
-          "doc": "Optional metadata dict stored on the document."
+          "doc": ""
         }
       ],
       "returns": {
         "type": "Document",
-        "doc": "Document: The assembled document root."
+        "doc": ""
       },
-      "examples": [
-        {
-          "code": "render(page(rect(None, 0, 0, 10, 10), page_id='p1', filename='p1.svg', page_number=1))",
-          "caption": null,
-          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
-        }
-      ],
-      "tags": [
-        "document"
-      ],
-      "source": "folio.dsl.builtins:2722"
+      "examples": [],
+      "tags": [],
+      "source": "folio.dsl.builtins:2803"
     },
     {
       "id": "folio.dsl.rule",
@@ -2385,7 +2523,7 @@
         "layout",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:2073"
+      "source": "folio.dsl.builtins:2074"
     },
     {
       "id": "folio.dsl.span",
@@ -2432,7 +2570,7 @@
         "text",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:1666"
+      "source": "folio.dsl.builtins:1667"
     },
     {
       "id": "folio.dsl.stop",
@@ -2469,7 +2607,7 @@
         "defs",
         "gradient"
       ],
-      "source": "folio.dsl.builtins:2175"
+      "source": "folio.dsl.builtins:2176"
     },
     {
       "id": "folio.dsl.svg_node",
@@ -2520,7 +2658,7 @@
       "tags": [
         "defs"
       ],
-      "source": "folio.dsl.builtins:2117"
+      "source": "folio.dsl.builtins:2118"
     },
     {
       "id": "folio.dsl.text",
@@ -2577,7 +2715,7 @@
         "text",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:1623"
+      "source": "folio.dsl.builtins:1624"
     },
     {
       "id": "folio.dsl.tokens",
@@ -4148,7 +4286,7 @@
         "transform",
         "builder"
       ],
-      "source": "folio.dsl.builtins:2591"
+      "source": "folio.dsl.builtins:2600"
     },
     {
       "id": "folio.dsl.triangle",
@@ -4225,7 +4363,7 @@
         "shape",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:2625"
+      "source": "folio.dsl.builtins:2634"
     },
     {
       "id": "folio.dsl.tspan",
@@ -4272,7 +4410,7 @@
         "text",
         "primitive"
       ],
-      "source": "folio.dsl.builtins:1666"
+      "source": "folio.dsl.builtins:1667"
     },
     {
       "id": "folio.dsl.wrapped_text",
@@ -4354,7 +4492,7 @@
         "text",
         "layout"
       ],
-      "source": "folio.dsl.builtins:1754"
+      "source": "folio.dsl.builtins:1755"
     }
   ]
 }

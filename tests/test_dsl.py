@@ -14,7 +14,9 @@ from folio.dsl import (
     TextLayoutWarning,
     block,
     clip_path,
+    collection,
     component_transfer,
+    document,
     drop_shadow,
     ellipse,
     filter_,
@@ -88,6 +90,8 @@ from folio.dsl.renderer import (
     RenderError,
     ValidationWarning,
     build_pages,
+    collection_from_module,
+    render_collection,
     render_document,
     validate_document,
 )
@@ -217,6 +221,58 @@ def test_public_render_builder_survives_renderer_import_order() -> None:
     from folio.dsl import render as render_builder
 
     assert callable(render_builder)
+
+
+def test_collection_document_builder_groups_logical_outputs(tmp_path: Path) -> None:
+    build = collection(
+        document(
+            "brochure",
+            pages=[
+                page(
+                    page_id="brochure-cover",
+                    filename="brochure-cover.svg",
+                    page_number=1,
+                    elements=[text("cover_title", 10, 20, "Cover", size_pt=12)],
+                ),
+                page(
+                    page_id="brochure-inside",
+                    filename="brochure-inside.svg",
+                    page_number=2,
+                    elements=[text("inside_title", 10, 20, "Inside", size_pt=12)],
+                ),
+            ],
+            filename="TM42_brochure",
+            title="TM42 Brochure",
+        ),
+        document(
+            "tv_16x9",
+            pages=[
+                page(
+                    page_id="tv",
+                    filename="tv.svg",
+                    page_number=1,
+                    width_mm=192,
+                    height_mm=108,
+                    elements=[text("tv_title", 10, 20, "TV", size_pt=12)],
+                )
+            ],
+            filename="TM42_tv_16x9",
+            title="TM42 TV 16:9",
+        ),
+    )
+
+    result = render_collection(build, config_dir=tmp_path)
+
+    assert [doc.document.document_id for doc in result.documents] == ["brochure", "tv_16x9"]
+    assert [doc.document.filename for doc in result.documents] == [
+        "TM42_brochure",
+        "TM42_tv_16x9",
+    ]
+    assert [page.filename for page in result.pages] == [
+        "brochure-cover.svg",
+        "brochure-inside.svg",
+        "tv.svg",
+    ]
 
 
 

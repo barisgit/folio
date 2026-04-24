@@ -17,6 +17,7 @@ DSL_KINDS: dict[str, str] = {
     "ChartHandle": "helper",
     "DefNode": "defs",
     "Document": "primitive",
+    "DocumentCollection": "primitive",
     "Element": "primitive",
     "ElementKind": "primitive",
     "Markup": "primitive",
@@ -70,6 +71,8 @@ DSL_KINDS: dict[str, str] = {
     "transform_builder": "builder",
     # Helpers (measurement, rasterization, top-level renderer)
     "chart": "helper",
+    "collection": "helper",
+    "document": "helper",
     "measure_text": "helper",
     "measure_wrapped_text": "helper",
     "render": "helper",

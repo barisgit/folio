@@ -151,6 +151,76 @@ def test_build_format_idml_writes_svgs_and_native_package(tmp_path: Path) -> Non
     assert "folio.idml" in command.stdout
 
 
+def test_build_format_idml_writes_one_package_per_document(tmp_path: Path) -> None:
+    spec_path = tmp_path / "build.py"
+    spec_path.write_text(
+        dedent(
+            """
+            from folio.dsl import collection, document, page, rect, text
+
+            def build():
+                return collection(
+                    document(
+                        "brochure",
+                        pages=[
+                            page(
+                                rect("brochure_bg", 0, 0, 100, 50, fill="#ffffff"),
+                                text("brochure_title", 10, 20, "Brochure", size_pt=12),
+                                page_id="brochure-cover",
+                                filename="brochure-cover.svg",
+                                page_number=1,
+                                width_mm=100,
+                                height_mm=50,
+                            )
+                        ],
+                        filename="TM42_brochure",
+                        title="TM42 Brochure",
+                    ),
+                    document(
+                        "tv",
+                        pages=[
+                            page(
+                                rect("tv_bg", 0, 0, 192, 108, fill="#ffffff"),
+                                text("tv_title", 10, 20, "TV", size_pt=12),
+                                page_id="tv",
+                                filename="tv.svg",
+                                page_number=1,
+                                width_mm=192,
+                                height_mm=108,
+                            )
+                        ],
+                        filename="TM42_tv_16x9",
+                        title="TM42 TV 16:9",
+                    ),
+                )
+            """
+        ).strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    out_dir = tmp_path / "out"
+
+    command = runner.invoke(
+        app,
+        [
+            "build",
+            str(spec_path),
+            "--format",
+            "idml",
+            "--out-dir",
+            str(out_dir),
+            "--no-cache",
+        ],
+    )
+
+    assert command.exit_code == 0, command.stdout
+    assert (out_dir / "brochure-cover.svg").exists()
+    assert (out_dir / "tv.svg").exists()
+    assert (out_dir / "TM42_brochure.idml").exists()
+    assert (out_dir / "TM42_tv_16x9.idml").exists()
+    assert not (out_dir / "folio.idml").exists()
+
+
 def test_build_format_idml_respects_page_filter(tmp_path: Path) -> None:
     spec_path = tmp_path / "build.py"
     _write_spec(spec_path)

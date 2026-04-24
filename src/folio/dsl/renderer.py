@@ -4,11 +4,21 @@ import re
 import types
 import warnings
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from hashlib import sha256
 from pathlib import Path
 
-from folio.dsl.model import Asset, DefNode, Document, Element, ElementKind, Markup, Page, TextSpan
+from folio.dsl.model import (
+    Asset,
+    DefNode,
+    Document,
+    DocumentCollection,
+    Element,
+    ElementKind,
+    Markup,
+    Page,
+    TextSpan,
+)
 from folio.dsl.styles import TextStyle, merge_text_style_attrs
 from folio.render import tokens as render_tokens
 from folio.render.primitives import (
@@ -69,9 +79,16 @@ class RenderedPage:
 
 
 @dataclass(frozen=True)
+class RenderedDocument:
+    document: Document
+    pages: list[RenderedPage]
+
+
+@dataclass(frozen=True)
 class BuildResult:
     pages: list[RenderedPage]
     config_hash: str
+    documents: list[RenderedDocument] = field(default_factory=list)
 
 
 def config_digest(source_path: Path) -> str:
@@ -88,39 +105,61 @@ def _resolve_asset(base_dir: Path, reference: str) -> Path:
     raise RenderError(f"Asset not found: {reference} -> tried {tried}")
 
 
-def _coerce_document(candidate: object, *, source: str) -> Document:
-    if isinstance(candidate, Document):
+def _coerce_collection(candidate: object, *, source: str) -> DocumentCollection:
+    if isinstance(candidate, DocumentCollection):
         return candidate
+    if isinstance(candidate, Document):
+        warnings.warn(
+            f"{source} returned a bare Document; wrap it in collection(document(...))",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+        return DocumentCollection(documents=(candidate,))
     if isinstance(candidate, Sequence) and not isinstance(candidate, str | bytes):
-        pages: list[Page] = []
+        documents: list[Document] = []
         for item in candidate:
-            if not isinstance(item, Page):
+            if not isinstance(item, Document):
                 break
-            pages.append(item)
+            documents.append(item)
         else:
-            return Document(pages=tuple(pages))
+            warnings.warn(
+                f"{source} returned a sequence of Document values; use collection(...) instead",
+                DeprecationWarning,
+                stacklevel=3,
+            )
+            return DocumentCollection(documents=tuple(documents))
     raise RenderError(
-        f"{source} must produce a folio.dsl.Document or a sequence of folio.dsl.Page values"
+        f"{source} must produce a folio.dsl.DocumentCollection. Use "
+        "collection(document('id', pages=[...]))."
+    )
+
+
+def collection_from_module(dsl_module: types.ModuleType) -> DocumentCollection:
+    build = getattr(dsl_module, "build", None)
+    if callable(build):
+        return _coerce_collection(build(), source="module.build()")
+
+    module_collection = getattr(dsl_module, "collection", None)
+    if isinstance(module_collection, DocumentCollection):
+        return module_collection
+
+    module_document = getattr(dsl_module, "document", None)
+    if isinstance(module_document, Document | DocumentCollection):
+        return _coerce_collection(module_document, source="module.document")
+
+    raise RenderError(
+        "DSL module must define `def build() -> DocumentCollection` using "
+        "collection(document('id', pages=[...]))."
     )
 
 
 def document_from_module(dsl_module: types.ModuleType) -> Document:
-    document = getattr(dsl_module, "document", None)
-    if document is not None:
-        return _coerce_document(document, source="module.document")
-
-    build = getattr(dsl_module, "build", None)
-    if callable(build):
-        return _coerce_document(build(), source="module.build()")
-
-    pages = getattr(dsl_module, "pages", None)
-    if pages is not None:
-        return _coerce_document(pages, source="module.pages")
-
-    raise RenderError(
-        "DSL module must define `document = render(...)`, `pages = [...]`, "
-        "or `def build() -> Document`."
-    )
+    collection = collection_from_module(dsl_module)
+    if len(collection.documents) != 1:
+        raise RenderError(
+            "document_from_module() requires exactly one document; use collection_from_module()"
+        )
+    return collection.documents[0]
 
 
 def _text_parts(content: object, *, source: str) -> tuple[str | Markup | TextSpan, ...] | None:
@@ -560,21 +599,47 @@ def _render_page(
     )
 
 
+def _render_document_pages(document: Document, *, config_dir: Path) -> list[RenderedPage]:
+    validate_document(document)
+    return [
+        _render_page(page, config_dir=config_dir, document_defs=document.defs)
+        for page in sorted(document.pages, key=lambda page: page.page_number)
+    ]
+
+
 def render_document(
     document: Document,
     *,
     config_dir: Path,
     source_path: Path | None = None,
 ) -> BuildResult:
-    validate_document(document)
-    pages = [
-        _render_page(page, config_dir=config_dir, document_defs=document.defs)
-        for page in sorted(document.pages, key=lambda page: page.page_number)
-    ]
+    pages = _render_document_pages(document, config_dir=config_dir)
     config_hash = document.config_hash or (
         config_digest(source_path) if source_path is not None else ""
     )
-    return BuildResult(pages=pages, config_hash=config_hash)
+    return BuildResult(
+        pages=pages,
+        config_hash=config_hash,
+        documents=[RenderedDocument(document=document, pages=pages)],
+    )
+
+
+def render_collection(
+    collection: DocumentCollection,
+    *,
+    config_dir: Path,
+    source_path: Path | None = None,
+) -> BuildResult:
+    config_hash = config_digest(source_path) if source_path is not None else ""
+    rendered_documents: list[RenderedDocument] = []
+    pages: list[RenderedPage] = []
+    for document in collection.documents:
+        rendered_pages = _render_document_pages(document, config_dir=config_dir)
+        rendered_documents.append(RenderedDocument(document=document, pages=rendered_pages))
+        pages.extend(rendered_pages)
+        if document.config_hash:
+            config_hash = document.config_hash
+    return BuildResult(pages=pages, config_hash=config_hash, documents=rendered_documents)
 
 
 def build_pages(
@@ -585,8 +650,8 @@ def build_pages(
 ) -> BuildResult:
     module_file = getattr(dsl_module, "__file__", None)
     source_path = Path(module_file).resolve() if isinstance(module_file, str) else None
-    result = render_document(
-        document_from_module(dsl_module), config_dir=config_dir, source_path=source_path
+    result = render_collection(
+        collection_from_module(dsl_module), config_dir=config_dir, source_path=source_path
     )
     if output_dir is not None:
         write_pages(result, output_dir)

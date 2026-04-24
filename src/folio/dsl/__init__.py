@@ -7,6 +7,7 @@ from .model import (
     Asset,
     DefNode,
     Document,
+    DocumentCollection,
     Element,
     ElementKind,
     Markup,
@@ -21,7 +22,9 @@ block = _builtins.block
 circle = _builtins.circle
 # chart / ChartHandle are imported directly above
 clip_path = _builtins.clip_path
+collection = _builtins.collection
 component_transfer = _builtins.component_transfer
+document = _builtins.document
 drop_shadow = _builtins.drop_shadow
 ellipse = _builtins.ellipse
 filter_ = _builtins.filter_
@@ -69,6 +72,7 @@ __all__ = [
     "ChartHandle",
     "DefNode",
     "Document",
+    "DocumentCollection",
     "Element",
     "ElementKind",
     "Markup",
@@ -83,7 +87,9 @@ __all__ = [
     "chart",
     "circle",
     "clip_path",
+    "collection",
     "component_transfer",
+    "document",
     "drop_shadow",
     "ellipse",
     "filter_",
