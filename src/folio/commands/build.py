@@ -21,7 +21,7 @@ from folio.dsl.renderer import (
     resolve_export_targets,
     write_pages,
 )
-from folio.export import write_idml, write_pdf
+from folio.export import PdfExportError, PdfPage, write_idml, write_pdf
 from folio.preview import _render_svg_preview
 
 console = Console()
@@ -172,7 +172,31 @@ def _write_document_export(
     if preset.format is ExportFormat.IDML:
         return write_idml(rendered_document.document, out_dir, package_name=artifact_name)
     if preset.format is ExportFormat.PDF:
-        return write_pdf(rendered_document.document, out_dir, filename=artifact_name)
+        pdf_pages = tuple(
+            PdfPage(
+                page_number=page.page_number,
+                svg_text=page.content,
+                width_mm=page_model.width_mm,
+                height_mm=page_model.height_mm,
+            )
+            for page, page_model in zip(
+                rendered_document.pages,
+                sorted(rendered_document.document.pages, key=lambda page: page.page_number),
+                strict=True,
+            )
+        )
+        try:
+            return write_pdf(
+                rendered_document.document,
+                out_dir,
+                filename=artifact_name,
+                pages=pdf_pages,
+                render_svg=lambda svg_text, output_path: _render_svg_preview(
+                    svg_text, output_path=output_path
+                ),
+            )
+        except PdfExportError as exc:
+            raise RenderError(str(exc)) from exc
     raise RenderError(f"Unsupported document export format: {preset.format}")
 
 

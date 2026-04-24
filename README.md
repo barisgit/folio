@@ -143,9 +143,11 @@ def build():
 
 `folio build` writes default exports, `folio build 1080p pdf` writes only those
 named targets, and `folio build all` writes every declared preset. IDML and PDF
-are document-scoped outputs; SVG and PNG are page-scoped outputs. The IDML
-exporter maps common Folio primitives such as rectangles, text frames, lines,
-ovals, polygons, and polylines. This is an editable-structure MVP, not a full
+are document-scoped outputs; SVG and PNG are page-scoped outputs. PDF exports
+are currently raster-backed from rendered pages for visual fidelity; editable or
+vector PDF pipelines are planned separately. The IDML exporter maps common Folio
+primitives such as rectangles, text frames, lines, ovals, polygons, and
+polylines. This is an editable-structure MVP, not a full
 SVG compatibility layer: filters, gradients, defs, arbitrary SVG path commands,
 and image assets need additional mapping work.
 

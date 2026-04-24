@@ -138,11 +138,25 @@ def build():
     return collection(
         document(
             "one",
-            pages=[page(rect("one_bg", 0, 0, 10, 10), page_id="one", filename="one.svg")],
+            pages=[
+                page(
+                    rect("one_bg", 0, 0, 10, 10),
+                    page_id="one",
+                    filename="one.svg",
+                    page_number=1,
+                )
+            ],
         ),
         document(
             "two",
-            pages=[page(rect("two_bg", 0, 0, 10, 10), page_id="two", filename="two.svg")],
+            pages=[
+                page(
+                    rect("two_bg", 0, 0, 10, 10),
+                    page_id="two",
+                    filename="two.svg",
+                    page_number=1,
+                )
+            ],
         ),
     )
 """.strip()

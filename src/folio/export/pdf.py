@@ -1,11 +1,33 @@
 from __future__ import annotations
 
+import tempfile
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 
 from folio.dsl.model import Document
-from folio.render.tokens import MM_TO_PT
+from folio.preview import _render_svg_preview
 
 _DEFAULT_PDF_NAME = "folio.pdf"
+_PDF_RASTER_DPI = 300
+_MM_PER_INCH = 25.4
+
+
+class PdfExportError(RuntimeError):
+    """Raised when Folio cannot produce a visual PDF export."""
+
+
+@dataclass(frozen=True)
+class PdfPage:
+    """Rendered page payload used by the raster-backed PDF exporter."""
+
+    page_number: int
+    svg_text: str
+    width_mm: float
+    height_mm: float
+
+
+RenderSvg = Callable[[str], Path]
 
 
 def write_pdf(
@@ -13,17 +35,31 @@ def write_pdf(
     out_dir: Path,
     *,
     filename: str = _DEFAULT_PDF_NAME,
+    pages: Sequence[PdfPage] | None = None,
+    render_svg: Callable[[str, Path], Path] | None = None,
 ) -> Path:
-    """Write a minimal valid PDF with one page per Folio page.
+    """Write a visual raster-backed PDF for a rendered Folio document.
 
-    The first PDF backend preserves document/page shape and physical page sizes. It
-    intentionally leaves page drawing content empty until a richer SVG-to-PDF path
-    is selected.
+    `pages` must contain rendered SVG content for each PDF page. The fallback
+    path that receives only a `Document` is intentionally rejected so callers do
+    not accidentally produce the old blank placeholder PDF.
     """
+
+    if pages is None:
+        raise PdfExportError("PDF export requires rendered page SVG content")
 
     out_dir.mkdir(parents=True, exist_ok=True)
     target = out_dir / _safe_pdf_name(filename)
-    target.write_bytes(_pdf_bytes(document))
+    tmp_target = target.with_suffix(f"{target.suffix}.tmp")
+    try:
+        ordered_pages = tuple(sorted(pages, key=lambda page: page.page_number))
+        _write_raster_pdf(ordered_pages, tmp_target, render_svg)
+        tmp_target.replace(target)
+    except Exception as exc:
+        tmp_target.unlink(missing_ok=True)
+        if isinstance(exc, PdfExportError):
+            raise
+        raise PdfExportError(f"Could not export PDF: {exc}") from exc
     return target
 
 
@@ -34,53 +70,67 @@ def _safe_pdf_name(filename: str) -> str:
     return name
 
 
-def _pdf_bytes(document: Document) -> bytes:
-    pages = sorted(document.pages, key=lambda page: page.page_number)
-    object_count = 2 + (len(pages) * 2)
-    objects: list[bytes] = []
+def _write_raster_pdf(
+    pages: tuple[PdfPage, ...],
+    target: Path,
+    render_svg: Callable[[str, Path], Path] | None,
+) -> None:
+    if not pages:
+        raise PdfExportError("PDF export requires at least one page")
 
-    catalog_id = 1
-    pages_id = 2
-    first_page_id = 3
-    page_ids = [first_page_id + (index * 2) for index in range(len(pages))]
-    kids = " ".join(f"{page_id} 0 R" for page_id in page_ids)
-    objects.append(f"<< /Type /Catalog /Pages {pages_id} 0 R >>".encode("ascii"))
-    objects.append(f"<< /Type /Pages /Kids [{kids}] /Count {len(page_ids)} >>".encode("ascii"))
+    try:
+        from PIL import Image  # type: ignore[import-not-found]
+    except ImportError as exc:  # pragma: no cover - depends on runtime environment
+        raise PdfExportError("PDF export requires Pillow to assemble page images") from exc
 
-    for index, page in enumerate(pages):
-        page_id = first_page_id + (index * 2)
-        content_id = page_id + 1
-        width_pt = round(page.width_mm * MM_TO_PT, 2)
-        height_pt = round(page.height_mm * MM_TO_PT, 2)
-        objects.append(
-            (
-                f"<< /Type /Page /Parent {pages_id} 0 R "
-                f"/MediaBox [0 0 {width_pt:g} {height_pt:g}] "
-                f"/Contents {content_id} 0 R >>"
-            ).encode("ascii")
+    renderer = render_svg or _default_render_svg
+    images = []
+    with tempfile.TemporaryDirectory(prefix="folio-pdf-") as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        try:
+            for index, page in enumerate(pages, start=1):
+                png_path = tmp_path / f"page-{index:04d}.png"
+                _render_page_svg(page, png_path, renderer)
+                image = Image.open(png_path).convert("RGB")
+                images.append(image.copy())
+        finally:
+            for image in images:
+                image.load()
+
+    first, *rest = images
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        first.save(
+            target,
+            "PDF",
+            save_all=True,
+            append_images=rest,
+            resolution=float(_PDF_RASTER_DPI),
         )
-        objects.append(b"<< /Length 0 >>\nstream\n\nendstream")
+    finally:
+        for image in images:
+            image.close()
 
-    if len(objects) != object_count:
-        raise AssertionError("PDF object count mismatch")
 
-    output = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
-    offsets = [0]
-    for object_id, content in enumerate(objects, start=1):
-        offsets.append(len(output))
-        output.extend(f"{object_id} 0 obj\n".encode("ascii"))
-        output.extend(content)
-        output.extend(b"\nendobj\n")
-
-    xref_offset = len(output)
-    output.extend(f"xref\n0 {len(objects) + 1}\n".encode("ascii"))
-    output.extend(b"0000000000 65535 f \n")
-    for offset in offsets[1:]:
-        output.extend(f"{offset:010d} 00000 n \n".encode("ascii"))
-    output.extend(
-        (
-            f"trailer\n<< /Size {len(objects) + 1} /Root {catalog_id} 0 R >>\n"
-            f"startxref\n{xref_offset}\n%%EOF\n"
-        ).encode("ascii")
+def _render_page_svg(
+    page: PdfPage,
+    output_path: Path,
+    render_svg: Callable[[str, Path], Path] | None,
+) -> Path:
+    if render_svg is not None:
+        return render_svg(page.svg_text, output_path)
+    return _render_svg_preview(
+        page.svg_text,
+        output_path=output_path,
+        viewport=_viewport_for_page(page),
     )
-    return bytes(output)
+
+
+def _viewport_for_page(page: PdfPage) -> tuple[int, int]:
+    width = max(1, round((page.width_mm / _MM_PER_INCH) * _PDF_RASTER_DPI))
+    height = max(1, round((page.height_mm / _MM_PER_INCH) * _PDF_RASTER_DPI))
+    return (width, height)
+
+
+def _default_render_svg(svg_text: str, output_path: Path) -> Path:
+    return _render_svg_preview(svg_text, output_path=output_path)

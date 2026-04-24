@@ -604,8 +604,10 @@ def test_build_all_writes_declared_svg_png_pdf_and_idml(tmp_path: Path, monkeypa
     def fake_render(
         svg_text: str, *, output_path: Path, viewport: tuple[int, int] | None = None
     ) -> Path:
+        from PIL import Image
+
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_bytes(b"PNG")
+        Image.new("RGB", (24, 16), color=(255, 0, 0)).save(output_path)
         return output_path
 
     monkeypatch.setattr("folio.commands.build._render_svg_preview", fake_render)

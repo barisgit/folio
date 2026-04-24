@@ -2,18 +2,18 @@
 
 ## Purpose
 
-Describe Folio's raster preview generation and SVG reconciliation workflow against cached builds.
+Describe Folio's raster generation and SVG reconciliation workflow against cached builds.
 
 ## Requirements
 
-### Requirement: Previewing explicit SVG files
-Folio SHALL rasterize an explicit SVG file to PNG.
+### Requirement: Rasterizing explicit SVG files
+Folio SHALL rasterize an explicit SVG file to PNG through the `folio rasterize` command.
 
-#### Scenario: Default preview output path
-- **WHEN** a user runs `folio preview <svg>` without `--output`
+#### Scenario: Default raster output path
+- **WHEN** a user runs `folio rasterize <svg>` without `--output`
 - **THEN** Folio writes a PNG beside that SVG using the same stem
 
-#### Scenario: Explicit preview output path
+#### Scenario: Explicit raster output path
 - **WHEN** a user passes `--output` with an explicit SVG path
 - **THEN** Folio writes the PNG to the requested location
 
@@ -21,20 +21,20 @@ Folio SHALL rasterize an explicit SVG file to PNG.
 - **WHEN** a user passes `--output` without an explicit SVG argument
 - **THEN** Folio rejects the command instead of guessing a target file
 
-### Requirement: Previewing cached build pages
-Folio SHALL preview cached last-build pages for a spec when no explicit SVG path is provided.
+### Requirement: Rasterizing cached build pages
+Folio SHALL rasterize cached last-build pages for a spec when no explicit SVG path is provided.
 
-#### Scenario: Spec-based preview
-- **WHEN** a user runs `folio preview --spec <spec>` or `folio preview` inside a project with cached pages
+#### Scenario: Spec-based rasterization
+- **WHEN** a user runs `folio rasterize --spec <spec>` or `folio rasterize` inside a project with cached pages
 - **THEN** Folio loads the cached last-build SVGs for that spec
-- **AND** writes PNG previews into that spec's preview cache area
+- **AND** writes PNG rasters into that spec's raster cache area
 
 ### Requirement: Viewport handling and renderer fallback
 Folio SHALL derive a raster viewport from the SVG when possible and fall back across multiple raster backends.
 
 #### Scenario: Automatic viewport
 - **WHEN** the user does not provide `--viewport`
-- **THEN** Folio derives the viewport from the SVG `width`/`height` attributes or `viewBox`
+- **THEN** Folio derives the viewport from the root SVG `width` and `height` attributes or root `viewBox`
 - **AND** falls back to an A4-sized default viewport if neither is available
 
 #### Scenario: Explicit viewport
@@ -43,12 +43,12 @@ Folio SHALL derive a raster viewport from the SVG when possible and fall back ac
 - **AND** rejects malformed or non-positive viewport values
 
 #### Scenario: Renderer fallback order
-- **WHEN** Folio rasterizes a preview
+- **WHEN** Folio rasterizes an SVG
 - **THEN** it tries Playwright first
 - **AND** falls back in order to CairoSVG, `rsvg-convert`, and Inkscape until one succeeds
 
-#### Scenario: Preview failures
-- **WHEN** preview cannot find cached inputs, cannot read the requested SVG, or all preview renderers fail
+#### Scenario: Rasterization failures
+- **WHEN** rasterization cannot find cached inputs, cannot read the requested SVG, or all raster renderers fail
 - **THEN** Folio exits with status code `2`
 
 ### Requirement: Reconciling edited SVGs against cached builds
