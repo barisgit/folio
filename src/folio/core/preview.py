@@ -53,8 +53,7 @@ def _default_viewport(svg_text: str) -> tuple[int, int]:
 
     svg_tag = svg_tag_match.group(0)
     dimensions = {
-        name: (float(value), unit or "px")
-        for name, value, unit in _DIMENSION_RE.findall(svg_tag)
+        name: (float(value), unit or "px") for name, value, unit in _DIMENSION_RE.findall(svg_tag)
     }
     if "width" in dimensions and "height" in dimensions:
         width, width_unit = dimensions["width"]
@@ -86,9 +85,7 @@ def _render_with_playwright(
     width, height = viewport
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch()
-        page = browser.new_page(
-            viewport={"width": width, "height": height}, device_scale_factor=1
-        )
+        page = browser.new_page(viewport={"width": width, "height": height}, device_scale_factor=1)
         page.set_content(
             f'<html><body style="margin:0;background:white">{svg_text}</body></html>',
             wait_until="load",

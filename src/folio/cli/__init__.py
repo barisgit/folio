@@ -7,6 +7,7 @@ Every command in this package is a pure adapter that:
 
 No business logic lives here.
 """
+
 from __future__ import annotations
 
 import importlib.metadata
@@ -20,9 +21,9 @@ from folio.cli.create import create_command
 from folio.cli.docs import docs_app
 from folio.cli.rasterize import rasterize_command
 from folio.cli.reconcile import reconcile_command
+from folio.cli.search import search_app
 from folio.cli.skill import skill_app
 from folio.cli.validate import validate_command
-from folio.cli.search import search_app
 
 __all__: list[str] = []
 

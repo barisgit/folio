@@ -41,8 +41,8 @@ def test_every_symbol_has_summary_and_source() -> None:
 
 
 def test_covers_dsl_all_tokens_and_styles() -> None:
-    import folio.dsl as dsl
     import folio.core.dsl.tokens as tokens
+    import folio.dsl as dsl
 
     ids = {symbol.id for symbol in discover_all()}
     for name in dsl.__all__:
@@ -54,9 +54,7 @@ def test_covers_dsl_all_tokens_and_styles() -> None:
     for name in vars(tokens.STYLES):
         if name.startswith("_"):
             continue
-        assert (
-            f"folio.dsl.tokens.STYLES.{name}" in ids
-        ), f"missing folio.dsl.tokens.STYLES.{name}"
+        assert f"folio.dsl.tokens.STYLES.{name}" in ids, f"missing folio.dsl.tokens.STYLES.{name}"
 
 
 def test_committed_index_matches_current_generator() -> None:
@@ -65,7 +63,8 @@ def test_committed_index_matches_current_generator() -> None:
     stripped_committed = {k: v for k, v in committed.items() if k != "folio_version"}
     stripped_current = {k: v for k, v in current.items() if k != "folio_version"}
     assert stripped_committed == stripped_current, (
-        "committed src/folio/services/docs/index.json is stale — run `python -m folio.docs.generate`"
+        "committed src/folio/services/docs/index.json is stale"
+        " — run `python -m folio.services.docs`"
     )
 
 

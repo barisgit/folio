@@ -13,9 +13,7 @@ from folio.core.model.result import BuildResult, RenderedDocument, RenderError
 from folio.core.render.pipeline import export_preset_map
 
 
-def document_requested_targets(
-    document: Document, requested: tuple[str, ...]
-) -> tuple[str, ...]:
+def document_requested_targets(document: Document, requested: tuple[str, ...]) -> tuple[str, ...]:
     """Return the subset of *requested* target names valid for *document*."""
     if not requested or tuple(requested) == ("all",) or "all" in requested:
         return requested
@@ -23,9 +21,7 @@ def document_requested_targets(
     return tuple(name for name in requested if name in presets)
 
 
-def filter_result_by_page(
-    result: BuildResult, page_number: int | None
-) -> BuildResult:
+def filter_result_by_page(result: BuildResult, page_number: int | None) -> BuildResult:
     """Return a new BuildResult containing only *page_number*."""
     if page_number is None:
         return result
@@ -34,20 +30,14 @@ def filter_result_by_page(
     selected_pages = []
     for rendered_document in result.documents:
         document_pages = [
-            page
-            for page in rendered_document.document.pages
-            if page.page_number == page_number
+            page for page in rendered_document.document.pages if page.page_number == page_number
         ]
         rendered_pages = [
-            page
-            for page in rendered_document.pages
-            if page.page_number == page_number
+            page for page in rendered_document.pages if page.page_number == page_number
         ]
         if not document_pages:
             continue
-        selected_document = replace(
-            rendered_document.document, pages=tuple(document_pages)
-        )
+        selected_document = replace(rendered_document.document, pages=tuple(document_pages))
         selected_documents.append(
             RenderedDocument(document=selected_document, pages=rendered_pages)
         )
@@ -81,11 +71,7 @@ def reject_page_with_document_targets(
     """Raise RenderError if --page is used with document-scoped targets."""
     if page_number is None:
         return
-    document_targets = [
-        target.name for target in targets if target.scope is ExportScope.DOCUMENT
-    ]
+    document_targets = [target.name for target in targets if target.scope is ExportScope.DOCUMENT]
     if document_targets:
         joined = ", ".join(document_targets)
-        raise RenderError(
-            f"--page applies only to page-scoped export targets: {joined}"
-        )
+        raise RenderError(f"--page applies only to page-scoped export targets: {joined}")

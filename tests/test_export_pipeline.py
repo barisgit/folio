@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from folio.dsl import document, page, pdf, png, rect, svg
 from folio.core.export.pipeline import ArtifactKind, plan_export_targets
+from folio.dsl import document, page, pdf, png, rect, svg
 
 
 def _document():

@@ -144,8 +144,6 @@ def fetch_stock_multi(
             errors.append(f"{prov}: {exc}")
 
     if not all_results and errors:
-        raise RuntimeError(
-            "All providers failed:\n" + "\n".join(f"  - {e}" for e in errors)
-        )
+        raise RuntimeError("All providers failed:\n" + "\n".join(f"  - {e}" for e in errors))
 
     return all_results

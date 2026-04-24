@@ -114,9 +114,7 @@ def __getattr__(name: str) -> str:
     try:
         return _extensions[name]
     except KeyError as exc:
-        raise AttributeError(
-            f"module 'folio.dsl.tokens' has no attribute {name!r}"
-        ) from exc
+        raise AttributeError(f"module 'folio.dsl.tokens' has no attribute {name!r}") from exc
 
 
 def __dir__() -> list[str]:

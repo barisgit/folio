@@ -10,6 +10,15 @@ from typing import cast
 import pytest
 
 import folio.dsl as _dsl_module
+from folio.core.dsl.loader import DslError, load_dsl_module
+from folio.core.render.pipeline import (
+    RenderError,
+    ValidationWarning,
+    build_pages,
+    render_collection,
+    render_document,
+    validate_document,
+)
 from folio.dsl import (
     TextLayoutWarning,
     block,
@@ -53,15 +62,6 @@ from folio.dsl import (
     tspan,
     wrapped_text,
 )
-from folio.core.dsl.loader import DslError, load_dsl_module
-from folio.core.render.pipeline import (
-    RenderError,
-    ValidationWarning,
-    build_pages,
-    render_collection,
-    render_document,
-    validate_document,
-)
 
 
 def _dsl_public_names() -> set[str]:
@@ -96,6 +96,7 @@ def test_dsl_all_is_sorted_and_unique() -> None:
     assert len(_dsl_module.__all__) == len(set(_dsl_module.__all__)), (
         "folio.dsl.__all__ must not contain duplicates"
     )
+
 
 SPEC = """from folio.dsl import group, image, page, rect, render, text, tokens
 
@@ -276,7 +277,6 @@ def test_collection_document_builder_groups_logical_outputs(tmp_path: Path) -> N
     ]
 
 
-
 def test_page_size_can_be_overridden(tmp_path: Path) -> None:
     document = render(
         page(
@@ -293,7 +293,6 @@ def test_page_size_can_be_overridden(tmp_path: Path) -> None:
 
     assert 'width="99mm" height="210mm"' in content
     assert 'viewBox="0 0 280.63 595.28"' in content
-
 
 
 def test_render_document_supports_shape_primitives_and_path_builder(tmp_path: Path) -> None:
@@ -333,10 +332,8 @@ def test_render_document_supports_shape_primitives_and_path_builder(tmp_path: Pa
     assert 'id="card_scoped_poly"' in content
     assert (
         '<path id="card_wave" d="M113.39 141.73 L141.73 141.73 '
-        'Q155.91 155.91 141.73 170.08 Z"'
-        in content
+        'Q155.91 155.91 141.73 170.08 Z"' in content
     )
-
 
 
 def test_transform_builder_serializes_mm_aware_group_transforms(tmp_path: Path) -> None:
@@ -366,7 +363,6 @@ def test_transform_builder_serializes_mm_aware_group_transforms(tmp_path: Path) 
 
     assert 'transform="translate(28.35 14.17) rotate(15 56.69 28.35)"' in content
     assert 'transform="rotate(30 70.87 127.56) scale(1.2)"' in content
-
 
 
 def test_qr_renders_compact_paths_and_block_helper(tmp_path: Path) -> None:
@@ -410,7 +406,6 @@ def test_qr_renders_compact_paths_and_block_helper(tmp_path: Path) -> None:
     assert content.count("<rect") == 1
 
 
-
 def test_qr_rejects_invalid_arguments() -> None:
     with pytest.raises(TypeError, match=r"qr\(\) data must be a string or bytes"):
         qr("code", 0, 0, cast(str, object()), size_mm=20)
@@ -423,7 +418,6 @@ def test_qr_rejects_invalid_arguments() -> None:
 
     with pytest.raises(TypeError, match=r"qr\(\) padding_mm must leave positive space"):
         qr("code", 0, 0, "hello", size_mm=20, padding_mm=10)
-
 
 
 def test_image_clip_helper_renders_inline_defs(tmp_path: Path) -> None:
@@ -450,12 +444,11 @@ def test_image_clip_helper_renders_inline_defs(tmp_path: Path) -> None:
 
     content = render_document(document, config_dir=tmp_path).pages[0].content
 
-    assert '<defs>' in content
+    assert "<defs>" in content
     assert 'id="hero_clip"' in content
     assert 'clip-path="url(#hero_clip)"' in content
     assert '<ellipse id="hero_clip_shape"' in content
     assert '<image id="hero"' in content
-
 
 
 def test_gradient_and_shadow_helpers_render(tmp_path: Path) -> None:
@@ -495,7 +488,6 @@ def test_gradient_and_shadow_helpers_render(tmp_path: Path) -> None:
     assert 'id="shadow_filter_blur"' in content
     assert 'id="shadow_filter_alpha_curve"' in content
     assert 'slope="0.8"' in content
-
 
 
 def test_extended_tokens_suppress_palette_warnings() -> None:
@@ -568,7 +560,6 @@ def test_page_rejects_mixed_positional_and_keyword_elements() -> None:
             page_number=1,
             elements=[text("headline", 5, 5, "Hello", size_pt=12)],
         )
-
 
 
 def test_block_and_callable_style_helpers_render(tmp_path: Path) -> None:
@@ -663,7 +654,6 @@ def test_block_and_callable_style_helpers_render(tmp_path: Path) -> None:
     assert 'id="card_sep"' in content
 
 
-
 def test_wrapped_text_wraps_plain_text_and_supports_style_helpers(tmp_path: Path) -> None:
     card = block("card", at=(20, 40))
     document = render(
@@ -713,7 +703,6 @@ def test_wrapped_text_wraps_plain_text_and_supports_style_helpers(tmp_path: Path
     assert re.search(r'<tspan id="card_body_line_1"[^>]* x="56\.69" y="113\.39"', content)
 
 
-
 def test_measure_text_and_measure_wrapped_text_return_metrics() -> None:
     inline = measure_text(
         [
@@ -736,7 +725,6 @@ def test_measure_text_and_measure_wrapped_text_return_metrics() -> None:
     assert wrapped.width_mm <= 20
     assert wrapped.line_count == 2
     assert wrapped.truncated is True
-
 
 
 def test_wrapped_text_supports_structured_content_and_warns_on_truncate(tmp_path: Path) -> None:
@@ -771,7 +759,6 @@ def test_wrapped_text_supports_structured_content_and_warns_on_truncate(tmp_path
     assert 'id="copy_line_1"' in content
     assert 'fill="#c8a24a"' in content
     assert "…</tspan>" in content
-
 
 
 def test_render_document_supports_document_level_defs_and_detects_collisions(
@@ -848,7 +835,6 @@ def test_render_document_supports_document_level_defs_and_detects_collisions(
         validate_document(collision)
 
 
-
 def test_qr_padding_and_grain_helper_render(tmp_path: Path) -> None:
     document = render(
         page(
@@ -876,12 +862,11 @@ def test_qr_padding_and_grain_helper_render(tmp_path: Path) -> None:
     content = render_document(document, config_dir=tmp_path).pages[0].content
 
     assert 'id="paper_grain"' in content
-    assert 'feTurbulence' in content
+    assert "feTurbulence" in content
     assert '<rect id="code_pad"' in content
     assert '<rect id="code_bg"' in content
     assert '<path id="code_fg" d="M' in content
     assert re.search(r'<rect id="code_bg"[^>]* x="34\.02" y="62\.36"', content)
-
 
 
 def test_render_document_supports_structured_text_content(tmp_path: Path) -> None:
@@ -938,11 +923,10 @@ def test_render_document_supports_structured_text_content(tmp_path: Path) -> Non
 
     assert 'id="headline_accent"' in content
     assert (
-        '<tspan id="headline_accent" font-size="8.0" '
-        'font-weight="700" fill="#c8a24a">world</tspan>'
+        '<tspan id="headline_accent" font-size="8.0" font-weight="700" fill="#c8a24a">world</tspan>'
     ) in content
-    assert 'Hello ' in content
-    assert '&amp; beyond' in content
+    assert "Hello " in content
+    assert "&amp; beyond" in content
     assert 'id="copy_line_1"' in content
     assert 'id="copy_line_2"' in content
     assert 'id="copy_line_2_accent"' in content
@@ -1117,7 +1101,7 @@ def test_text_style_markup_and_triangle_helpers_render(tmp_path: Path) -> None:
     assert 'id="shadow_offset"' in content
     assert 'id="shadow_alpha_curve"' in content
     assert 'id="shadow_merge_graphic"' in content
-    assert '>Use &amp; escape hatch</text>' in content
+    assert ">Use &amp; escape hatch</text>" in content
     assert 'id="arrow"' in content
     assert '<path id="arrow"' in content
 

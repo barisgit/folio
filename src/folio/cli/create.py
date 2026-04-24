@@ -1,4 +1,5 @@
 """`folio create` command — thin IO adapter."""
+
 from __future__ import annotations
 
 import re

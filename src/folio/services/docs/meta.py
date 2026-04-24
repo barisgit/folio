@@ -93,8 +93,7 @@ DSL_KINDS: dict[str, str] = {
 
 
 DEFAULT_EXAMPLE_SETUP: str = (
-    "from folio.dsl import *  # noqa: F401,F403\n"
-    "from folio.dsl import tokens  # noqa: F401\n"
+    "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
 )
 
 
@@ -277,18 +276,12 @@ STYLE_DOCS: dict[str, TokenEntry] = {
     "feature_body": _style_entry(
         "feature_body", "Feature card body preset (8.5pt, 400, soft text)."
     ),
-    "flow_label": _style_entry(
-        "flow_label", "Flow step label preset (8pt, 700, dark accent)."
-    ),
-    "flow_body": _style_entry(
-        "flow_body", "Flow step body preset (8.5pt, 400, secondary ink)."
-    ),
+    "flow_label": _style_entry("flow_label", "Flow step label preset (8pt, 700, dark accent)."),
+    "flow_body": _style_entry("flow_body", "Flow step body preset (8.5pt, 400, secondary ink)."),
     "capture_title": _style_entry(
         "capture_title", "Capture block title preset (7pt, 700, muted, tracked)."
     ),
-    "capture_value": _style_entry(
-        "capture_value", "Capture block value preset (9pt, 600, ink)."
-    ),
+    "capture_value": _style_entry("capture_value", "Capture block value preset (9pt, 600, ink)."),
     "capture_body": _style_entry(
         "capture_body", "Capture block body preset (7.5pt, 400, secondary ink)."
     ),
@@ -298,40 +291,26 @@ STYLE_DOCS: dict[str, TokenEntry] = {
     "audience_body": _style_entry(
         "audience_body", "Audience section body preset (8.5pt, 400, soft text)."
     ),
-    "brand_name": _style_entry(
-        "brand_name", "Brand wordmark preset (22pt, 800, white)."
-    ),
+    "brand_name": _style_entry("brand_name", "Brand wordmark preset (22pt, 800, white)."),
     "brand_tagline": _style_entry(
         "brand_tagline", "Brand tagline preset (8.5pt, 700, accent, tracked)."
     ),
-    "meta": _style_entry(
-        "meta", "Page meta/footer preset (8pt, 400, light muted, tracked)."
-    ),
+    "meta": _style_entry("meta", "Page meta/footer preset (8pt, 400, light muted, tracked)."),
     "counter_mono": _style_entry(
         "counter_mono", "Monospace counter preset (8pt, 400, muted, mono family)."
     ),
-    "bottom_claim": _style_entry(
-        "bottom_claim", "Bottom closing claim preset (11pt, 500, white)."
-    ),
-    "body": _style_entry(
-        "body", "Default body copy preset (8.5pt, 400, secondary ink)."
-    ),
+    "bottom_claim": _style_entry("bottom_claim", "Bottom closing claim preset (11pt, 500, white)."),
+    "body": _style_entry("body", "Default body copy preset (8.5pt, 400, secondary ink)."),
     "body_large": _style_entry(
         "body_large", "Large body copy preset (10.5pt, 300, secondary ink)."
     ),
-    "caption": _style_entry(
-        "caption", "Caption preset (alias of stat_detail)."
-    ),
-    "page_title": _style_entry(
-        "page_title", "Page-level title preset (14pt, 800, ink)."
-    ),
+    "caption": _style_entry("caption", "Caption preset (alias of stat_detail)."),
+    "page_title": _style_entry("page_title", "Page-level title preset (14pt, 800, ink)."),
     "section_label": _style_entry(
         "section_label", "Section label preset (7.5pt, 700, dark accent, tracked)."
     ),
     "title": _style_entry("title", "Generic title preset (9.5pt, 600)."),
-    "title_large": _style_entry(
-        "title_large", "Large title preset (alias of page_title)."
-    ),
+    "title_large": _style_entry("title_large", "Large title preset (alias of page_title)."),
     # Uppercase aliases
     "BODY": _style_entry("BODY", "Uppercase alias for the body preset."),
     "BODY_LG": _style_entry("BODY_LG", "Uppercase alias for the body_large preset."),
@@ -348,4 +327,3 @@ STYLE_DOCS: dict[str, TokenEntry] = {
 }
 """Per-style documentation metadata for every `TextStyle` under
 `folio.dsl.tokens.STYLES`."""
-

@@ -6,7 +6,12 @@ from typer.testing import CliRunner
 
 import folio.cli.search.svg as search_svg_command_module
 from folio.cli import app
-from folio.services.search.svg import SvgSearchError, SvgSearchResponse, SvgSearchResult, search_svg_assets
+from folio.services.search.svg import (
+    SvgSearchError,
+    SvgSearchResponse,
+    SvgSearchResult,
+    search_svg_assets,
+)
 
 runner = CliRunner()
 

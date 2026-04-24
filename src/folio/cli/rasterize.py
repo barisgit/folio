@@ -1,4 +1,5 @@
 """`folio rasterize` command — thin IO adapter."""
+
 from __future__ import annotations
 
 from pathlib import Path

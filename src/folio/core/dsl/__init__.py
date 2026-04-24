@@ -5,6 +5,8 @@ from __future__ import annotations
 from folio.core.dsl import builtins as _builtins
 from folio.core.dsl import tokens
 from folio.core.dsl.charts import ChartHandle, chart
+from folio.core.dsl.styles import TextStyle
+from folio.core.layout.helpers import cols, flow_cols, grid
 from folio.core.model import (
     Asset,
     DefNode,
@@ -20,8 +22,6 @@ from folio.core.model import (
     TextMetrics,
     TextSpan,
 )
-from folio.core.dsl.styles import TextStyle
-from folio.core.layout.helpers import cols, flow_cols, grid
 
 Block = _builtins.Block
 block = _builtins.block

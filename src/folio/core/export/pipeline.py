@@ -6,7 +6,10 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Protocol
 
+from folio.core.export.idml import write_idml
+from folio.core.export.pdf import PdfExportError, PdfPage, write_pdf
 from folio.core.model import Document, ExportFormat, ExportPreset, ExportScope, Page
+from folio.core.preview import _render_svg_preview
 from folio.core.render.pipeline import (
     BuildResult,
     RenderedDocument,
@@ -18,9 +21,6 @@ from folio.core.render.pipeline import (
     resolve_export_targets,
     write_pages,
 )
-from folio.core.export.idml import write_idml
-from folio.core.export.pdf import PdfExportError, PdfPage, write_pdf
-from folio.core.preview import _render_svg_preview
 
 
 class ArtifactKind(StrEnum):
@@ -282,9 +282,7 @@ def _participating_pages(
 
 def _dependency_names(plan: ExportPlan) -> frozenset[str]:
     return frozenset(
-        dependency.preset_name
-        for step in plan.steps
-        for dependency in step.dependencies
+        dependency.preset_name for step in plan.steps for dependency in step.dependencies
     )
 
 

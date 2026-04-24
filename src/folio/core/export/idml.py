@@ -8,8 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from folio.core.model import Document, Element, ElementKind, Markup, Page, TextSpan
 from folio.core.dsl.styles import merge_text_style_attrs
+from folio.core.model import Document, Element, ElementKind, Markup, Page, TextSpan
 from folio.core.render.primitives import m
 
 _IDML_MIMETYPE = "application/vnd.adobe.indesign-idml-package"
@@ -344,7 +344,9 @@ def _text_frame_xml(
 
     left = m(element.x_mm)
     top = max(0.0, m(element.y_mm) - point_size)
-    width_mm = float(_pop_attr(attrs, "width_mm", "width", default=max(10.0, page.width_mm - element.x_mm)))
+    width_mm = float(
+        _pop_attr(attrs, "width_mm", "width", default=max(10.0, page.width_mm - element.x_mm))
+    )
     line_count = max(1, len(lines))
     height = point_size * max(1.25, line_count * 1.35)
     bounds = (top, left, top + height, left + m(width_mm))
@@ -406,7 +408,9 @@ def _path_geometry(points: tuple[tuple[float, float], ...], *, closed: bool, ind
 {indent}</PathGeometry>"""
 
 
-def _rectangle_points(left_mm: float, top_mm: float, width_mm: float, height_mm: float) -> tuple[tuple[float, float], ...]:
+def _rectangle_points(
+    left_mm: float, top_mm: float, width_mm: float, height_mm: float
+) -> tuple[tuple[float, float], ...]:
     left = m(left_mm)
     top = m(top_mm)
     right = m(left_mm + width_mm)
@@ -414,12 +418,16 @@ def _rectangle_points(left_mm: float, top_mm: float, width_mm: float, height_mm:
     return ((left, top), (right, top), (right, bottom), (left, bottom))
 
 
-def _rectangle_points_pt(bounds: tuple[float, float, float, float]) -> tuple[tuple[float, float], ...]:
+def _rectangle_points_pt(
+    bounds: tuple[float, float, float, float],
+) -> tuple[tuple[float, float], ...]:
     top, left, bottom, right = bounds
     return ((left, top), (right, top), (right, bottom), (left, bottom))
 
 
-def _bounds(left_mm: float, top_mm: float, width_mm: float, height_mm: float) -> tuple[float, float, float, float]:
+def _bounds(
+    left_mm: float, top_mm: float, width_mm: float, height_mm: float
+) -> tuple[float, float, float, float]:
     return (m(top_mm), m(left_mm), m(top_mm + height_mm), m(left_mm + width_mm))
 
 

@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
-from folio.core.model import BuildResult, Document, RenderedDocument
+from folio.core.model import BuildResult, Document
 
 
 @runtime_checkable

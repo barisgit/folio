@@ -188,9 +188,7 @@ def coerce_text_style(style: object, *, source: str) -> TextStyle | None:
     raise TypeError(f"{source} style must be a TextStyle")
 
 
-def merge_text_style_attrs(
-    attrs: dict[str, Any], *, source: str, for_span: bool
-) -> dict[str, Any]:
+def merge_text_style_attrs(attrs: dict[str, Any], *, source: str, for_span: bool) -> dict[str, Any]:
     style = coerce_text_style(attrs.pop("style", None), source=source)
     merged = (style.span_attrs() if for_span else style.text_attrs()) if style else {}
     merged.update(attrs)

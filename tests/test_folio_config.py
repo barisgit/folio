@@ -38,12 +38,8 @@ def test_bundled_folio_config_build_is_idempotent(tmp_path: Path) -> None:
 
     assert first.config_hash == second.config_hash
     assert [
-        (page.page_number, page.page_id, page.filename, page.content)
-        for page in first.pages
-    ] == [
-        (page.page_number, page.page_id, page.filename, page.content)
-        for page in second.pages
-    ]
+        (page.page_number, page.page_id, page.filename, page.content) for page in first.pages
+    ] == [(page.page_number, page.page_id, page.filename, page.content) for page in second.pages]
 
     first_paths = write_pages(first, tmp_path / "first")
     second_paths = write_pages(second, tmp_path / "second")

@@ -8,13 +8,14 @@ from typer.testing import CliRunner
 
 import folio.cli.rasterize as rasterize_command_module
 import folio.cli.search.stock as stock_mod
-from folio.core.cache import cache_build, cache_paths
 from folio.cli import app
+from folio.core.cache import cache_build, cache_paths
 from folio.core.dsl.loader import load_dsl_module
 from folio.core.render.pipeline import build_pages
 from folio.services.search.providers import SearchResult
 
 runner = CliRunner()
+
 
 def test_rasterize_can_render_arbitrary_svg_path(
     tmp_path: Path,
@@ -128,7 +129,6 @@ def test_build_can_write_one_page_without_cache(tmp_path: Path) -> None:
     assert not cache_paths(spec_path).root.exists()
 
 
-
 def test_build_uses_project_build_py_by_default(tmp_path: Path, monkeypatch) -> None:
     project_dir = tmp_path / "project"
     project_dir.mkdir()
@@ -159,7 +159,6 @@ def test_build_uses_project_build_py_by_default(tmp_path: Path, monkeypatch) -> 
     assert command.exit_code == 0
     assert (project_dir / "out" / "cover.svg").exists()
     assert not cache_paths(build_path).root.exists()
-
 
 
 def test_build_accepts_project_directory_as_spec(tmp_path: Path) -> None:
@@ -195,7 +194,6 @@ def test_build_accepts_project_directory_as_spec(tmp_path: Path) -> None:
     assert command.exit_code == 0
     assert (out_dir / "cover.svg").exists()
     assert not cache_paths(build_path).root.exists()
-
 
 
 def test_build_defaults_to_spec_local_out_dir_for_explicit_spec(
@@ -268,8 +266,8 @@ def test_reconcile_can_override_page_number(tmp_path: Path) -> None:
 
     edited_svg = tmp_path / "edited.svg"
     edited_svg.write_text(
-        result.pages[1].content
-        .replace('data-page-number="2"', 'data-page-number=""')
+        result.pages[1]
+        .content.replace('data-page-number="2"', 'data-page-number=""')
         .replace(">Two</text>", ">Two again</text>"),
         encoding="utf-8",
     )
@@ -306,12 +304,10 @@ def test_reconcile_can_override_page_number(tmp_path: Path) -> None:
     ]
 
 
-
 def test_reconcile_rejects_page_with_all() -> None:
     command = runner.invoke(app, ["reconcile", "--all", "--page", "1"])
 
     assert command.exit_code == 2
-
 
 
 def test_reconcile_json_output_is_machine_readable(tmp_path: Path) -> None:
@@ -385,6 +381,7 @@ def test_reconcile_json_output_is_machine_readable(tmp_path: Path) -> None:
 
 
 # --- search stock command tests ---
+
 
 def _fake_results(*args, **kwargs):
     return [
@@ -509,7 +506,6 @@ def test_search_stock_no_args_shows_help() -> None:
     assert "stock" in result.stdout
 
 
-
 def test_build_explicit_png_target_writes_only_participating_pages(
     tmp_path: Path, monkeypatch
 ) -> None:
@@ -624,9 +620,7 @@ def test_build_all_writes_declared_svg_png_pdf_and_idml(tmp_path: Path, monkeypa
     assert (out_dir / "TM42_brochure.idml").exists()
 
 
-def test_build_pdf_source_uses_internal_png_without_public_png(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_build_pdf_source_uses_internal_png_without_public_png(tmp_path: Path, monkeypatch) -> None:
     spec_path = tmp_path / "build.py"
     spec_path.write_text(
         dedent(

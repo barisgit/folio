@@ -1,4 +1,5 @@
 """`folio skill` command — thin IO adapter."""
+
 from __future__ import annotations
 
 import shutil
@@ -66,9 +67,7 @@ def _install_skill(destination: Path, *, force: bool) -> int:
     assets = skill_assets()
     conflicts = _conflicting_files(source, destination, assets)
     if conflicts and not force:
-        _error_console.print(
-            f"[red]conflicting files at {destination}:[/red]"
-        )
+        _error_console.print(f"[red]conflicting files at {destination}:[/red]")
         for path in conflicts:
             _error_console.print(f"  {path}")
         _error_console.print(
@@ -91,9 +90,7 @@ def _install_skill(destination: Path, *, force: bool) -> int:
     return _EXIT_OK
 
 
-def _conflicting_files(
-    source: Path, destination: Path, assets: list[Path]
-) -> list[Path]:
+def _conflicting_files(source: Path, destination: Path, assets: list[Path]) -> list[Path]:
     conflicts: list[Path] = []
     for asset in assets:
         relative = asset.relative_to(source)

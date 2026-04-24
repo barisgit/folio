@@ -28,6 +28,8 @@ from folio.core.render.primitives import (
 )
 from folio.core.render.primitives import (
     group as group_mm,
+)
+from folio.core.render.primitives import (
     tspan as tspan_mm,
 )
 from folio.core.render.tokens import (
@@ -52,11 +54,11 @@ from folio.core.render.tokens import (
     MUTED_LIGHT,
     MUTED_SOFT,
     PT_TO_MM,
-    ROLLUP_850x2000,
     SOFT,
     TEXT_SOFT,
     US_LETTER,
     WHITE,
+    ROLLUP_850x2000,
 )
 
 __all__ = [

@@ -162,8 +162,7 @@ def _describe_token(name: str, value: Any, *, tokens_module: Any) -> Symbol:
         entry = TOKEN_DOCS.get(name)
         if entry is None:
             raise DiscoveryError(
-                f"token 'folio.dsl.tokens.{name}' is missing a TOKEN_DOCS entry "
-                f"({source})"
+                f"token 'folio.dsl.tokens.{name}' is missing a TOKEN_DOCS entry ({source})"
             )
         summary = entry["summary"]
         description = entry.get("description", "")
@@ -240,9 +239,7 @@ def _validate_kind(name: str, kind: str) -> None:
 def _require_parsed_doc(*, raw: str | None, symbol: str, source_hint: str) -> ParsedDoc:
     parsed = parse_docstring(raw)
     if parsed is None or not parsed.summary:
-        raise DiscoveryError(
-            f"public DSL symbol '{symbol}' has no docstring ({source_hint})"
-        )
+        raise DiscoveryError(f"public DSL symbol '{symbol}' has no docstring ({source_hint})")
     if _looks_like_dataclass_autodoc(parsed.summary, symbol):
         raise DiscoveryError(
             f"public DSL symbol '{symbol}' uses an auto-synthesized dataclass "
@@ -295,7 +292,7 @@ def _render_annotation(annotation: Any, *, fallback: str) -> str:
 def _render_token_signature(name: str, value: Any) -> str:
     if isinstance(value, str):
         return f"{name}: str = {value!r}"
-    if isinstance(value, (int, float)):
+    if isinstance(value, int | float):
         return f"{name}: {type(value).__name__} = {value!r}"
     if isinstance(value, dict):
         keys = ", ".join(value.keys())

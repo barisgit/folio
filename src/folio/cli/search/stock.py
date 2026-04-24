@@ -1,4 +1,5 @@
 """``folio search stock`` sub-command — thin IO adapter."""
+
 from __future__ import annotations
 
 import json as _json
@@ -19,6 +20,7 @@ from folio.services.search.providers import (
 
 def _is_provider(value: str) -> TypeGuard[Provider]:
     return value in PROVIDERS
+
 
 console = Console(width=200)
 
@@ -86,17 +88,13 @@ def _resolve_providers(raw_providers: list[str] | None) -> list[Provider]:
         )
         if invalid:
             valid = ", ".join(PROVIDERS) + ", all"
-            raise RuntimeError(
-                f"Unknown provider(s): {', '.join(invalid)}. Valid: {valid}"
-            )
+            raise RuntimeError(f"Unknown provider(s): {', '.join(invalid)}. Valid: {valid}")
         return list(PROVIDERS)
 
     invalid = sorted({provider for provider in raw_providers if provider not in PROVIDERS})
     if invalid:
         valid = ", ".join(PROVIDERS) + ", all"
-        raise RuntimeError(
-            f"Unknown provider(s): {', '.join(invalid)}. Valid: {valid}"
-        )
+        raise RuntimeError(f"Unknown provider(s): {', '.join(invalid)}. Valid: {valid}")
 
     resolved: list[Provider] = []
     for provider_name in raw_providers:

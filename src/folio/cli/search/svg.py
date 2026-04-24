@@ -1,4 +1,5 @@
 """``folio search svg`` sub-command — thin IO adapter."""
+
 from __future__ import annotations
 
 import json

@@ -4,10 +4,10 @@ import re
 import types
 import warnings
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
-from hashlib import sha256
 from pathlib import Path
 
+import folio.core.render.tokens as render_tokens
+from folio.core.dsl.styles import TextStyle, merge_text_style_attrs
 from folio.core.model import (
     Asset,
     DefNode,
@@ -22,8 +22,14 @@ from folio.core.model import (
     Page,
     TextSpan,
 )
-from folio.core.dsl.styles import TextStyle, merge_text_style_attrs
-import folio.core.render.tokens as render_tokens
+from folio.core.model.result import (
+    BuildResult,
+    RenderedDocument,
+    RenderedPage,
+    RenderError,
+    ValidationWarning,
+    config_digest,
+)
 from folio.core.render.primitives import (
     circle_mm,
     ellipse_mm,
@@ -44,17 +50,6 @@ from folio.core.render.primitives import (
 from folio.core.render.primitives import (
     tspan as tspan_mm,
 )
-
-
-from folio.core.model.result import (
-    BuildResult,
-    RenderedDocument,
-    RenderedPage,
-    RenderError,
-    ValidationWarning,
-    config_digest,
-)
-
 
 _HEX_COLOR_RE = re.compile(r"#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})")
 _LEGACY_SVG_PRESET = ExportPreset(
@@ -78,7 +73,6 @@ def _token_hex_colors() -> frozenset[str]:
         for value in vars(render_tokens).values()
         if isinstance(value, str) and _HEX_COLOR_RE.fullmatch(value)
     )
-
 
 
 def _resolve_asset(base_dir: Path, reference: str) -> Path:
@@ -161,8 +155,7 @@ def _text_parts(content: object, *, source: str) -> tuple[str | Markup | TextSpa
             parts.append(item)
         return tuple(parts)
     raise RenderError(
-        f"{source} content must be a string, Markup, or a sequence of "
-        "strings/Markup/TextSpan"
+        f"{source} content must be a string, Markup, or a sequence of strings/Markup/TextSpan"
     )
 
 
@@ -241,9 +234,7 @@ def export_preset_source_name(preset: ExportPreset) -> str | None:
     return preset.source
 
 
-def _validate_export_preset_source(
-    preset: ExportPreset, presets: dict[str, ExportPreset]
-) -> None:
+def _validate_export_preset_source(preset: ExportPreset, presets: dict[str, ExportPreset]) -> None:
     source_name = export_preset_source_name(preset)
     if source_name is None:
         return

@@ -1,31 +1,23 @@
 from __future__ import annotations
 
 import html
-import math
 import re
-import warnings
 from collections import defaultdict
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
+from folio.core.dsl.styles import TextStyle, merge_text_style_attrs
 from folio.core.model import (
-    Asset,
     DefNode,
-    Document,
-    DocumentCollection,
     Element,
-    ElementKind,
     ExportFormat,
     ExportPreset,
     ExportScope,
     Markup,
-    Page,
     TextMetrics,
     TextSpan,
 )
-from folio.core.dsl.styles import TextStyle, coerce_text_style, merge_text_style_attrs
-from folio.core.render import tokens as render_tokens
 from folio.core.render.tokens import MM_TO_PT, PT_TO_MM
 from folio.vendor.qrcodegen import QrCode
 
@@ -176,8 +168,7 @@ def _coerce_text_content(
             )
         return coerced
     raise TypeError(
-        f"{source} content must be a string, Markup, or a sequence of "
-        "strings/Markup/TextSpan"
+        f"{source} content must be a string, Markup, or a sequence of strings/Markup/TextSpan"
     )
 
 
@@ -264,15 +255,12 @@ class _WrappedLayout:
     metrics: TextMetrics
 
 
-
 def _default_line_step_mm(size_pt: float) -> float:
     return round(size_pt * PT_TO_MM * _DEFAULT_LINE_HEIGHT, 2)
 
 
-
 def _visible_markup_text(content: Markup) -> str:
     return html.unescape(_MARKUP_TAG_RE.sub("", content.value))
-
 
 
 def _measure_text_mm(text: str, *, size_pt: float, letter_spacing: float | None = None) -> float:
@@ -281,7 +269,6 @@ def _measure_text_mm(text: str, *, size_pt: float, letter_spacing: float | None 
     glyph_width_mm = size_pt * PT_TO_MM * _DEFAULT_WRAP_WIDTH_RATIO
     letter_spacing_mm = 0.0 if letter_spacing is None else float(letter_spacing) * PT_TO_MM
     return (len(text) * glyph_width_mm) + (max(0, len(text) - 1) * letter_spacing_mm)
-
 
 
 def _truncate_to_width(
@@ -294,11 +281,15 @@ def _truncate_to_width(
 ) -> str:
     candidate = text.strip()
     suffix = ELLIPSIS if use_ellipsis and candidate else ""
-    while candidate and _measure_text_mm(
-        f"{candidate}{suffix}",
-        size_pt=size_pt,
-        letter_spacing=letter_spacing,
-    ) > width_mm:
+    while (
+        candidate
+        and _measure_text_mm(
+            f"{candidate}{suffix}",
+            size_pt=size_pt,
+            letter_spacing=letter_spacing,
+        )
+        > width_mm
+    ):
         candidate = candidate[:-1].rstrip()
     if not candidate:
         ellipsis_width = _measure_text_mm(
@@ -308,7 +299,6 @@ def _truncate_to_width(
         )
         return ELLIPSIS if use_ellipsis and ellipsis_width <= width_mm else ""
     return f"{candidate}{suffix}"
-
 
 
 def _validate_wrap_options(
@@ -326,7 +316,6 @@ def _validate_wrap_options(
         raise TypeError("wrapped_text() max_lines must be positive when provided")
     if overflow not in {"ellipsis", "clip"}:
         raise TypeError("wrapped_text() overflow must be 'ellipsis' or 'clip'")
-
 
 
 def _root_measurement_attrs(
@@ -350,7 +339,6 @@ def _root_measurement_attrs(
     }
 
 
-
 def _span_measurement_attrs(
     attrs: dict[str, Any],
     *,
@@ -363,7 +351,6 @@ def _span_measurement_attrs(
         if key in overrides:
             merged[key] = float(overrides[key]) if key == "size_pt" else overrides[key]
     return merged
-
 
 
 def _flatten_text_runs(
@@ -432,7 +419,6 @@ def _flatten_text_runs(
     return runs
 
 
-
 def _tokenize_runs(runs: Sequence[_LayoutRun]) -> list[_WrapToken]:
     tokens: list[_WrapToken] = []
     for run in runs:
@@ -491,14 +477,12 @@ def _tokenize_runs(runs: Sequence[_LayoutRun]) -> list[_WrapToken]:
     return tokens
 
 
-
 def _token_width_mm(token: _WrapToken) -> float:
     return _measure_text_mm(
         token.measure_text,
         size_pt=token.size_pt,
         letter_spacing=token.letter_spacing,
     )
-
 
 
 def _space_piece(token: _WrapToken) -> _LinePiece:
@@ -512,7 +496,6 @@ def _space_piece(token: _WrapToken) -> _LinePiece:
     )
 
 
-
 def _line_piece_from_token(token: _WrapToken) -> _LinePiece:
     return _LinePiece(
         content=token.content,
@@ -522,7 +505,6 @@ def _line_piece_from_token(token: _WrapToken) -> _LinePiece:
         letter_spacing=token.letter_spacing,
         splittable=token.splittable,
     )
-
 
 
 def _truncate_piece_to_width(
@@ -570,12 +552,10 @@ def _truncate_piece_to_width(
     return None
 
 
-
 def _append_token(line: _LineBuilder, token: _WrapToken, *, leading_space: bool) -> None:
     if leading_space:
         line.append(_space_piece(token))
     line.append(_line_piece_from_token(token))
-
 
 
 def _append_ellipsis(line: _LineBuilder, *, width_mm: float, template: _LinePiece) -> None:
@@ -607,7 +587,6 @@ def _append_ellipsis(line: _LineBuilder, *, width_mm: float, template: _LinePiec
         line.append(truncated)
 
 
-
 def _line_content(
     pieces: Sequence[_LinePiece],
 ) -> str | Markup | tuple[str | Markup | TextSpan, ...]:
@@ -629,11 +608,9 @@ def _line_content(
     return tuple(built)
 
 
-
 def _line_height_mm(pieces: Sequence[_LinePiece], *, fallback_size_pt: float) -> float:
     size_pt = max((piece.size_pt for piece in pieces), default=fallback_size_pt)
     return round(size_pt * PT_TO_MM, 2)
-
 
 
 def _wrap_layout(
@@ -772,7 +749,6 @@ def _wrap_layout(
     )
 
 
-
 def measure_text(
     content: str | Markup | Sequence[str | Markup | TextSpan],
     *,
@@ -820,7 +796,6 @@ def measure_text(
         line_step_mm=line_step_mm,
         truncated=False,
     )
-
 
 
 def measure_wrapped_text(
@@ -912,12 +887,10 @@ def _coerce_points_mm(
     return points
 
 
-
 def _offset_mm_attr(attrs: dict[str, Any], key: str, delta: float) -> None:
     value = attrs.get(key)
     if value is not None:
         attrs[key] = value + delta
-
 
 
 def _offset_xy_attrs(attrs: dict[str, Any], *, x_mm: float, y_mm: float) -> dict[str, Any]:
@@ -925,6 +898,10 @@ def _offset_xy_attrs(attrs: dict[str, Any], *, x_mm: float, y_mm: float) -> dict
     _offset_mm_attr(adjusted, "x_mm", x_mm)
     _offset_mm_attr(adjusted, "y_mm", y_mm)
     return adjusted
+
+
+def _pt(value_mm: float) -> float:
+    return round(value_mm * MM_TO_PT, 2)
 
 
 @dataclass(slots=True)
@@ -990,9 +967,7 @@ class TransformBuilder:
         e_mm: float = 0.0,
         f_mm: float = 0.0,
     ) -> TransformBuilder:
-        self.operations.append(
-            f"matrix({a:g} {b:g} {c:g} {d:g} {_pt(e_mm)} {_pt(f_mm)})"
-        )
+        self.operations.append(f"matrix({a:g} {b:g} {c:g} {d:g} {_pt(e_mm)} {_pt(f_mm)})")
         return self
 
     def build(self) -> str:
@@ -1105,375 +1080,3 @@ class PathBuilder:
 
     def __str__(self) -> str:
         return self.build()
-
-
-@dataclass(frozen=True, slots=True)
-class Block:
-    """Scoped id and coordinate helper for authoring groups of Elements.
-
-    A ``Block`` carries a stable id prefix and an origin offset in mm.
-    Shape/text methods on the block delegate to the module-level builtins
-    but automatically prefix ids and translate coordinates by the block
-    origin, so nested layouts stay consistent without manual bookkeeping.
-
-    Example:
-        block('hero', at=(10, 20)).rect('bg', 0, 0, 40, 30)
-
-    Tags: layout, builder
-    """
-
-    prefix: str
-    x_mm: float = 0.0
-    y_mm: float = 0.0
-
-    def id(self, suffix: str | None = None) -> str:
-        if not suffix:
-            return self.prefix
-        return f"{self.prefix}_{suffix}"
-
-    def x(self, value_mm: float) -> float:
-        return self.x_mm + value_mm
-
-    def y(self, value_mm: float) -> float:
-        return self.y_mm + value_mm
-
-    def point(self, x_mm: float, y_mm: float) -> tuple[float, float]:
-        return (self.x(x_mm), self.y(y_mm))
-
-    def scope(self, suffix: str, *, at: tuple[float, float] = (0.0, 0.0)) -> Block:
-        child_x_mm, child_y_mm = at
-        return Block(self.id(suffix), self.x(child_x_mm), self.y(child_y_mm))
-
-    def rect(
-        self,
-        suffix: str,
-        x_mm: float,
-        y_mm: float,
-        width_mm: float,
-        height_mm: float,
-        **attrs: Any,
-    ) -> Element:
-        return rect(self.id(suffix), self.x(x_mm), self.y(y_mm), width_mm, height_mm, **attrs)
-
-    def circle(
-        self,
-        suffix: str,
-        cx_mm: float,
-        cy_mm: float,
-        radius_mm: float,
-        **attrs: Any,
-    ) -> Element:
-        return circle(self.id(suffix), self.x(cx_mm), self.y(cy_mm), radius_mm, **attrs)
-
-    def ellipse(
-        self,
-        suffix: str,
-        cx_mm: float,
-        cy_mm: float,
-        rx_mm: float,
-        ry_mm: float,
-        **attrs: Any,
-    ) -> Element:
-        return ellipse(self.id(suffix), self.x(cx_mm), self.y(cy_mm), rx_mm, ry_mm, **attrs)
-
-    def polygon(
-        self,
-        suffix: str,
-        points_mm: Sequence[tuple[float, float]],
-        **attrs: Any,
-    ) -> Element:
-        return polygon(
-            self.id(suffix),
-            [self.point(x_mm, y_mm) for x_mm, y_mm in points_mm],
-            **attrs,
-        )
-
-    def polyline(
-        self,
-        suffix: str,
-        points_mm: Sequence[tuple[float, float]],
-        **attrs: Any,
-    ) -> Element:
-        return polyline(
-            self.id(suffix),
-            [self.point(x_mm, y_mm) for x_mm, y_mm in points_mm],
-            **attrs,
-        )
-
-    def text(
-        self,
-        suffix: str,
-        x_mm: float,
-        y_mm: float,
-        content: str | Markup | Sequence[str | Markup | TextSpan],
-        *,
-        style: TextStyle | None = None,
-        **attrs: Any,
-    ) -> Element:
-        return text(self.id(suffix), self.x(x_mm), self.y(y_mm), content, style=style, **attrs)
-
-    def multiline(
-        self,
-        suffix: str,
-        x_mm: float,
-        y_mm: float,
-        lines: Sequence[str | Markup | Sequence[str | Markup | TextSpan]],
-        *,
-        line_step_mm: float,
-        style: TextStyle | None = None,
-        **attrs: Any,
-    ) -> Element:
-        return multiline(
-            self.id(suffix),
-            self.x(x_mm),
-            self.y(y_mm),
-            lines,
-            line_step_mm=line_step_mm,
-            style=style,
-            **attrs,
-        )
-
-    def wrapped_text(
-        self,
-        suffix: str,
-        x_mm: float,
-        y_mm: float,
-        content: str | Markup | Sequence[str | Markup | TextSpan],
-        *,
-        width_mm: float,
-        line_step_mm: float | None = None,
-        max_lines: int | None = None,
-        overflow: str = "ellipsis",
-        warn_on_truncate: bool = True,
-        style: TextStyle | None = None,
-        **attrs: Any,
-    ) -> Element:
-        return wrapped_text(
-            self.id(suffix),
-            self.x(x_mm),
-            self.y(y_mm),
-            content,
-            width_mm=width_mm,
-            line_step_mm=line_step_mm,
-            max_lines=max_lines,
-            overflow=overflow,
-            warn_on_truncate=warn_on_truncate,
-            style=style,
-            **attrs,
-        )
-
-    def measure_text(
-        self,
-        content: str | Markup | Sequence[str | Markup | TextSpan],
-        *,
-        style: TextStyle | None = None,
-        **attrs: Any,
-    ) -> TextMetrics:
-        return measure_text(content, style=style, **attrs)
-
-    def measure_wrapped_text(
-        self,
-        content: str | Markup | Sequence[str | Markup | TextSpan],
-        *,
-        width_mm: float,
-        line_step_mm: float | None = None,
-        max_lines: int | None = None,
-        overflow: str = "ellipsis",
-        style: TextStyle | None = None,
-        **attrs: Any,
-    ) -> TextMetrics:
-        return measure_wrapped_text(
-            content,
-            width_mm=width_mm,
-            line_step_mm=line_step_mm,
-            max_lines=max_lines,
-            overflow=overflow,
-            style=style,
-            **attrs,
-        )
-
-    def span(
-        self,
-        suffix: str,
-        content: str | Markup | Sequence[str | Markup | TextSpan],
-        *,
-        style: TextStyle | None = None,
-        **attrs: Any,
-    ) -> TextSpan:
-        return tspan(
-            self.id(suffix),
-            content,
-            style=style,
-            **_offset_xy_attrs(attrs, x_mm=self.x_mm, y_mm=self.y_mm),
-        )
-
-    def image(
-        self,
-        suffix: str,
-        reference: str,
-        x_mm: float,
-        y_mm: float,
-        width_mm: float,
-        height_mm: float | None = None,
-        **attrs: Any,
-    ) -> Element:
-        return image(
-            self.id(suffix),
-            reference,
-            self.x(x_mm),
-            self.y(y_mm),
-            width_mm,
-            height_mm,
-            **attrs,
-        )
-
-    def qr(
-        self,
-        suffix: str,
-        x_mm: float,
-        y_mm: float,
-        data: str | bytes,
-        *,
-        size_mm: float,
-        ecc: str = "M",
-        border_modules: int = 4,
-        fill: str = render_tokens.INK,
-        background_fill: str | None = None,
-        padding_mm: float = 0.0,
-        padding_fill: str | None = None,
-        **attrs: Any,
-    ) -> Element:
-        return qr(
-            self.id(suffix),
-            self.x(x_mm),
-            self.y(y_mm),
-            data,
-            size_mm=size_mm,
-            ecc=ecc,
-            border_modules=border_modules,
-            fill=fill,
-            background_fill=background_fill,
-            padding_mm=padding_mm,
-            padding_fill=padding_fill,
-            **attrs,
-        )
-
-    def line(
-        self,
-        suffix: str,
-        x1_mm: float,
-        y1_mm: float,
-        x2_mm: float,
-        y2_mm: float,
-        **attrs: Any,
-    ) -> Element:
-        return line(
-            self.id(suffix),
-            self.x(x1_mm),
-            self.y(y1_mm),
-            self.x(x2_mm),
-            self.y(y2_mm),
-            **attrs,
-        )
-
-    def rule(
-        self,
-        suffix: str,
-        x_mm: float,
-        y_mm: float,
-        width_mm: float,
-        *,
-        height_mm: float = 0.3,
-        fill: str,
-        opacity: float | None = None,
-        **attrs: Any,
-    ) -> Element:
-        return rule(
-            self.id(suffix),
-            self.x(x_mm),
-            self.y(y_mm),
-            width_mm,
-            height_mm=height_mm,
-            fill=fill,
-            opacity=opacity,
-            **attrs,
-        )
-
-    def triangle(
-        self,
-        suffix: str,
-        x_mm: float | None = None,
-        y_mm: float | None = None,
-        width_mm: float | None = None,
-        height_mm: float | None = None,
-        *,
-        cx_mm: float | None = None,
-        cy_mm: float | None = None,
-        size_mm: float | None = None,
-        direction: str = "right",
-        **attrs: Any,
-    ) -> Element:
-        if cx_mm is not None or cy_mm is not None:
-            return triangle(
-                self.id(suffix),
-                cx_mm=self.x(cx_mm or 0.0),
-                cy_mm=self.y(cy_mm or 0.0),
-                size_mm=size_mm,
-                width_mm=width_mm,
-                height_mm=height_mm,
-                direction=direction,
-                **attrs,
-            )
-        return triangle(
-            self.id(suffix),
-            x_mm=self.x(x_mm or 0.0),
-            y_mm=self.y(y_mm or 0.0),
-            width_mm=width_mm,
-            height_mm=height_mm,
-            direction=direction,
-            **attrs,
-        )
-
-    def transform_builder(self) -> TransformBuilder:
-        return TransformBuilder(origin_x_mm=self.x_mm, origin_y_mm=self.y_mm)
-
-    def path_builder(self) -> PathBuilder:
-        return PathBuilder(origin_x_mm=self.x_mm, origin_y_mm=self.y_mm)
-
-    def path(self, suffix: str, d: str | PathBuilder, **attrs: Any) -> Element:
-        return path(self.id(suffix), d, **attrs)
-
-    def group(
-        self,
-        suffix: str,
-        label: str,
-        *children: Element,
-        **attrs: Any,
-    ) -> Element:
-        return group(self.id(suffix), label, *children, **attrs)
-
-    def layer(self, label: str, *children: Element, **attrs: Any) -> Element:
-        return self.group("group", label, *children, **attrs)
-
-
-
-def block(prefix: str, *, at: tuple[float, float] = (0.0, 0.0)) -> Block:
-    """Create a :class:`Block` scope with an id prefix and origin offset.
-
-    Args:
-        prefix: Id prefix used for every child element produced via the block.
-        at: ``(x_mm, y_mm)`` origin applied to all child coordinates.
-
-    Returns:
-        Block: A scoped authoring helper.
-
-    Example:
-        block('hero', at=(10, 20))
-
-    Tags: layout, builder
-    """
-    x_mm, y_mm = at
-    return Block(prefix=prefix, x_mm=x_mm, y_mm=y_mm)
-
-
-

@@ -232,7 +232,7 @@ def text_mm(
 
 
 def tspan(element_id: str | None, text: str, *, raw: bool = False, **attrs: object) -> str:
-    merged = ({"id": element_id, **attrs} if element_id is not None else dict(attrs))
+    merged = {"id": element_id, **attrs} if element_id is not None else dict(attrs)
     inner = text if raw else escape_text(text)
     return f"<tspan{_attrs(merged)}>{inner}</tspan>"
 

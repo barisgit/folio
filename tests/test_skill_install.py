@@ -22,9 +22,7 @@ def test_project_scope_install_writes_into_cwd(
     assert str(destination.resolve()) in result.output
 
 
-def test_user_scope_install_uses_home(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_user_scope_install_uses_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     fake_home = tmp_path / "home"
     fake_home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: fake_home)
@@ -34,18 +32,14 @@ def test_user_scope_install_uses_home(
     assert (destination / "SKILL.md").is_file()
 
 
-def test_default_scope_is_project(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_default_scope_is_project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     result = runner.invoke(app, ["skill", "install"])
     assert result.exit_code == 0, result.output
     assert (tmp_path / ".agents" / "skills" / "folio" / "SKILL.md").is_file()
 
 
-def test_idempotent_reinstall_exits_zero(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_idempotent_reinstall_exits_zero(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     first = runner.invoke(app, ["skill", "install"])
     assert first.exit_code == 0
@@ -65,9 +59,7 @@ def test_conflict_without_force_exits_three(
     assert "conflicting" in result.output.lower()
 
 
-def test_force_overwrites_conflicts(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_force_overwrites_conflicts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     destination = tmp_path / ".agents" / "skills" / "folio"
     destination.mkdir(parents=True)
@@ -78,9 +70,7 @@ def test_force_overwrites_conflicts(
     assert (destination / "SKILL.md").read_bytes() == expected
 
 
-def test_prints_absolute_destination(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_prints_absolute_destination(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     result = runner.invoke(app, ["skill", "install"])
     assert result.exit_code == 0

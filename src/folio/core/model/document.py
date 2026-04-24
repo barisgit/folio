@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from folio.core.model.defs import DefNode
+    from folio.core.model.export import ExportPreset
     from folio.core.model.markup import Markup
 
 

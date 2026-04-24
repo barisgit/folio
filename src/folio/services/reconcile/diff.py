@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from folio.services.reconcile.parse import ParsedElement, ParsedSvg
 from folio.core.render.primitives import pt_to_mm
+from folio.services.reconcile.parse import ParsedElement, ParsedSvg
 
 
 @dataclass(frozen=True)

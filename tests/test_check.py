@@ -8,6 +8,7 @@ from unittest.mock import MagicMock
 import pytest
 from typer.testing import CliRunner
 
+from folio.cli import app
 from folio.services.check.backends import (
     FORMAT_BACKENDS,
     LINT_BACKENDS,
@@ -22,7 +23,6 @@ from folio.services.check.backends import (
 )
 from folio.services.check.runner import EXIT_DIAGNOSTICS, EXIT_INFRA_FAILURE, EXIT_PASS, run_check
 from folio.services.check.target import CheckTarget, resolve_check_target
-from folio.cli import app
 
 runner = CliRunner()
 

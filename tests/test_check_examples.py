@@ -30,9 +30,7 @@ def test_examples_step_reports_failure_labels(
         "symbols": [
             {
                 "id": "test.broken",
-                "examples": [
-                    {"code": "raise ValueError('boom')", "caption": None, "setup": None}
-                ],
+                "examples": [{"code": "raise ValueError('boom')", "caption": None, "setup": None}],
             }
         ],
     }
@@ -41,9 +39,7 @@ def test_examples_step_reports_failure_labels(
 
     from folio.services.check import runner as runner_mod
 
-    monkeypatch.setattr(
-        "folio.services.docs.generate.index_path", lambda: index_file
-    )
+    monkeypatch.setattr("folio.services.docs.generate.index_path", lambda: index_file)
     _ = runner_mod
 
     result = run_examples(target)
@@ -90,9 +86,7 @@ def test_examples_step_runs_between_validate_and_lint(
     ok_backend = MagicMock()
     ok_backend.name = "mock"
     ok_backend.is_available.return_value = True
-    ok_backend.run.return_value = BackendResult(
-        success=True, output="", backend_name="mock"
-    )
+    ok_backend.run.return_value = BackendResult(success=True, output="", backend_name="mock")
     monkeypatch.setattr(runner_mod, "LINT_BACKENDS", [ok_backend])
     monkeypatch.setattr(runner_mod, "FORMAT_BACKENDS", [ok_backend])
     monkeypatch.setattr(runner_mod, "TYPECHECK_BACKENDS", [ok_backend])

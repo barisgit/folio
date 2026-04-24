@@ -177,9 +177,7 @@ def run_check(
 
     result.steps.append(run_examples(target))
 
-    result.steps.append(
-        _run_backend_step("lint", LINT_BACKENDS, target, fix=fix, verbose=verbose)
-    )
+    result.steps.append(_run_backend_step("lint", LINT_BACKENDS, target, fix=fix, verbose=verbose))
 
     if fmt or fix:
         result.steps.append(

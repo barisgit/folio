@@ -1,4 +1,5 @@
 """`folio build` command — thin IO adapter."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -17,10 +18,8 @@ from folio.core.export.targets import (
     reject_unknown_collection_targets,
 )
 from folio.core.render.pipeline import (
-    BuildResult,
     RenderError,
     collection_from_module,
-    export_preset_map,
     render_collection,
 )
 
@@ -84,9 +83,7 @@ def build_command(
             or tuple(requested_targets) == ("all",)
             or "all" in requested_targets
         )
-        all_targets = tuple(
-            target for plan in requested_plans for target in plan.requested_targets
-        )
+        all_targets = tuple(target for plan in requested_plans for target in plan.requested_targets)
         reject_page_with_document_targets(all_targets, page_number)
         output_result = filter_result_by_page(result, page_number)
 

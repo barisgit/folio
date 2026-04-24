@@ -22,7 +22,6 @@ def default_spec_path(cwd: Path | None = None) -> Path:
     return base / _DEFAULT_SPEC_FILENAME
 
 
-
 def resolve_spec_path(path: Path | None = None) -> Path:
     if path is None:
         return default_spec_path()
@@ -30,7 +29,6 @@ def resolve_spec_path(path: Path | None = None) -> Path:
     if resolved.is_dir():
         return default_spec_path(resolved)
     return resolved
-
 
 
 def load_dsl_module(path: Path) -> types.ModuleType:

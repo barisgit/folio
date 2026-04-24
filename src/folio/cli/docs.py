@@ -1,4 +1,5 @@
 """`folio docs` command group — thin IO adapter."""
+
 from __future__ import annotations
 
 import json
@@ -48,9 +49,7 @@ def show_command(
     format: _Format = typer.Option(  # noqa: A002
         _Format.TEXT, "--format", case_sensitive=False, help="Output format."
     ),
-    json_flag: bool = typer.Option(
-        False, "--json", help="Shortcut for --format=json."
-    ),
+    json_flag: bool = typer.Option(False, "--json", help="Shortcut for --format=json."),
 ) -> None:
     """Show the signature, summary, params, examples, and source for a symbol."""
     fmt = _resolve_format(format=format, json_flag=json_flag)
@@ -80,9 +79,7 @@ def search_command(
     format: _Format = typer.Option(  # noqa: A002
         _Format.TEXT, "--format", case_sensitive=False, help="Output format."
     ),
-    json_flag: bool = typer.Option(
-        False, "--json", help="Shortcut for --format=json."
-    ),
+    json_flag: bool = typer.Option(False, "--json", help="Shortcut for --format=json."),
 ) -> None:
     """Search symbols by name, summary, parameter names, or tags."""
     fmt = _resolve_format(format=format, json_flag=json_flag)
@@ -104,16 +101,13 @@ def list_command(
     format: _Format = typer.Option(  # noqa: A002
         _Format.TEXT, "--format", case_sensitive=False, help="Output format."
     ),
-    json_flag: bool = typer.Option(
-        False, "--json", help="Shortcut for --format=json."
-    ),
+    json_flag: bool = typer.Option(False, "--json", help="Shortcut for --format=json."),
 ) -> None:
     """List every symbol in the index, optionally filtered by `--kind`."""
     fmt = _resolve_format(format=format, json_flag=json_flag)
     if kind is not None and kind not in VALID_KINDS:
         _error_console.print(
-            f"[red]invalid kind:[/red] {kind}\n"
-            f"[dim]expected one of:[/dim] {', '.join(VALID_KINDS)}"
+            f"[red]invalid kind:[/red] {kind}\n[dim]expected one of:[/dim] {', '.join(VALID_KINDS)}"
         )
         raise typer.Exit(code=_EXIT_USER_ERROR)
     index = _load_index()
@@ -161,9 +155,7 @@ def _load_index() -> dict[str, Any]:
         raise typer.Exit(code=_EXIT_SCHEMA_MISMATCH) from None
     version = payload.get("version")
     if version != 1:
-        _error_console.print(
-            f"[red]doc index schema mismatch:[/red] expected 1, got {version!r}"
-        )
+        _error_console.print(f"[red]doc index schema mismatch:[/red] expected 1, got {version!r}")
         raise typer.Exit(code=_EXIT_SCHEMA_MISMATCH)
     return payload
 
@@ -255,9 +247,7 @@ def _symbol_to_markdown(symbol: dict[str, Any]) -> Markdown:
             lines.append(f"- `{param['name']}` ({param['type']}): {param['doc']}")
     returns = symbol.get("returns")
     if returns:
-        lines.extend(
-            ["", f"## Returns\n\n`{returns['type']}` \u2014 {returns.get('doc', '')}"]
-        )
+        lines.extend(["", f"## Returns\n\n`{returns['type']}` \u2014 {returns.get('doc', '')}"])
     for index_, example in enumerate(symbol.get("examples", []), start=1):
         caption = example.get("caption") or f"Example {index_}"
         lines.extend(["", f"### {caption}", "", f"```python\n{example['code']}\n```"])

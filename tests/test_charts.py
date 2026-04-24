@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from folio.dsl import ChartHandle, Element, ElementKind, chart
 from folio.core.model import Asset
+from folio.dsl import ChartHandle, Element, ElementKind, chart
 
 matplotlib = pytest.importorskip("matplotlib")
 
@@ -74,12 +74,8 @@ def test_chart_cache_hit_reuses_png(tmp_path: Path, monkeypatch: pytest.MonkeyPa
         ax.set_xlim(0, 2)
         ax.set_ylim(0, 3)
 
-    first = chart(
-        "cached", x_mm=0.0, y_mm=0.0, width_mm=40.0, height_mm=20.0, dpi=72
-    )(plot)
-    second = chart(
-        "cached", x_mm=0.0, y_mm=0.0, width_mm=40.0, height_mm=20.0, dpi=72
-    )(plot)
+    first = chart("cached", x_mm=0.0, y_mm=0.0, width_mm=40.0, height_mm=20.0, dpi=72)(plot)
+    second = chart("cached", x_mm=0.0, y_mm=0.0, width_mm=40.0, height_mm=20.0, dpi=72)(plot)
 
     assert first.content.reference == second.content.reference
     cache_file = (tmp_path / first.content.reference).resolve()
@@ -127,15 +123,11 @@ def test_chart_from_figure_rejects_non_figure() -> None:
         chart("bad", x_mm=0.0, y_mm=0.0, width_mm=10.0, height_mm=10.0).from_figure(None)  # type: ignore[arg-type]
 
 
-def test_chart_environment_cache_override(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_chart_environment_cache_override(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     cache_dir = tmp_path / "custom-cache"
     monkeypatch.setenv("FOLIO_CHART_CACHE_DIR", str(cache_dir))
 
-    handle = chart(
-        "env_cached", x_mm=0.0, y_mm=0.0, width_mm=30.0, height_mm=20.0, dpi=72
-    )
+    handle = chart("env_cached", x_mm=0.0, y_mm=0.0, width_mm=30.0, height_mm=20.0, dpi=72)
 
     @handle
     def _render(ax) -> None:

@@ -1,4 +1,5 @@
 """`folio reconcile` command — thin IO adapter."""
+
 from __future__ import annotations
 
 import json
@@ -9,10 +10,10 @@ import typer
 from rich.console import Console
 
 from folio.core.cache import CacheError, cached_pages, last_build_svg, reconcile_report_path
+from folio.core.dsl.loader import resolve_spec_path
 from folio.services.reconcile.diff import diff_svgs
 from folio.services.reconcile.parse import ParsedSvg, ParseError, parse_svg
 from folio.services.reconcile.report import print_report, report_payload, write_report
-from folio.core.dsl.loader import resolve_spec_path
 
 console = Console()
 

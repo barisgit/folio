@@ -9,6 +9,8 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
+import folio.core.render.tokens as render_tokens
+from folio.core.dsl.styles import TextStyle, coerce_text_style, merge_text_style_attrs
 from folio.core.model import (
     Asset,
     DefNode,
@@ -24,8 +26,6 @@ from folio.core.model import (
     TextMetrics,
     TextSpan,
 )
-from folio.core.dsl.styles import TextStyle, coerce_text_style, merge_text_style_attrs
-import folio.core.render.tokens as render_tokens
 from folio.core.render.tokens import MM_TO_PT, PT_TO_MM
 from folio.vendor.qrcodegen import QrCode
 
@@ -176,8 +176,7 @@ def _coerce_text_content(
             )
         return coerced
     raise TypeError(
-        f"{source} content must be a string, Markup, or a sequence of "
-        "strings/Markup/TextSpan"
+        f"{source} content must be a string, Markup, or a sequence of strings/Markup/TextSpan"
     )
 
 
@@ -264,15 +263,12 @@ class _WrappedLayout:
     metrics: TextMetrics
 
 
-
 def _default_line_step_mm(size_pt: float) -> float:
     return round(size_pt * PT_TO_MM * _DEFAULT_LINE_HEIGHT, 2)
 
 
-
 def _visible_markup_text(content: Markup) -> str:
     return html.unescape(_MARKUP_TAG_RE.sub("", content.value))
-
 
 
 def _measure_text_mm(text: str, *, size_pt: float, letter_spacing: float | None = None) -> float:
@@ -281,7 +277,6 @@ def _measure_text_mm(text: str, *, size_pt: float, letter_spacing: float | None 
     glyph_width_mm = size_pt * PT_TO_MM * _DEFAULT_WRAP_WIDTH_RATIO
     letter_spacing_mm = 0.0 if letter_spacing is None else float(letter_spacing) * PT_TO_MM
     return (len(text) * glyph_width_mm) + (max(0, len(text) - 1) * letter_spacing_mm)
-
 
 
 def _truncate_to_width(
@@ -294,11 +289,15 @@ def _truncate_to_width(
 ) -> str:
     candidate = text.strip()
     suffix = ELLIPSIS if use_ellipsis and candidate else ""
-    while candidate and _measure_text_mm(
-        f"{candidate}{suffix}",
-        size_pt=size_pt,
-        letter_spacing=letter_spacing,
-    ) > width_mm:
+    while (
+        candidate
+        and _measure_text_mm(
+            f"{candidate}{suffix}",
+            size_pt=size_pt,
+            letter_spacing=letter_spacing,
+        )
+        > width_mm
+    ):
         candidate = candidate[:-1].rstrip()
     if not candidate:
         ellipsis_width = _measure_text_mm(
@@ -308,7 +307,6 @@ def _truncate_to_width(
         )
         return ELLIPSIS if use_ellipsis and ellipsis_width <= width_mm else ""
     return f"{candidate}{suffix}"
-
 
 
 def _validate_wrap_options(
@@ -326,7 +324,6 @@ def _validate_wrap_options(
         raise TypeError("wrapped_text() max_lines must be positive when provided")
     if overflow not in {"ellipsis", "clip"}:
         raise TypeError("wrapped_text() overflow must be 'ellipsis' or 'clip'")
-
 
 
 def _root_measurement_attrs(
@@ -350,7 +347,6 @@ def _root_measurement_attrs(
     }
 
 
-
 def _span_measurement_attrs(
     attrs: dict[str, Any],
     *,
@@ -363,7 +359,6 @@ def _span_measurement_attrs(
         if key in overrides:
             merged[key] = float(overrides[key]) if key == "size_pt" else overrides[key]
     return merged
-
 
 
 def _flatten_text_runs(
@@ -432,7 +427,6 @@ def _flatten_text_runs(
     return runs
 
 
-
 def _tokenize_runs(runs: Sequence[_LayoutRun]) -> list[_WrapToken]:
     tokens: list[_WrapToken] = []
     for run in runs:
@@ -491,14 +485,12 @@ def _tokenize_runs(runs: Sequence[_LayoutRun]) -> list[_WrapToken]:
     return tokens
 
 
-
 def _token_width_mm(token: _WrapToken) -> float:
     return _measure_text_mm(
         token.measure_text,
         size_pt=token.size_pt,
         letter_spacing=token.letter_spacing,
     )
-
 
 
 def _space_piece(token: _WrapToken) -> _LinePiece:
@@ -512,7 +504,6 @@ def _space_piece(token: _WrapToken) -> _LinePiece:
     )
 
 
-
 def _line_piece_from_token(token: _WrapToken) -> _LinePiece:
     return _LinePiece(
         content=token.content,
@@ -522,7 +513,6 @@ def _line_piece_from_token(token: _WrapToken) -> _LinePiece:
         letter_spacing=token.letter_spacing,
         splittable=token.splittable,
     )
-
 
 
 def _truncate_piece_to_width(
@@ -570,12 +560,10 @@ def _truncate_piece_to_width(
     return None
 
 
-
 def _append_token(line: _LineBuilder, token: _WrapToken, *, leading_space: bool) -> None:
     if leading_space:
         line.append(_space_piece(token))
     line.append(_line_piece_from_token(token))
-
 
 
 def _append_ellipsis(line: _LineBuilder, *, width_mm: float, template: _LinePiece) -> None:
@@ -607,7 +595,6 @@ def _append_ellipsis(line: _LineBuilder, *, width_mm: float, template: _LinePiec
         line.append(truncated)
 
 
-
 def _line_content(
     pieces: Sequence[_LinePiece],
 ) -> str | Markup | tuple[str | Markup | TextSpan, ...]:
@@ -629,11 +616,9 @@ def _line_content(
     return tuple(built)
 
 
-
 def _line_height_mm(pieces: Sequence[_LinePiece], *, fallback_size_pt: float) -> float:
     size_pt = max((piece.size_pt for piece in pieces), default=fallback_size_pt)
     return round(size_pt * PT_TO_MM, 2)
-
 
 
 def _wrap_layout(
@@ -772,7 +757,6 @@ def _wrap_layout(
     )
 
 
-
 def measure_text(
     content: str | Markup | Sequence[str | Markup | TextSpan],
     *,
@@ -820,7 +804,6 @@ def measure_text(
         line_step_mm=line_step_mm,
         truncated=False,
     )
-
 
 
 def measure_wrapped_text(
@@ -912,12 +895,10 @@ def _coerce_points_mm(
     return points
 
 
-
 def _offset_mm_attr(attrs: dict[str, Any], key: str, delta: float) -> None:
     value = attrs.get(key)
     if value is not None:
         attrs[key] = value + delta
-
 
 
 def _offset_xy_attrs(attrs: dict[str, Any], *, x_mm: float, y_mm: float) -> dict[str, Any]:
@@ -990,9 +971,7 @@ class TransformBuilder:
         e_mm: float = 0.0,
         f_mm: float = 0.0,
     ) -> TransformBuilder:
-        self.operations.append(
-            f"matrix({a:g} {b:g} {c:g} {d:g} {_pt(e_mm)} {_pt(f_mm)})"
-        )
+        self.operations.append(f"matrix({a:g} {b:g} {c:g} {d:g} {_pt(e_mm)} {_pt(f_mm)})")
         return self
 
     def build(self) -> str:
@@ -1456,7 +1435,6 @@ class Block:
         return self.group("group", label, *children, **attrs)
 
 
-
 def block(prefix: str, *, at: tuple[float, float] = (0.0, 0.0)) -> Block:
     """Create a :class:`Block` scope with an id prefix and origin offset.
 
@@ -1474,7 +1452,6 @@ def block(prefix: str, *, at: tuple[float, float] = (0.0, 0.0)) -> Block:
     """
     x_mm, y_mm = at
     return Block(prefix=prefix, x_mm=x_mm, y_mm=y_mm)
-
 
 
 def page(
@@ -1521,9 +1498,7 @@ def page(
     if elements is None:
         if not children:
             raise TypeError("page() requires positional elements or elements=[...]")
-        page_elements = _coerce_elements(
-            _coerce_variadic_children(children), source="page()"
-        )
+        page_elements = _coerce_elements(_coerce_variadic_children(children), source="page()")
     else:
         page_elements = _coerce_elements(elements, source="page()")
     return Page(
@@ -1643,7 +1618,6 @@ def ellipse(
     )
 
 
-
 def polygon(
     element_id: str | None,
     points_mm: Sequence[tuple[float, float]] | Iterable[tuple[float, float]],
@@ -1672,7 +1646,6 @@ def polygon(
     )
 
 
-
 def polyline(
     element_id: str | None,
     points_mm: Sequence[tuple[float, float]] | Iterable[tuple[float, float]],
@@ -1699,7 +1672,6 @@ def polyline(
         content=_coerce_points_mm(points_mm, source="polyline()"),
         attrs=dict(attrs),
     )
-
 
 
 def text(
@@ -1780,7 +1752,6 @@ def tspan(
     )
 
 
-
 def multiline(
     element_id: str | None,
     x_mm: float,
@@ -1830,7 +1801,6 @@ def multiline(
         style=style,
         **attrs,
     )
-
 
 
 def wrapped_text(
@@ -1899,7 +1869,6 @@ def wrapped_text(
         style=style,
         **attrs,
     )
-
 
 
 def image(
@@ -2060,7 +2029,6 @@ def qr(
     return group(qr_id, label, *children, shape_rendering=shape_rendering, **attrs)
 
 
-
 def group(
     element_id: str | None,
     label: str,
@@ -2151,7 +2119,6 @@ def line(
     )
 
 
-
 def rule(
     element_id: str | None,
     x_mm: float,
@@ -2193,7 +2160,6 @@ def rule(
         opacity=opacity,
         **attrs,
     )
-
 
 
 def svg_node(
@@ -2490,7 +2456,6 @@ def clip_path(
     return svg_node("clipPath", element_id, *children, **attrs)
 
 
-
 def mask(
     element_id: str | None,
     *children: DefNode | Element,
@@ -2512,7 +2477,6 @@ def mask(
     Tags: defs, masking
     """
     return svg_node("mask", element_id, *children, **attrs)
-
 
 
 def linear_gradient_stops(
@@ -2561,7 +2525,6 @@ def linear_gradient_stops(
     return linear_gradient(element_id, *stop_nodes, **gradient_attrs)
 
 
-
 def drop_shadow(
     element_id: str | None,
     *,
@@ -2606,7 +2569,6 @@ def drop_shadow(
         ),
         **filter_attrs,
     )
-
 
 
 def grain(
@@ -2677,7 +2639,6 @@ def grain(
     )
 
 
-
 def transform_builder() -> TransformBuilder:
     """Return a fresh :class:`TransformBuilder` for chaining transforms.
 
@@ -2692,7 +2653,6 @@ def transform_builder() -> TransformBuilder:
     return TransformBuilder()
 
 
-
 def path_builder() -> PathBuilder:
     """Return a fresh :class:`PathBuilder` for chaining path commands.
 
@@ -2705,7 +2665,6 @@ def path_builder() -> PathBuilder:
     Tags: path, builder
     """
     return PathBuilder()
-
 
 
 def _pt(value_mm: float) -> float:

@@ -40,7 +40,6 @@ def _fake_results(*args, **kwargs):
     ]
 
 
-
 def test_search_stock_prints_table(monkeypatch) -> None:
     monkeypatch.setattr(stock_mod, "fetch_stock", _fake_results)
 
@@ -49,7 +48,6 @@ def test_search_stock_prints_table(monkeypatch) -> None:
     assert result.exit_code == 0
     assert "sunset over the ocean" in result.stdout
     assert "1920×1080" in result.stdout
-
 
 
 def test_search_stock_json_output(monkeypatch) -> None:
@@ -63,7 +61,6 @@ def test_search_stock_json_output(monkeypatch) -> None:
     assert payload[0]["id"] == "abc-123"
     assert payload[0]["width"] == 1920
     assert payload[1]["description"] == "Mountain landscape"
-
 
 
 def test_search_stock_provider_option(monkeypatch) -> None:
@@ -122,7 +119,6 @@ def test_search_stock_invalid_provider(monkeypatch) -> None:
     assert "nonexistent" in result.stdout
 
 
-
 def test_search_stock_per_page_option(monkeypatch) -> None:
     captured: dict = {}
 
@@ -138,7 +134,6 @@ def test_search_stock_per_page_option(monkeypatch) -> None:
     assert captured["per_page"] == 5
 
 
-
 def test_search_stock_empty_results(monkeypatch) -> None:
     monkeypatch.setattr(stock_mod, "fetch_stock", lambda *a, **kw: [])
 
@@ -146,7 +141,6 @@ def test_search_stock_empty_results(monkeypatch) -> None:
 
     assert result.exit_code == 0
     assert "No results found" in result.stdout
-
 
 
 def test_search_stock_missing_api_key_exits(monkeypatch) -> None:
@@ -159,7 +153,6 @@ def test_search_stock_missing_api_key_exits(monkeypatch) -> None:
 
     assert result.exit_code == 1
     assert "PEXELS_API_KEY" in result.stdout
-
 
 
 def test_search_stock_json_output_includes_metadata(monkeypatch) -> None:

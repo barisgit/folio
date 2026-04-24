@@ -119,9 +119,7 @@ class RuffLintBackend:
     def is_available(self) -> bool:
         return _tool_available("ruff")
 
-    def run(
-        self, project_root: Path, *, fix: bool = False, verbose: bool = False
-    ) -> BackendResult:
+    def run(self, project_root: Path, *, fix: bool = False, verbose: bool = False) -> BackendResult:
         args = ["ruff", "check", "--output-format", "json", str(project_root)]
         if fix:
             args.insert(2, "--fix")
@@ -153,9 +151,7 @@ class RuffFormatBackend:
     def is_available(self) -> bool:
         return _tool_available("ruff")
 
-    def run(
-        self, project_root: Path, *, fix: bool = False, verbose: bool = False
-    ) -> BackendResult:
+    def run(self, project_root: Path, *, fix: bool = False, verbose: bool = False) -> BackendResult:
         args = ["ruff", "format"]
         if not fix:
             args.append("--check")
@@ -187,9 +183,7 @@ class BlackFormatBackend:
     def is_available(self) -> bool:
         return _tool_available("black")
 
-    def run(
-        self, project_root: Path, *, fix: bool = False, verbose: bool = False
-    ) -> BackendResult:
+    def run(self, project_root: Path, *, fix: bool = False, verbose: bool = False) -> BackendResult:
         args = ["black"]
         if not fix:
             args.extend(["--check", "--diff"])
@@ -221,9 +215,7 @@ class TyTypecheckBackend:
     def is_available(self) -> bool:
         return _tool_available("ty")
 
-    def run(
-        self, project_root: Path, *, fix: bool = False, verbose: bool = False
-    ) -> BackendResult:
+    def run(self, project_root: Path, *, fix: bool = False, verbose: bool = False) -> BackendResult:
         _ = fix
         args = [
             "ty",
@@ -261,9 +253,7 @@ class PyrightTypecheckBackend:
     def is_available(self) -> bool:
         return _tool_available("pyright")
 
-    def run(
-        self, project_root: Path, *, fix: bool = False, verbose: bool = False
-    ) -> BackendResult:
+    def run(self, project_root: Path, *, fix: bool = False, verbose: bool = False) -> BackendResult:
         _ = fix
         args = ["pyright", "--outputjson", str(project_root)]
         proc = _run_cmd(args, cwd=project_root)
