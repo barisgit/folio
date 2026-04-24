@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest  # noqa: F401
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-INDEX_RELPATH = Path("src/folio/docs/index.json")
+INDEX_RELPATH = Path("src/folio/services/docs/index.json")
 
 
 @pytest.fixture
@@ -62,7 +62,7 @@ def test_sdist_contains_current_index(repo_copy: Path) -> None:
         inner = next(
             member
             for member in tf.getmembers()
-            if member.name.endswith("/src/folio/docs/index.json")
+            if member.name.endswith("/src/folio/services/docs/index.json")
         )
         fobj = tf.extractfile(inner)
         assert fobj is not None
@@ -79,7 +79,7 @@ def test_stale_committed_index_fails_build(repo_copy: Path) -> None:
     result = _run_build(repo_copy)
     assert result.returncode != 0, "build must fail on a stale committed index"
     combined = result.stdout + result.stderr
-    assert "python -m folio.docs.generate" in combined, (
+    assert "python -m folio.services.docs.generate" in combined, (
         f"staleness error message missing regeneration hint:\n{combined}"
     )
 

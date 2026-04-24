@@ -5,11 +5,11 @@ from pathlib import Path
 
 import pytest
 
-from folio.docs import VALID_KINDS
-from folio.docs.discovery import discover_all
-from folio.docs.generate import build_index, index_path
-from folio.docs.schema import INDEX_SCHEMA_VERSION
-from folio.docs.serialize import dumps
+from folio.services.docs import VALID_KINDS
+from folio.services.docs.discovery import discover_all
+from folio.services.docs.generate import build_index, index_path
+from folio.services.docs.schema import INDEX_SCHEMA_VERSION
+from folio.services.docs.serialize import dumps
 
 
 def test_index_schema_version_is_one() -> None:
@@ -42,7 +42,7 @@ def test_every_symbol_has_summary_and_source() -> None:
 
 def test_covers_dsl_all_tokens_and_styles() -> None:
     import folio.dsl as dsl
-    import folio.dsl.tokens as tokens
+    import folio.core.dsl.tokens as tokens
 
     ids = {symbol.id for symbol in discover_all()}
     for name in dsl.__all__:
@@ -65,7 +65,7 @@ def test_committed_index_matches_current_generator() -> None:
     stripped_committed = {k: v for k, v in committed.items() if k != "folio_version"}
     stripped_current = {k: v for k, v in current.items() if k != "folio_version"}
     assert stripped_committed == stripped_current, (
-        "committed src/folio/docs/index.json is stale — run `python -m folio.docs.generate`"
+        "committed src/folio/services/docs/index.json is stale — run `python -m folio.docs.generate`"
     )
 
 
@@ -77,7 +77,7 @@ def test_source_format_is_module_colon_line() -> None:
 
 
 def test_missing_docstring_fails_generation(monkeypatch: pytest.MonkeyPatch) -> None:
-    from folio.docs import discovery
+    from folio.services.docs import discovery
 
     class _Stub:
         __doc__ = None

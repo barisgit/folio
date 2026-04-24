@@ -6,13 +6,13 @@ from textwrap import dedent
 
 from typer.testing import CliRunner
 
-import folio.commands.rasterize as rasterize_command_module
-import folio.commands.search.stock as stock_mod
-from folio.cache import cache_build, cache_paths
+import folio.cli.rasterize as rasterize_command_module
+import folio.cli.search.stock as stock_mod
+from folio.core.cache import cache_build, cache_paths
 from folio.cli import app
-from folio.dsl.loader import load_dsl_module
-from folio.dsl.renderer import build_pages
-from folio.search.providers import SearchResult
+from folio.core.dsl.loader import load_dsl_module
+from folio.core.render.pipeline import build_pages
+from folio.services.search.providers import SearchResult
 
 runner = CliRunner()
 
@@ -556,7 +556,7 @@ def test_build_explicit_png_target_writes_only_participating_pages(
         output_path.write_bytes(b"PNG")
         return output_path
 
-    monkeypatch.setattr("folio.export.pipeline._render_svg_preview", fake_render)
+    monkeypatch.setattr("folio.core.export.pipeline._render_svg_preview", fake_render)
 
     command = runner.invoke(
         app,
@@ -610,7 +610,7 @@ def test_build_all_writes_declared_svg_png_pdf_and_idml(tmp_path: Path, monkeypa
         Image.new("RGB", (24, 16), color=(255, 0, 0)).save(output_path)
         return output_path
 
-    monkeypatch.setattr("folio.export.pipeline._render_svg_preview", fake_render)
+    monkeypatch.setattr("folio.core.export.pipeline._render_svg_preview", fake_render)
 
     command = runner.invoke(
         app,
@@ -670,7 +670,7 @@ def test_build_pdf_source_uses_internal_png_without_public_png(
         Image.new("RGB", (24, 16), color=(255, 0, 0)).save(output_path)
         return output_path
 
-    monkeypatch.setattr("folio.export.pipeline._render_svg_preview", fake_render)
+    monkeypatch.setattr("folio.core.export.pipeline._render_svg_preview", fake_render)
 
     command = runner.invoke(
         app,
@@ -746,7 +746,7 @@ def test_build_explicit_targets_apply_to_matching_documents_only(
         Image.new("RGB", (24, 16), color=(255, 0, 0)).save(output_path)
         return output_path
 
-    monkeypatch.setattr("folio.export.pipeline._render_svg_preview", fake_render)
+    monkeypatch.setattr("folio.core.export.pipeline._render_svg_preview", fake_render)
 
     pdf_command = runner.invoke(
         app,

@@ -8,9 +8,9 @@ from textwrap import dedent
 from typer.testing import CliRunner
 
 from folio.cli import app
-from folio.dsl.loader import load_dsl_module
-from folio.dsl.renderer import document_from_module
-from folio.export.idml import write_idml
+from folio.core.dsl.loader import load_dsl_module
+from folio.core.render.pipeline import document_from_module
+from folio.core.export.idml import write_idml
 
 runner = CliRunner()
 

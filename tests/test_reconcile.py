@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from folio.reconcile.diff import diff_svgs
-from folio.reconcile.parse import parse_svg
+from folio.services.reconcile.diff import diff_svgs
+from folio.services.reconcile.parse import parse_svg
 
 BASE_SVG = """<?xml version='1.0' encoding='UTF-8'?>
 <svg xmlns='http://www.w3.org/2000/svg'>

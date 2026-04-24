@@ -80,7 +80,7 @@ def test_schema_mismatch_exits_three(monkeypatch: pytest.MonkeyPatch, tmp_path: 
     bad_path = stub / "index.json"  # type: ignore[operator]
     bad_path.write_text(json.dumps({"version": 99, "symbols": []}), encoding="utf-8")
 
-    from folio.commands import docs as docs_module
+    from folio.cli import docs as docs_module
 
     monkeypatch.setattr(docs_module, "index_path", lambda: bad_path)
 
@@ -93,7 +93,7 @@ def test_schema_mismatch_exits_three(monkeypatch: pytest.MonkeyPatch, tmp_path: 
 def test_missing_index_file_exits_three(monkeypatch: pytest.MonkeyPatch, tmp_path: object) -> None:
     missing = tmp_path / "missing.json"  # type: ignore[operator]
 
-    from folio.commands import docs as docs_module
+    from folio.cli import docs as docs_module
 
     monkeypatch.setattr(docs_module, "index_path", lambda: missing)
 

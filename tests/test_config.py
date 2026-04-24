@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from folio.dsl.loader import default_spec_path, load_dsl_module, resolve_spec_path
-from folio.dsl.renderer import build_pages
+from folio.core.dsl.loader import default_spec_path, load_dsl_module, resolve_spec_path
+from folio.core.render.pipeline import build_pages
 
 
 def test_starter_config_uses_expected_page_ids() -> None:

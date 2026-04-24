@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from folio.dsl import ChartHandle, Element, ElementKind, chart
-from folio.dsl.model import Asset
+from folio.core.model import Asset
 
 matplotlib = pytest.importorskip("matplotlib")
 

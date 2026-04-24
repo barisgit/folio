@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from folio.layout import Columns, FlowColumns, Grid, cols, flow_cols, grid
+from folio.core.layout import Columns, FlowColumns, Grid, cols, flow_cols, grid
 
 
 def test_columns_from_bounds_returns_even_positions() -> None:

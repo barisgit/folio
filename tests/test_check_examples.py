@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from folio.check.runner import run_examples
-from folio.check.target import CheckTarget
+from folio.services.check.runner import run_examples
+from folio.services.check.target import CheckTarget
 
 
 @pytest.fixture
@@ -39,10 +39,10 @@ def test_examples_step_reports_failure_labels(
     index_file = tmp_path / "broken_index.json"
     index_file.write_text(json.dumps(payload), encoding="utf-8")
 
-    from folio.check import runner as runner_mod
+    from folio.services.check import runner as runner_mod
 
     monkeypatch.setattr(
-        "folio.docs.generate.index_path", lambda: index_file
+        "folio.services.docs.generate.index_path", lambda: index_file
     )
     _ = runner_mod
 
@@ -73,7 +73,7 @@ def test_examples_step_uses_setup_when_provided(
     index_file = tmp_path / "setup_index.json"
     index_file.write_text(json.dumps(payload), encoding="utf-8")
 
-    monkeypatch.setattr("folio.docs.generate.index_path", lambda: index_file)
+    monkeypatch.setattr("folio.services.docs.generate.index_path", lambda: index_file)
 
     result = run_examples(target)
     assert result.success, result.output
@@ -84,8 +84,8 @@ def test_examples_step_runs_between_validate_and_lint(
 ) -> None:
     from unittest.mock import MagicMock
 
-    from folio.check import runner as runner_mod
-    from folio.check.backends import BackendResult
+    from folio.services.check import runner as runner_mod
+    from folio.services.check.backends import BackendResult
 
     ok_backend = MagicMock()
     ok_backend.name = "mock"

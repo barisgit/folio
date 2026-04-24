@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 import pytest
 from typer.testing import CliRunner
 
-from folio.check.backends import (
+from folio.services.check.backends import (
     FORMAT_BACKENDS,
     LINT_BACKENDS,
     TYPECHECK_BACKENDS,
@@ -20,8 +20,8 @@ from folio.check.backends import (
     TyTypecheckBackend,
     select_backend,
 )
-from folio.check.runner import EXIT_DIAGNOSTICS, EXIT_INFRA_FAILURE, EXIT_PASS, run_check
-from folio.check.target import CheckTarget, resolve_check_target
+from folio.services.check.runner import EXIT_DIAGNOSTICS, EXIT_INFRA_FAILURE, EXIT_PASS, run_check
+from folio.services.check.target import CheckTarget, resolve_check_target
 from folio.cli import app
 
 runner = CliRunner()
@@ -126,7 +126,7 @@ class TestFallbackChains:
 
 class TestRunnerBehavior:
     def test_validate_accepts_document_collection(self, tmp_path: Path) -> None:
-        from folio.check import runner as runner_mod
+        from folio.services.check import runner as runner_mod
 
         spec_path = tmp_path / "build.py"
         spec_path.write_text(
@@ -174,7 +174,7 @@ def build():
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        from folio.check import runner as runner_mod
+        from folio.services.check import runner as runner_mod
 
         first = MagicMock()
         first.name = "first"
@@ -212,7 +212,7 @@ def build():
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        from folio.check import runner as runner_mod
+        from folio.services.check import runner as runner_mod
 
         ok_backend = _success_backend("ok")
         monkeypatch.setattr(runner_mod, "LINT_BACKENDS", [ok_backend])
@@ -238,7 +238,7 @@ def build():
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        from folio.check import runner as runner_mod
+        from folio.services.check import runner as runner_mod
 
         lint_backend = _success_backend("lint")
         monkeypatch.setattr(runner_mod, "LINT_BACKENDS", [lint_backend])
@@ -266,7 +266,7 @@ def build():
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        from folio.check import runner as runner_mod
+        from folio.services.check import runner as runner_mod
 
         lint_backend = _success_backend("lint")
         ok_backend = _success_backend("ok")
@@ -294,7 +294,7 @@ class TestCLIOutput:
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        from folio.check import runner as runner_mod
+        from folio.services.check import runner as runner_mod
 
         ok_backend = _success_backend("mock")
         monkeypatch.setattr(runner_mod, "LINT_BACKENDS", [ok_backend])
@@ -319,7 +319,7 @@ class TestCLIOutput:
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        from folio.check import runner as runner_mod
+        from folio.services.check import runner as runner_mod
 
         backend = _success_backend("mock")
         backend.run.return_value = BackendResult(
@@ -362,7 +362,7 @@ class TestExitCodes:
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        from folio.check import runner as runner_mod
+        from folio.services.check import runner as runner_mod
 
         ok_backend = _success_backend("mock")
         monkeypatch.setattr(runner_mod, "LINT_BACKENDS", [ok_backend])
@@ -384,7 +384,7 @@ class TestExitCodes:
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        from folio.check import runner as runner_mod
+        from folio.services.check import runner as runner_mod
 
         fail_backend = _success_backend("mock-lint")
         fail_backend.run.return_value = BackendResult(
@@ -413,7 +413,7 @@ class TestExitCodes:
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        from folio.check import runner as runner_mod
+        from folio.services.check import runner as runner_mod
 
         unavailable = MagicMock()
         unavailable.name = "unavailable"

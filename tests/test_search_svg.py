@@ -4,9 +4,9 @@ import json
 
 from typer.testing import CliRunner
 
-import folio.commands.search.svg as search_svg_command_module
+import folio.cli.search.svg as search_svg_command_module
 from folio.cli import app
-from folio.search.svg import SvgSearchError, SvgSearchResponse, SvgSearchResult, search_svg_assets
+from folio.services.search.svg import SvgSearchError, SvgSearchResponse, SvgSearchResult, search_svg_assets
 
 runner = CliRunner()
 
@@ -124,8 +124,8 @@ def test_search_svg_assets_ranks_and_verifies_results(monkeypatch) -> None:
             "https://api.iconify.design/logos/stripe.svg",
         }
 
-    monkeypatch.setattr("folio.search.svg._fetch_json", fake_fetch_json)
-    monkeypatch.setattr("folio.search.svg._probe_svg_url", fake_probe)
+    monkeypatch.setattr("folio.services.search.svg._fetch_json", fake_fetch_json)
+    monkeypatch.setattr("folio.services.search.svg._probe_svg_url", fake_probe)
 
     response = search_svg_assets("stripe", limit=3)
 

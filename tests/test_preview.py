@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-import folio.preview as preview
+import folio.core.preview as preview
 
 SVG = (
     '<svg xmlns="http://www.w3.org/2000/svg" '

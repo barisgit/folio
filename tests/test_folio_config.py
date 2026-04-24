@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from folio.dsl.loader import load_dsl_module
-from folio.dsl.renderer import build_pages, write_pages
+from folio.core.dsl.loader import load_dsl_module
+from folio.core.render.pipeline import build_pages, write_pages
 
 
 def test_bundled_folio_config_builds_standalone() -> None:

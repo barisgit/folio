@@ -53,8 +53,8 @@ from folio.dsl import (
     tspan,
     wrapped_text,
 )
-from folio.dsl.loader import DslError, load_dsl_module
-from folio.dsl.renderer import (
+from folio.core.dsl.loader import DslError, load_dsl_module
+from folio.core.render.pipeline import (
     RenderError,
     ValidationWarning,
     build_pages,
@@ -1201,7 +1201,7 @@ def test_validate_document_rejects_export_source_cycle() -> None:
 
 
 def test_validate_document_rejects_source_on_idml() -> None:
-    from folio.dsl.model import ExportFormat, ExportPreset, ExportScope
+    from folio.core.model import ExportFormat, ExportPreset, ExportScope
 
     doc = document(
         "brochure",

@@ -19,7 +19,7 @@ from folio.dsl import (
     tspan,
     wrapped_text,
 )
-from folio.layout import grid
+from folio.core.layout import grid
 
 from content import (
     BRAND_NAME,

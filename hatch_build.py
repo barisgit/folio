@@ -18,9 +18,9 @@ from typing import Any
 
 from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 
-_INDEX_RELPATH = "src/folio/docs/index.json"
+_INDEX_RELPATH = "src/folio/services/docs/index.json"
 _IGNORED_KEYS = frozenset({"generated_at", "folio_version"})
-_REGEN_COMMAND = "python -m folio.docs.generate"
+_REGEN_COMMAND = "python -m folio.services.docs.generate"
 
 
 class FolioDocsIndexHook(BuildHookInterface):
@@ -41,7 +41,7 @@ class FolioDocsIndexHook(BuildHookInterface):
         src_path = root / "src"
         sys.path.insert(0, str(src_path))
         try:
-            from folio.docs.generate import build_index  # noqa: PLC0415
+            from folio.services.docs.generate import build_index  # noqa: PLC0415
         finally:
             try:
                 sys.path.remove(str(src_path))
@@ -53,7 +53,7 @@ class FolioDocsIndexHook(BuildHookInterface):
 
         if current != committed:
             raise RuntimeError(
-                "folio.docs: committed src/folio/docs/index.json is stale. "
+                "folio.docs: committed src/folio/services/docs/index.json is stale. "
                 f"Run `{_REGEN_COMMAND}` and commit the result."
             )
 

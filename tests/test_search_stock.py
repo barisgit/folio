@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from folio.search import providers
+from folio.services.search import providers
 
 
 class _FakeResponse:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from folio.cache import cache_paths
+from folio.core.cache import cache_paths
 
 
 def test_cache_paths_are_namespaced_by_spec_file() -> None:

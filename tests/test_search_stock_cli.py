@@ -4,9 +4,9 @@ import json
 
 from typer.testing import CliRunner
 
-import folio.commands.search.stock as stock_mod
+import folio.cli.search.stock as stock_mod
 from folio.cli import app
-from folio.search.providers import SearchResult
+from folio.services.search.providers import SearchResult
 
 runner = CliRunner()
 
