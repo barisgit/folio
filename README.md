@@ -134,7 +134,7 @@ def build():
                 svg(),
                 png("1080p", viewport=(1920, 1080)),
                 png("4k", viewport=(3840, 2160)),
-                pdf(),
+                pdf(source="1080p"),
                 idml(),
             ],
         )
@@ -143,9 +143,11 @@ def build():
 
 `folio build` writes default exports, `folio build 1080p pdf` writes only those
 named targets, and `folio build all` writes every declared preset. IDML and PDF
-are document-scoped outputs; SVG and PNG are page-scoped outputs. PDF exports
-are currently raster-backed from rendered pages for visual fidelity; editable or
-vector PDF pipelines are planned separately. The IDML exporter maps common Folio
+are document-scoped outputs; SVG and PNG are page-scoped outputs. Export targets
+can depend on other presets: `pdf(source="1080p")` builds a PDF from the named
+PNG preset without requiring users to build `1080p` first or write unrequested
+PNG files to `out/`. PDF exports are currently raster-backed for visual fidelity;
+true SVG-to-vector-PDF conversion is planned separately. The IDML exporter maps common Folio
 primitives such as rectangles, text frames, lines, ovals, polygons, and
 polylines. This is an editable-structure MVP, not a full
 SVG compatibility layer: filters, gradients, defs, arbitrary SVG path commands,

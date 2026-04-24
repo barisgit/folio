@@ -556,7 +556,7 @@ def test_build_explicit_png_target_writes_only_participating_pages(
         output_path.write_bytes(b"PNG")
         return output_path
 
-    monkeypatch.setattr("folio.commands.build._render_svg_preview", fake_render)
+    monkeypatch.setattr("folio.export.pipeline._render_svg_preview", fake_render)
 
     command = runner.invoke(
         app,
@@ -610,7 +610,7 @@ def test_build_all_writes_declared_svg_png_pdf_and_idml(tmp_path: Path, monkeypa
         Image.new("RGB", (24, 16), color=(255, 0, 0)).save(output_path)
         return output_path
 
-    monkeypatch.setattr("folio.commands.build._render_svg_preview", fake_render)
+    monkeypatch.setattr("folio.export.pipeline._render_svg_preview", fake_render)
 
     command = runner.invoke(
         app,
@@ -622,6 +622,68 @@ def test_build_all_writes_declared_svg_png_pdf_and_idml(tmp_path: Path, monkeypa
     assert (out_dir / "cover_1080p.png").exists()
     assert (out_dir / "TM42_brochure.pdf").exists()
     assert (out_dir / "TM42_brochure.idml").exists()
+
+
+def test_build_pdf_source_uses_internal_png_without_public_png(
+    tmp_path: Path, monkeypatch
+) -> None:
+    spec_path = tmp_path / "build.py"
+    spec_path.write_text(
+        dedent(
+            """
+            from folio.dsl import collection, document, page, pdf, png, rect, svg
+
+            def build():
+                return collection(document(
+                    "brochure",
+                    pages=[
+                        page(
+                            rect("cover_bg", 0, 0, 10, 10),
+                            page_id="cover",
+                            filename="cover.svg",
+                            page_number=1,
+                        )
+                    ],
+                    filename="TM42_brochure",
+                    export_presets=[
+                        svg(),
+                        png("1080p", viewport=(1920, 1080)),
+                        pdf(source="1080p"),
+                    ],
+                    default_exports=["pdf"],
+                ))
+            """
+        ).strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    out_dir = tmp_path / "out"
+    calls: list[tuple[Path, tuple[int, int] | None]] = []
+
+    def fake_render(
+        svg_text: str, *, output_path: Path, viewport: tuple[int, int] | None = None
+    ) -> Path:
+        from PIL import Image
+
+        calls.append((output_path, viewport))
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        Image.new("RGB", (24, 16), color=(255, 0, 0)).save(output_path)
+        return output_path
+
+    monkeypatch.setattr("folio.export.pipeline._render_svg_preview", fake_render)
+
+    command = runner.invoke(
+        app,
+        ["build", str(spec_path), "pdf", "--out-dir", str(out_dir), "--no-cache"],
+    )
+
+    assert command.exit_code == 0, command.stdout
+    assert (out_dir / "TM42_brochure.pdf").exists()
+    assert not (out_dir / "cover.svg").exists()
+    assert not (out_dir / "cover_1080p.png").exists()
+    assert calls
+    assert calls[0][0].parent != out_dir
+    assert calls[0][1] == (1920, 1080)
 
 
 def test_build_rejects_unknown_export_target(tmp_path: Path) -> None:

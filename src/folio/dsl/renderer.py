@@ -256,6 +256,69 @@ def export_preset_map(document: Document) -> dict[str, ExportPreset]:
     return result
 
 
+def export_preset_source_name(preset: ExportPreset) -> str | None:
+    """Return the source preset name declared or implied by a preset."""
+    if preset.format is ExportFormat.PNG:
+        return preset.source or "svg"
+    return preset.source
+
+
+def _validate_export_preset_source(
+    preset: ExportPreset, presets: dict[str, ExportPreset]
+) -> None:
+    source_name = export_preset_source_name(preset)
+    if source_name is None:
+        return
+    source = presets.get(source_name)
+    if source is None:
+        raise RenderError(f"Export preset {preset.name} references unknown source: {source_name}")
+
+    if preset.format is ExportFormat.SVG:
+        raise RenderError(f"SVG export preset {preset.name} cannot declare a source")
+    if preset.format is ExportFormat.IDML:
+        raise RenderError(f"IDML export preset {preset.name} cannot declare a source")
+    if preset.format is ExportFormat.PNG:
+        if source.scope is not ExportScope.PAGE or source.format is not ExportFormat.SVG:
+            raise RenderError(
+                f"PNG export preset {preset.name} requires a page-scoped SVG source; "
+                f"{source_name} is {source.scope.value}-scoped {source.format.value}"
+            )
+        return
+    if preset.format is ExportFormat.PDF:
+        if source.scope is not ExportScope.PAGE or source.format is not ExportFormat.PNG:
+            raise RenderError(
+                f"PDF export preset {preset.name} requires a page-scoped PNG source; "
+                f"{source_name} is {source.scope.value}-scoped {source.format.value}"
+            )
+        return
+    raise RenderError(f"Unsupported export preset format: {preset.format}")
+
+
+def _validate_export_preset_cycles(presets: dict[str, ExportPreset]) -> None:
+    visiting: set[str] = set()
+    visited: set[str] = set()
+    path: list[str] = []
+
+    def visit(name: str) -> None:
+        if name in visited:
+            return
+        if name in visiting:
+            start = path.index(name)
+            cycle = " -> ".join([*path[start:], name])
+            raise RenderError(f"Export preset dependency cycle: {cycle}")
+        visiting.add(name)
+        path.append(name)
+        source_name = export_preset_source_name(presets[name])
+        if source_name in presets:
+            visit(source_name)
+        path.pop()
+        visiting.remove(name)
+        visited.add(name)
+
+    for name in presets:
+        visit(name)
+
+
 def default_export_names(document: Document) -> tuple[str, ...]:
     presets = export_preset_map(document)
     if document.default_exports is not None:
@@ -267,6 +330,10 @@ def default_export_names(document: Document) -> tuple[str, ...]:
 
 def _validate_export_presets(document: Document) -> None:
     presets = export_preset_map(document)
+
+    _validate_export_preset_cycles(presets)
+    for preset in presets.values():
+        _validate_export_preset_source(preset, presets)
 
     for name in default_export_names(document):
         if name not in presets:

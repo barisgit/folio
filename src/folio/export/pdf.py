@@ -19,12 +19,13 @@ class PdfExportError(RuntimeError):
 
 @dataclass(frozen=True)
 class PdfPage:
-    """Rendered page payload used by the raster-backed PDF exporter."""
+    """Rendered page payload used by the PDF exporter."""
 
     page_number: int
-    svg_text: str
+    svg_text: str | None
     width_mm: float
     height_mm: float
+    png_path: Path | None = None
 
 
 RenderSvg = Callable[[str], Path]
@@ -40,9 +41,9 @@ def write_pdf(
 ) -> Path:
     """Write a visual raster-backed PDF for a rendered Folio document.
 
-    `pages` must contain rendered SVG content for each PDF page. The fallback
-    path that receives only a `Document` is intentionally rejected so callers do
-    not accidentally produce the old blank placeholder PDF.
+    `pages` must contain rendered SVG content or a PNG artifact path for each
+    PDF page. The fallback path that receives only a `Document` is intentionally
+    rejected so callers do not accidentally produce the old blank placeholder PDF.
     """
 
     if pages is None:
@@ -89,8 +90,9 @@ def _write_raster_pdf(
         tmp_path = Path(tmp_dir)
         try:
             for index, page in enumerate(pages, start=1):
-                png_path = tmp_path / f"page-{index:04d}.png"
-                _render_page_svg(page, png_path, renderer)
+                png_path = page.png_path or (tmp_path / f"page-{index:04d}.png")
+                if page.png_path is None:
+                    _render_page_svg(page, png_path, renderer)
                 image = Image.open(png_path).convert("RGB")
                 images.append(image.copy())
         finally:
@@ -117,6 +119,8 @@ def _render_page_svg(
     output_path: Path,
     render_svg: Callable[[str, Path], Path] | None,
 ) -> Path:
+    if page.svg_text is None:
+        raise PdfExportError(f"PDF page {page.page_number} has no SVG or PNG content")
     if render_svg is not None:
         return render_svg(page.svg_text, output_path)
     return _render_svg_preview(

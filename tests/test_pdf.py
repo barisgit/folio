@@ -129,7 +129,7 @@ def test_build_pdf_target_writes_visual_pdf_for_each_document(tmp_path: Path, mo
         _write_png(output_path)
         return output_path
 
-    monkeypatch.setattr("folio.commands.build._render_svg_preview", fake_render)
+    monkeypatch.setattr("folio.export.pipeline._render_svg_preview", fake_render)
 
     command = runner.invoke(
         app,
@@ -178,7 +178,7 @@ def test_build_pdf_target_reports_rasterization_failure(tmp_path: Path, monkeypa
     def fail_render(svg_text: str, *, output_path: Path, viewport=None) -> Path:
         raise RuntimeError("no raster backend")
 
-    monkeypatch.setattr("folio.commands.build._render_svg_preview", fail_render)
+    monkeypatch.setattr("folio.export.pipeline._render_svg_preview", fail_render)
 
     command = runner.invoke(app, ["build", str(spec_path), "pdf", "--no-cache"])
 

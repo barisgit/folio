@@ -127,6 +127,7 @@ def png(
     *,
     viewport: tuple[int, int],
     filename_pattern: str | None = None,
+    source: str = "svg",
 ) -> ExportPreset:
     """Create a page-scoped PNG export preset with a fixed viewport."""
     return ExportPreset(
@@ -135,16 +136,20 @@ def png(
         scope=ExportScope.PAGE,
         viewport=_validate_viewport(viewport),
         filename_pattern=filename_pattern,
+        source=source,
     )
 
 
-def pdf(name: str = "pdf", *, filename_pattern: str | None = None) -> ExportPreset:
+def pdf(
+    name: str = "pdf", *, filename_pattern: str | None = None, source: str | None = None
+) -> ExportPreset:
     """Create a document-scoped PDF export preset."""
     return ExportPreset(
         name=name,
         format=ExportFormat.PDF,
         scope=ExportScope.DOCUMENT,
         filename_pattern=filename_pattern,
+        source=source,
     )
 
 

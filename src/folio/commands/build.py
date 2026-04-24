@@ -9,20 +9,15 @@ from rich.console import Console
 
 from folio.cache import cache_build
 from folio.dsl.loader import DslError, load_dsl_module, resolve_spec_path
-from folio.dsl.model import Document, ExportFormat, ExportPreset, ExportScope, Page
+from folio.dsl.model import ExportPreset, ExportScope
 from folio.dsl.renderer import (
     BuildResult,
     RenderedDocument,
-    RenderedPage,
     RenderError,
     collection_from_module,
-    default_export_names,
     render_collection,
-    resolve_export_targets,
-    write_pages,
 )
-from folio.export import PdfExportError, PdfPage, write_idml, write_pdf
-from folio.preview import _render_svg_preview
+from folio.export.pipeline import execute_export_plan, plan_export_targets
 
 console = Console()
 
@@ -71,159 +66,6 @@ def _filter_result_by_page(result: BuildResult, page_number: int | None) -> Buil
     )
 
 
-def _page_by_number(document: Document) -> dict[int, Page]:
-    return {page.page_number: page for page in document.pages}
-
-
-def _participating_pages(
-    rendered_document: RenderedDocument,
-    preset: ExportPreset,
-    *,
-    default_names: tuple[str, ...],
-) -> list[RenderedPage]:
-    pages_by_number = _page_by_number(rendered_document.document)
-    if preset.name in default_names or preset.format is ExportFormat.SVG:
-        return list(rendered_document.pages)
-    return [
-        page
-        for page in rendered_document.pages
-        if preset.name in pages_by_number[page.page_number].extra_exports
-    ]
-
-
-def _build_result_for_pages(
-    result: BuildResult,
-    preset: ExportPreset,
-    *,
-    default_names: tuple[str, ...],
-) -> BuildResult:
-    selected_documents: list[RenderedDocument] = []
-    selected_pages: list[RenderedPage] = []
-    for rendered_document in result.documents:
-        rendered_pages = _participating_pages(
-            rendered_document,
-            preset,
-            default_names=default_names,
-        )
-        if not rendered_pages:
-            continue
-        selected_page_numbers = {page.page_number for page in rendered_pages}
-        selected_document_pages = tuple(
-            page
-            for page in rendered_document.document.pages
-            if page.page_number in selected_page_numbers
-        )
-        selected_document = replace(rendered_document.document, pages=selected_document_pages)
-        selected_documents.append(
-            RenderedDocument(document=selected_document, pages=rendered_pages)
-        )
-        selected_pages.extend(rendered_pages)
-    return BuildResult(
-        pages=selected_pages,
-        config_hash=result.config_hash,
-        documents=selected_documents,
-    )
-
-
-def _png_output_name(page: RenderedPage, preset: ExportPreset) -> str:
-    stem = Path(page.filename).stem
-    if preset.filename_pattern:
-        return preset.filename_pattern.format(
-            stem=stem,
-            preset=preset.name,
-            page_id=page.page_id,
-            page_number=page.page_number,
-        )
-    return f"{stem}_{preset.name}.png"
-
-
-def _document_artifact_name(document: Document, preset: ExportPreset) -> str:
-    extension = preset.format.value
-    base = document.filename or document.document_id or "folio"
-    if preset.filename_pattern:
-        return preset.filename_pattern.format(
-            stem=base,
-            preset=preset.name,
-            document_id=document.document_id,
-        )
-    return f"{base}.{extension}"
-
-
-def _write_pngs(result: BuildResult, preset: ExportPreset, out_dir: Path) -> list[Path]:
-    written: list[Path] = []
-    for page in result.pages:
-        target = out_dir / _png_output_name(page, preset)
-        written.append(
-            _render_svg_preview(
-                page.content,
-                output_path=target,
-                viewport=preset.viewport,
-            )
-        )
-    return written
-
-
-def _write_document_export(
-    rendered_document: RenderedDocument,
-    preset: ExportPreset,
-    out_dir: Path,
-) -> Path:
-    artifact_name = _document_artifact_name(rendered_document.document, preset)
-    if preset.format is ExportFormat.IDML:
-        return write_idml(rendered_document.document, out_dir, package_name=artifact_name)
-    if preset.format is ExportFormat.PDF:
-        pdf_pages = tuple(
-            PdfPage(
-                page_number=page.page_number,
-                svg_text=page.content,
-                width_mm=page_model.width_mm,
-                height_mm=page_model.height_mm,
-            )
-            for page, page_model in zip(
-                rendered_document.pages,
-                sorted(rendered_document.document.pages, key=lambda page: page.page_number),
-                strict=True,
-            )
-        )
-        try:
-            return write_pdf(
-                rendered_document.document,
-                out_dir,
-                filename=artifact_name,
-                pages=pdf_pages,
-                render_svg=lambda svg_text, output_path: _render_svg_preview(
-                    svg_text, output_path=output_path
-                ),
-            )
-        except PdfExportError as exc:
-            raise RenderError(str(exc)) from exc
-    raise RenderError(f"Unsupported document export format: {preset.format}")
-
-
-def _write_target(
-    result: BuildResult,
-    preset: ExportPreset,
-    out_dir: Path,
-    *,
-    default_names: tuple[str, ...],
-) -> list[Path]:
-    if preset.scope is ExportScope.DOCUMENT:
-        return [
-            _write_document_export(rendered_document, preset, out_dir)
-            for rendered_document in result.documents
-        ]
-
-    target_result = _build_result_for_pages(
-        result,
-        preset,
-        default_names=default_names,
-    )
-    if preset.format is ExportFormat.SVG:
-        return write_pages(target_result, out_dir)
-    if preset.format is ExportFormat.PNG:
-        return _write_pngs(target_result, preset, out_dir)
-    raise RenderError(f"Unsupported page export format: {preset.format}")
-
 
 def _reject_page_with_document_targets(
     targets: tuple[ExportPreset, ...], page_number: int | None
@@ -264,39 +106,20 @@ def build_command(
             config_dir=resolved_spec.parent,
             source_path=resolved_spec,
         )
-        requested_by_document = tuple(
-            (
-                rendered_document,
-                resolve_export_targets(rendered_document.document, requested_targets),
-            )
+        requested_plans = tuple(
+            plan_export_targets(rendered_document.document, requested_targets)
             for rendered_document in result.documents
         )
         all_targets = tuple(
-            target
-            for _, targets in requested_by_document
-            for target in targets
+            target for plan in requested_plans for target in plan.requested_targets
         )
         _reject_page_with_document_targets(all_targets, page_number)
         output_result = _filter_result_by_page(result, page_number)
 
         written: list[Path] = []
         for rendered_document in output_result.documents:
-            document_result = BuildResult(
-                pages=list(rendered_document.pages),
-                config_hash=output_result.config_hash,
-                documents=[rendered_document],
-            )
-            default_names = default_export_names(rendered_document.document)
-            targets = resolve_export_targets(rendered_document.document, requested_targets)
-            for target in targets:
-                written.extend(
-                    _write_target(
-                        document_result,
-                        target,
-                        resolved_out_dir,
-                        default_names=default_names,
-                    )
-                )
+            plan = plan_export_targets(rendered_document.document, requested_targets)
+            written.extend(execute_export_plan(rendered_document, plan, resolved_out_dir))
         cached = None if no_cache else cache_build(result, spec_path=resolved_spec)
     except DslError as exc:
         console.print(f"[red]Build error:[/red] {exc}")

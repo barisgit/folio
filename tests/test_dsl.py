@@ -35,6 +35,8 @@ from folio.dsl import (
     multiline,
     offset,
     page,
+    pdf,
+    png,
     polygon,
     polyline,
     qr,
@@ -43,6 +45,7 @@ from folio.dsl import (
     rule,
     span,
     stop,
+    svg,
     text,
     tokens,
     transform_builder,
@@ -1149,6 +1152,69 @@ def test_text_raw_is_replaced_by_markup_builder() -> None:
 
     with pytest.raises(TypeError, match="use markup"):
         tspan("headline_accent", "world", raw=True)
+
+
+def test_export_preset_helpers_store_source_metadata() -> None:
+    assert png("1080p", viewport=(1920, 1080)).source == "svg"
+    assert pdf(source="1080p").name == "pdf"
+    assert pdf(source="1080p").source == "1080p"
+
+
+def test_validate_document_rejects_unknown_export_source() -> None:
+    doc = document(
+        "brochure",
+        pages=[page(rect("bg", 0, 0, 10, 10), page_id="p1", filename="p1.svg", page_number=1)],
+        export_presets=[svg(), pdf(source="missing")],
+        default_exports=["pdf"],
+    )
+
+    with pytest.raises(RenderError, match="unknown source: missing"):
+        validate_document(doc)
+
+
+def test_validate_document_rejects_unsupported_export_source_route() -> None:
+    doc = document(
+        "brochure",
+        pages=[page(rect("bg", 0, 0, 10, 10), page_id="p1", filename="p1.svg", page_number=1)],
+        export_presets=[svg(), pdf(source="svg")],
+        default_exports=["pdf"],
+    )
+
+    with pytest.raises(RenderError, match="requires a page-scoped PNG source"):
+        validate_document(doc)
+
+
+def test_validate_document_rejects_export_source_cycle() -> None:
+    doc = document(
+        "brochure",
+        pages=[page(rect("bg", 0, 0, 10, 10), page_id="p1", filename="p1.svg", page_number=1)],
+        export_presets=[
+            svg(),
+            png("a", viewport=(1920, 1080), source="b"),
+            png("b", viewport=(1920, 1080), source="a"),
+        ],
+        default_exports=["a"],
+    )
+
+    with pytest.raises(RenderError, match="dependency cycle: a -> b -> a"):
+        validate_document(doc)
+
+
+def test_validate_document_rejects_source_on_idml() -> None:
+    from folio.dsl.model import ExportFormat, ExportPreset, ExportScope
+
+    doc = document(
+        "brochure",
+        pages=[page(rect("bg", 0, 0, 10, 10), page_id="p1", filename="p1.svg", page_number=1)],
+        export_presets=[
+            svg(),
+            ExportPreset("idml", ExportFormat.IDML, ExportScope.DOCUMENT, source="svg"),
+        ],
+        default_exports=["idml"],
+    )
+
+    with pytest.raises(RenderError, match="IDML export preset idml cannot declare a source"):
+        validate_document(doc)
 
 
 def test_validate_document_warns_on_non_token_hex_colors() -> None:

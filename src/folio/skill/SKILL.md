@@ -52,12 +52,16 @@ folio check --verbose # show selected backend and its output
 
 ### 2. `folio build`
 
-Only once `check` is clean, produce the SVG artifacts. This writes page
-SVGs to the configured output directory.
+Only once `check` is clean, produce the requested export artifacts. This writes
+page SVG/PNG targets and document PDF/IDML targets to the configured output
+directory. Declared targets may depend on other presets, e.g.
+`pdf(source="1080p")` uses the `1080p` PNG pipeline internally without requiring
+a separate public PNG build.
 
 ```bash
-folio build           # renders cwd/build.py
-folio build path/to/spec.py
+folio build           # builds cwd/build.py default_exports
+folio build 1080p pdf # builds named export targets
+folio build path/to/spec.py all
 ```
 
 ### 3. `folio rasterize`
