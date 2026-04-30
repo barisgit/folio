@@ -111,6 +111,59 @@ def test_playground_state_includes_pages_declarations_values_and_css_vars(tmp_pa
     assert schema["theme.hero_size_pt"].max == 76
 
 
+def test_repeated_playground_load_reexecutes_imported_theme_module(tmp_path: Path) -> None:
+    (tmp_path / "theme.py").write_text(
+        dedent(
+            """
+            from folio.dsl import TextStyle, tweaks
+
+            theme = tweaks.group(
+                "theme",
+                primary=tweaks.color(default="#d9a64b"),
+                hero_size_pt=tweaks.size_pt(default=58, min=32, max=76),
+            )
+            HERO = TextStyle(font_size_pt=theme.hero_size_pt, fill=theme.primary)
+            """
+        ).strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    spec_path = _write_spec(
+        tmp_path,
+        dedent(
+            """
+            from folio.dsl import collection, document, page, text
+            from theme import HERO
+
+            def build():
+                return collection(
+                    document(
+                        "demo",
+                        pages=[
+                            page(
+                                page_id="one",
+                                filename="one.svg",
+                                page_number=1,
+                                elements=[text("hero", 10, 20, "Hi", style=HERO)],
+                            )
+                        ],
+                    )
+                )
+            """
+        ).strip()
+        + "\n",
+    )
+    _write_values(tmp_path, '[theme]\nprimary = "#445566"\nhero_size_pt = 64\n')
+
+    first = load_playground_state(spec_path)
+    second = load_playground_state(spec_path)
+
+    assert [tweak.key for tweak in first.tweaks] == ["theme.primary", "theme.hero_size_pt"]
+    assert [tweak.key for tweak in second.tweaks] == ["theme.primary", "theme.hero_size_pt"]
+    assert second.diagnostics == ()
+    assert 'fill="var(--folio-tweak-theme-primary, #445566)"' in second.pages[0].svg
+
+
 def test_playground_state_for_spec_without_tweaks_is_valid_and_empty(tmp_path: Path) -> None:
     spec_path = _write_spec(tmp_path, SPEC_WITHOUT_TWEAKS)
 

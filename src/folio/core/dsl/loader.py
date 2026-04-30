@@ -10,6 +10,9 @@ from pathlib import Path
 from folio.core.dsl import builtins as dsl_builtins
 
 
+_loaded_spec_module_names: set[str] = set()
+
+
 class DslError(Exception):
     """Raised when a DSL module cannot be loaded."""
 
@@ -50,6 +53,9 @@ def load_dsl_module(path: Path) -> types.ModuleType:
 
     dsl_package.render = dsl_builtins.render
     original_sys_path = list(sys.path)
+    _clear_previous_spec_modules()
+    _clear_spec_local_modules(resolved.parent)
+    before_load = set(sys.modules)
     sys.modules[module_name] = module
     sys.path.insert(0, str(resolved.parent))
     dsl_charts.set_spec_base_dir(resolved.parent)
@@ -63,5 +69,44 @@ def load_dsl_module(path: Path) -> types.ModuleType:
         sys.path[:] = original_sys_path
         with suppress(KeyError):
             del sys.modules[module_name]
+        _remember_spec_local_modules(resolved.parent, before_load)
 
     return module
+
+
+def _clear_previous_spec_modules() -> None:
+    for name in tuple(_loaded_spec_module_names):
+        sys.modules.pop(name, None)
+    _loaded_spec_module_names.clear()
+
+
+def _clear_spec_local_modules(spec_dir: Path) -> None:
+    """Remove cached user modules imported from the spec directory.
+
+    User specs commonly split declarations across local modules such as
+    ``theme.py``. Those modules must re-execute for every spec load so
+    context-scoped side effects, including tweak declarations, register into
+    the active load context instead of being skipped by ``sys.modules``.
+    """
+
+    root = spec_dir.resolve()
+    for name, module in list(sys.modules.items()):
+        module_file = getattr(module, "__file__", None)
+        if module_file is None:
+            continue
+        with suppress(OSError, RuntimeError, ValueError):
+            if Path(module_file).resolve().is_relative_to(root):
+                sys.modules.pop(name, None)
+
+
+def _remember_spec_local_modules(spec_dir: Path, before_load: set[str]) -> None:
+    root = spec_dir.resolve()
+    for name, module in list(sys.modules.items()):
+        if name in before_load:
+            continue
+        module_file = getattr(module, "__file__", None)
+        if module_file is None:
+            continue
+        with suppress(OSError, RuntimeError, ValueError):
+            if Path(module_file).resolve().is_relative_to(root):
+                _loaded_spec_module_names.add(name)
