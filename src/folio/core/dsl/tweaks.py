@@ -117,13 +117,19 @@ class TweakValue:
     style fields (e.g. :class:`folio.dsl.TextStyle`) preserve the wrapper
     instead of coercing it eagerly, so a future renderer can emit
     ``var(--folio-tweak-...)`` for live attributes.
+
+    The wrapper holds a back-reference to its :class:`TweakRegistry` and
+    reads the resolved primitive lazily through it. This makes persisted
+    values applied *after* declaration registration visible to wrappers
+    that were already handed back to the spec, which is the order of
+    operations used by the spec-load pipeline.
     """
 
-    __slots__ = ("_decl", "_value")
+    __slots__ = ("_decl", "_registry")
 
-    def __init__(self, declaration: TweakDeclaration, value: Any) -> None:
+    def __init__(self, declaration: TweakDeclaration, registry: "TweakRegistry") -> None:
         object.__setattr__(self, "_decl", declaration)
-        object.__setattr__(self, "_value", value)
+        object.__setattr__(self, "_registry", registry)
 
     # ------ public attributes (read-only) ------
 
@@ -137,7 +143,11 @@ class TweakValue:
 
     @property
     def value(self) -> Any:
-        return self._value
+        # Read directly from the registry's value mapping rather than going
+        # through ``TweakRegistry.resolved`` so a wrapper still works if the
+        # declaration was cleared from the registry (e.g. in tests). The
+        # declaration itself is pinned on the wrapper for that fallback.
+        return self._registry.values.get(self._decl.key, self._decl.default)
 
     @property
     def mode(self) -> str:
@@ -152,59 +162,62 @@ class TweakValue:
     # ------ primitive coercion ------
 
     def __str__(self) -> str:
-        return str(self._value)
+        return str(self.value)
 
     def __float__(self) -> float:
-        return float(self._value)  # type: ignore[arg-type]
+        return float(self.value)  # type: ignore[arg-type]
 
     def __int__(self) -> int:
-        return int(self._value)  # type: ignore[arg-type]
+        return int(self.value)  # type: ignore[arg-type]
 
     def __bool__(self) -> bool:
-        return bool(self._value)
+        return bool(self.value)
 
     # Numeric protocol: support ``theme.x + 4`` etc. without forcing
     # callers to call ``float(...)`` first. Returning a plain primitive
     # intentionally drops live metadata for the derived value.
     def __add__(self, other: Any) -> Any:
-        return self._value + other
+        return self.value + other
 
     def __radd__(self, other: Any) -> Any:
-        return other + self._value
+        return other + self.value
 
     def __sub__(self, other: Any) -> Any:
-        return self._value - other
+        return self.value - other
 
     def __rsub__(self, other: Any) -> Any:
-        return other - self._value
+        return other - self.value
 
     def __mul__(self, other: Any) -> Any:
-        return self._value * other
+        return self.value * other
 
     def __rmul__(self, other: Any) -> Any:
-        return other * self._value
+        return other * self.value
 
     def __truediv__(self, other: Any) -> Any:
-        return self._value / other
+        return self.value / other
 
     def __rtruediv__(self, other: Any) -> Any:
-        return other / self._value
+        return other / self.value
 
     def __neg__(self) -> Any:
-        return -self._value  # type: ignore[operator]
+        return -self.value  # type: ignore[operator]
 
     # ------ identity / equality ------
 
     def __repr__(self) -> str:
-        return f"TweakValue(key={self._decl.key!r}, value={self._value!r}, mode={self._decl.mode!r})"
+        return f"TweakValue(key={self._decl.key!r}, value={self.value!r}, mode={self._decl.mode!r})"
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, TweakValue):
-            return self._value == other._value and self._decl.key == other._decl.key
-        return self._value == other
+            return self.value == other.value and self._decl.key == other._decl.key
+        return self.value == other
 
     def __hash__(self) -> int:
-        return hash((self._decl.key, self._value))
+        # Hash by key only: the resolved primitive can change when
+        # ``TweakRegistry.apply_values`` runs, so a value-based hash
+        # would invalidate dict/set membership across persistence.
+        return hash(self._decl.key)
 
 
 # ---------------------------------------------------------------------------
@@ -264,8 +277,7 @@ class TweakRegistry:
                 f"duplicate tweak key: {decl.key!r} is already declared in this spec load"
             )
         self.declarations[decl.key] = decl
-        resolved = self.values.get(decl.key, decl.default)
-        return TweakValue(decl, resolved)
+        return TweakValue(decl, self)
 
     def resolved(self, key: str) -> Any:
         if key not in self.declarations:
@@ -353,7 +365,7 @@ def _check_range(value: float, *, min: float | None, max: float | None, kind: st
         raise ValueError(f"tweaks.{kind}() default {value} is above max={max}")
 
 
-def _normalize_color(value: str, *, kind: str) -> str:
+def normalize_color(value: str, *, kind: str) -> str:
     if not isinstance(value, str) or not value:
         raise TypeError(
             f"tweaks.{kind}() default must be a non-empty color string"
@@ -420,7 +432,7 @@ def color(
     """Declare a color tweak (live by default)."""
 
     _require(default, "color")
-    normalized = _normalize_color(default, kind="color")
+    normalized = normalize_color(default, kind="color")
     effective = _resolve_mode(kind="color", default_mode="live", override=mode)
     return (
         "color",

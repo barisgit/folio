@@ -15,11 +15,11 @@
 
 ## 3. TOML Values and Diagnostics
 
-- [ ] 3.1 Resolve the persisted values file at `<spec_dir>/theme.toml`; do not accept `values_file=` overrides in this change.
-- [ ] 3.2 Implement TOML loading with `tomllib`, dotted-key/table mapping, and fallback to declaration defaults when the file is missing.
-- [ ] 3.3 Implement validation for supported value types, numeric ranges, choice options, invalid modes, and unknown persisted keys (warning, not error).
-- [ ] 3.4 Implement a deterministic writer for Folio-owned scalar/simple-array tweak values, grouped by TOML table in canonical sorted key order; document that comments are not preserved.
-- [ ] 3.5 Add tests for valid values, missing file defaults, invalid type, out-of-range values, unknown key warnings, and deterministic write output.
+- [x] 3.1 Resolve the persisted values file at `<spec_dir>/theme.toml`; do not accept `values_file=` overrides in this change.
+- [x] 3.2 Implement TOML loading with `tomllib`, dotted-key/table mapping, and fallback to declaration defaults when the file is missing.
+- [x] 3.3 Implement validation for supported value types, numeric ranges, choice options, invalid modes, and unknown persisted keys (warning, not error).
+- [x] 3.4 Implement a deterministic writer for Folio-owned scalar/simple-array tweak values, grouped by TOML table in canonical sorted key order; document that comments are not preserved.
+- [x] 3.5 Add tests for valid values, missing file defaults, invalid type, out-of-range values, unknown key warnings, and deterministic write output.
 
 ## 4. Spec Load and Build Integration
 
