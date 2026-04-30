@@ -27,9 +27,16 @@ folio check          # validate + ruff + ty (optionally --fix / --format)
 - `content.py` — copy, constants, table data
 - `pages.py` — page layout and composition
 - `layout.py` / `theme.py` — reusable components and typography
+- `theme.toml` — current values for approved design-time tweaks
+
+Approved design values are declared in Python with `folio.dsl.tweaks` in
+`theme.py`. Their current project values live in `theme.toml`, so you can
+adjust brand accents or display sizes without duplicating those values in
+`tokens.extend(...)`.
 
 Rendered output lands in `./out/`. The build cache lives in `./.cache/`.
-Both are git-ignored.
+Both are git-ignored. `folio check`, `folio build`, `folio rasterize`, and
+`folio reconcile` remain the authoritative production workflow.
 
 ## Agent workflow
 

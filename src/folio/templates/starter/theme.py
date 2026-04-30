@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from folio.dsl import TextStyle, tokens
+from folio.dsl import TextStyle, tokens, tweaks
 
 tokens.extend(
     ink_black="#04060d",
     deep_navy="#070c1d",
     glass_navy="#18284a",
     mid_navy="#132243",
-    amber="#d9a64b",
     amber_deep="#b8862a",
     burgundy="#6b1c2a",
     coral="#ff5a3c",
@@ -23,21 +22,32 @@ TOTAL_PAGES = 3
 
 T = tokens.STYLES
 
+THEME_TWEAKS = tweaks.group(
+    "theme",
+    brand=tweaks.color(default="#c8a24a", label="Brand accent"),
+    hero_size_pt=tweaks.size_pt(
+        default=58,
+        label="Hero display size",
+        min=32,
+        max=76,
+    ),
+)
+
 DISPLAY_XL = TextStyle(
-    font_size_pt=58,
+    font_size_pt=THEME_TWEAKS.hero_size_pt,
     font_weight=800,
     fill=tokens.WHITE,
     letter_spacing=-2.2,
 )
 DISPLAY_XL_EM = TextStyle(
-    font_size_pt=58,
+    font_size_pt=THEME_TWEAKS.hero_size_pt,
     font_weight=800,
-    fill=tokens.ACCENT,
+    fill=THEME_TWEAKS.brand,
     letter_spacing=-2.2,
     font_style="italic",
 )
 DISPLAY_SERIF = TextStyle(
-    font_size_pt=58,
+    font_size_pt=THEME_TWEAKS.hero_size_pt,
     font_weight=300,
     fill=tokens.WHITE,
     letter_spacing=-2.2,
@@ -68,7 +78,7 @@ GIANT_NUMBER = TextStyle(
 EYEBROW = TextStyle(
     font_size_pt=7.6,
     font_weight=800,
-    fill=tokens.ACCENT,
+    fill=THEME_TWEAKS.brand,
     letter_spacing=4.0,
 )
 EYEBROW_DARK = TextStyle(
@@ -200,7 +210,7 @@ BRAND_NAME_DARK = TextStyle(
 BRAND_TAGLINE_LIGHT = TextStyle(
     font_size_pt=6.8,
     font_weight=700,
-    fill=tokens.ACCENT,
+    fill=THEME_TWEAKS.brand,
     letter_spacing=2.8,
 )
 BRAND_TAGLINE_DARK = TextStyle(
@@ -253,5 +263,6 @@ __all__ = [
     "METRIC_VALUE",
     "PAGE_SIZE_MM",
     "T",
+    "THEME_TWEAKS",
     "TOTAL_PAGES",
 ]
