@@ -47,8 +47,8 @@
 
 ## 7. Verification
 
-- [ ] 7.1 Run targeted unit tests for tweak model, TOML values, DSL integration, renderer modes, and CLI validate/build behavior.
-- [ ] 7.2 Run starter-template generation/build tests and confirm generated projects include valid `theme.toml` and a buildable `theme.py`.
-- [ ] 7.3 Run docs generation and example validation.
-- [ ] 7.4 Run the full project test suite.
-- [ ] 7.5 Run `openspec validate add-tweaks-model --strict` and fix any proposal/spec/task validation issues.
+- [x] 7.1 Run targeted unit tests for tweak model, TOML values, DSL integration, renderer modes, and CLI validate/build behavior.
+- [x] 7.2 Run starter-template generation/build tests and confirm generated projects include valid `theme.toml` and a buildable `theme.py`.
+- [x] 7.3 Run docs generation and example validation.
+- [x] 7.4 Run the full project test suite.
+- [x] 7.5 Run `openspec validate add-tweaks-model --strict` and fix any proposal/spec/task validation issues.
