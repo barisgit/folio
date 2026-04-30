@@ -1,0 +1,12 @@
+{
+  "build": "npm run build:playground",
+  "sourceHashes": {
+    "src/folio/playground_ui/index.html": "98610614a593890c72716c62b53dd7fff5c4041a1a86c44e167c5acdb10761cb",
+    "src/folio/playground_ui/main.ts": "e7aa1c04f0b27f264c066941d6992b9daea26f177afb544366c28cf21ff88ece",
+    "src/folio/playground_ui/styles.css": "7ee8e70153514bed0f869400f5b0aa5b1efea93696c1b3018b7d1923657c0f97",
+    "src/folio/playground_ui/README.md": "93d1aa0d2460ec14a79e271175f787a541f34a9741b9d1901bc2690043901292",
+    "src/folio/playground_ui/build.mjs": "82df061aca75010f3541521a0f6824662a42e1b87569d0a691ecc62310059dd7",
+    "package.json": "a080b1d061b6b435ddf49400ac00ef908c35a73df74cf95f47738db21dcd4efa",
+    "package-lock.json": "8ea9fdc5c9bbf2a37eeb13f370c569d8d845092e7188817de2c51656c63fe1fb"
+  }
+}

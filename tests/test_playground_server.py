@@ -4,15 +4,17 @@ from __future__ import annotations
 
 import json
 import threading
+from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
-from http import HTTPStatus
 from contextlib import contextmanager
+from http import HTTPStatus
+from importlib import resources
 from pathlib import Path
 from textwrap import dedent
-from typing import Iterator
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
+import folio.services.playground_assets as playground_assets
 from folio.core.cache import cache_build, cache_paths
 from folio.services.playground_server import (
     PlaygroundHTTPServer,
@@ -21,7 +23,6 @@ from folio.services.playground_server import (
     playground_url,
 )
 from folio.services.tweaks_load import load_spec_with_tweaks
-
 
 SPEC_WITH_TWEAKS = dedent(
     """
@@ -115,7 +116,20 @@ def _json_patch(url: str, payload: dict[str, object]) -> dict[str, object]:
         return json.loads(response.read().decode("utf-8"))
 
 
-def test_create_playground_server_binds_configurable_host_and_ephemeral_port(tmp_path: Path) -> None:
+def test_playground_assets_are_package_resources() -> None:
+    asset_root = resources.files(playground_assets)
+
+    assert asset_root.joinpath("index.html").is_file()
+    assert asset_root.joinpath("playground.js").is_file()
+    assert asset_root.joinpath("playground.css").is_file()
+    manifest = json.loads(asset_root.joinpath("manifest.json").read_text(encoding="utf-8"))
+    assert manifest["build"] == "npm run build:playground"
+    assert "src/folio/playground_ui/main.ts" in manifest["sourceHashes"]
+
+
+def test_create_playground_server_binds_configurable_host_and_port(
+    tmp_path: Path,
+) -> None:
     spec_path = _write_spec(tmp_path)
     server = create_playground_server(spec_path, host="127.0.0.1", port=0)
     try:
@@ -127,7 +141,7 @@ def test_create_playground_server_binds_configurable_host_and_ephemeral_port(tmp
         server.server_close()
 
 
-def test_get_root_returns_html_shell(tmp_path: Path) -> None:
+def test_get_root_returns_packaged_html_shell(tmp_path: Path) -> None:
     spec_path = _write_spec(tmp_path)
 
     with _running_server(spec_path) as base_url:
@@ -136,54 +150,87 @@ def test_get_root_returns_html_shell(tmp_path: Path) -> None:
 
     assert response.status == 200
     assert "text/html" in response.headers["Content-Type"]
+    assert response.headers["Cache-Control"] == "no-store"
     assert "Folio Tweaks Playground" in body
-    assert "/api/state" in body
+    assert 'href="/assets/playground.css"' in body
+    assert 'src="/assets/playground.js"' in body
+    assert "/api/state" not in body
 
 
-def test_get_root_includes_playground_ui_hooks(tmp_path: Path) -> None:
+def test_get_static_playground_assets(tmp_path: Path) -> None:
     spec_path = _write_spec(tmp_path)
 
     with _running_server(spec_path) as base_url:
-        with urlopen(base_url, timeout=5) as response:
-            body = response.read().decode("utf-8")
+        with urlopen(base_url + "assets/playground.css", timeout=5) as css_response:
+            css_body = css_response.read().decode("utf-8")
+        with urlopen(base_url + "assets/playground.js", timeout=5) as js_response:
+            js_body = js_response.read().decode("utf-8")
 
-    assert 'id="page-selector"' in body
-    assert 'id="preview-container"' in body
-    assert 'id="preview-frame"' in body
-    assert 'id="tweak-panel"' in body
-    assert 'id="diagnostics"' in body
-    assert "renderPageSelector" in body
-    assert "renderControls" in body
-    assert "renderPreview" in body
+    assert css_response.status == 200
+    assert "text/css" in css_response.headers["Content-Type"]
+    assert css_response.headers["Cache-Control"] == "no-store"
+    assert "#folio-playground" in css_body
+    assert js_response.status == 200
+    assert "javascript" in js_response.headers["Content-Type"]
+    assert js_response.headers["Cache-Control"] == "no-store"
+    assert "var API_STATE = \"/api/state\"" in js_body
+    assert "var API_TWEAKS = \"/api/tweaks\"" in js_body
 
 
-def test_get_root_ui_applies_live_vars_and_debounces_persistence(tmp_path: Path) -> None:
+def test_get_static_playground_asset_missing_returns_404(tmp_path: Path) -> None:
     spec_path = _write_spec(tmp_path)
 
     with _running_server(spec_path) as base_url:
-        with urlopen(base_url, timeout=5) as response:
+        try:
+            urlopen(base_url + "assets/missing.js", timeout=5)
+        except HTTPError as exc:
+            assert exc.code == 404
+            payload = json.loads(exc.read().decode("utf-8"))
+        else:  # pragma: no cover - defensive
+            raise AssertionError("expected HTTP 404")
+
+    assert payload["diagnostics"][0]["message"] == "not found"
+
+
+def test_get_static_playground_asset_rejects_traversal_and_directories(tmp_path: Path) -> None:
+    spec_path = _write_spec(tmp_path)
+
+    with _running_server(spec_path) as base_url:
+        for suffix in ("assets/%2e%2e/playground.js", "assets/%2Fetc/passwd", "assets/."):
+            try:
+                urlopen(base_url + suffix, timeout=5)
+            except HTTPError as exc:
+                assert exc.code == 404
+                payload = json.loads(exc.read().decode("utf-8"))
+            else:  # pragma: no cover - defensive
+                raise AssertionError(f"expected HTTP 404 for {suffix}")
+            assert payload["diagnostics"][0]["message"] == "not found"
+
+
+def test_packaged_js_preserves_current_ui_behavior(tmp_path: Path) -> None:
+    spec_path = _write_spec(tmp_path)
+
+    with _running_server(spec_path) as base_url:
+        with urlopen(base_url + "assets/playground.js", timeout=5) as response:
             body = response.read().decode("utf-8")
 
+    assert "function renderPageSelector" in body
+    assert "function renderControls" in body
+    assert "function renderPreview" in body
     assert "style.setProperty(tweak.cssVar, liveCssValue" in body
-    assert "if (tweak.kind === 'size_pt' || tweak.kind === 'letter_spacing') return `${value}pt`;" in body
-    assert "const DEBOUNCE_MS" in body
+    assert (
+        'if (tweak.kind === "size_pt" || tweak.kind === "letter_spacing") return `${value}pt`;'
+        in body
+    )
+    assert "var DEBOUNCE_MS" in body
     assert "setTimeout(() => patchTweak" in body
     assert "clearTimeout(pendingTimers.get" in body
     assert "fetch(API_TWEAKS" in body
     assert "JSON.stringify({ key: tweak.key" in body
-
-
-def test_get_root_ui_renders_controls_and_diagnostics(tmp_path: Path) -> None:
-    spec_path = _write_spec(tmp_path)
-
-    with _running_server(spec_path) as base_url:
-        with urlopen(base_url, timeout=5) as response:
-            body = response.read().decode("utf-8")
-
-    assert "if (tweak.kind === 'color') return 'color';" in body
-    assert "input.type = controlInputType(tweak)" in body
-    assert "range.type = 'range'" in body
-    assert "document.createElement('select')" in body
+    assert 'if (tweak.kind === "color") return "color";' in body
+    assert 'input.type = controlInputType(tweak)' in body
+    assert 'range.type = "range"' in body
+    assert 'document.createElement("select")' in body
     assert "displayDiagnostics" in body
     assert "control-diagnostic" in body
     assert "is-invalid" in body
@@ -304,7 +351,10 @@ def test_patch_api_tweaks_rereads_external_edit_before_write(tmp_path: Path) -> 
     values_path.write_text('[theme]\nprimary = "#111111"\nhero_size_pt = 60\n', encoding="utf-8")
 
     with _running_server(spec_path) as base_url:
-        values_path.write_text('[theme]\nprimary = "#222222"\nhero_size_pt = 68\n', encoding="utf-8")
+        values_path.write_text(
+            '[theme]\nprimary = "#222222"\nhero_size_pt = 68\n',
+            encoding="utf-8",
+        )
         state = _json_patch(
             base_url + "api/tweaks",
             {"key": "theme.primary", "value": "#abcdef"},

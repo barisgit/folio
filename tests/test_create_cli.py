@@ -54,7 +54,10 @@ def test_create_uses_builtin_defaults(tmp_path: Path) -> None:
     readme = (project_dir / "README.md").read_text(encoding="utf-8")
     assert "folio dev" in readme
     assert "browser playground" in readme
+    assert "page navigation" in readme
+    assert "zoom controls" in readme
     assert "theme.toml" in readme
+    assert "You do not need Node, npm, TypeScript" in readme
     assert "authoritative production workflow" in readme
 
 
@@ -109,7 +112,10 @@ def test_create_installs_skill_by_default(tmp_path: Path) -> None:
     skill_text = skill_file.read_text(encoding="utf-8")
     assert "folio dev" in skill_text
     assert "browser playground" in skill_text
+    assert "page navigation" in skill_text
+    assert "zoom controls" in skill_text
     assert "theme.toml" in skill_text
+    assert "do not need Node, npm, TypeScript" in skill_text
     assert "authoritative workflow" in skill_text
 
 
