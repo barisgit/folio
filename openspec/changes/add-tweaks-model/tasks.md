@@ -1,17 +1,17 @@
 ## 1. Core Tweak Model
 
-- [ ] 1.1 Add internal tweak declaration/value dataclasses for key, group, label, type, default, constraints, mode, resolved value, and diagnostics under `folio.core.dsl.tweaks`.
-- [ ] 1.2 Implement a spec-scoped `TweakRegistry` that starts clean for each spec load and records declarations from imported modules.
-- [ ] 1.3 Implement duplicate-key detection and missing-default/type-specific declaration errors.
-- [ ] 1.4 Implement `TweakValue` wrappers with primitive coercion (`__str__`, `__float__`, `__int__`, `__bool__`) and a stable CSS-variable identifier (`--folio-tweak-<dotted-key-with-dashes>`).
-- [ ] 1.5 Add unit tests for registry isolation across repeated and sequential spec loads, duplicate keys, missing defaults, and primitive coercion behavior.
+- [x] 1.1 Add internal tweak declaration/value dataclasses for key, group, label, type, default, constraints, mode, resolved value, and diagnostics under `folio.core.dsl.tweaks`.
+- [x] 1.2 Implement a spec-scoped `TweakRegistry` that starts clean for each spec load and records declarations from imported modules.
+- [x] 1.3 Implement duplicate-key detection and missing-default/type-specific declaration errors.
+- [x] 1.4 Implement `TweakValue` wrappers with primitive coercion (`__str__`, `__float__`, `__int__`, `__bool__`) and a stable CSS-variable identifier (`--folio-tweak-<dotted-key-with-dashes>`).
+- [x] 1.5 Add unit tests for registry isolation across repeated and sequential spec loads, duplicate keys, missing defaults, and primitive coercion behavior.
 
 ## 2. Public DSL API
 
-- [ ] 2.1 Add `folio.core.dsl.tweaks` with `group()`, `color()`, `size_pt()`, `size_mm()`, `opacity()`, `letter_spacing()`, `stroke_width()`, `choice()`, `preset()`, and `font_choice()` helpers. Do not add `image()` in this change.
-- [ ] 2.2 Re-export the `tweaks` namespace from `folio.core.dsl.__init__` and `folio.dsl` so users import `from folio.dsl import tweaks`.
-- [ ] 2.3 Type live-eligible `TextStyle` fields (`font_size_pt`, `letter_spacing`, `fill`, opacity-related fields) and live-eligible element-attribute fields as `float | TweakValue` (or `str | TweakValue` for color); store wrappers without primitive coercion at construction.
-- [ ] 2.4 Add DSL tests for colors in `fill`, numeric size values in `TextStyle`, group attribute access, duplicate keys, derived primitive expressions losing live metadata, and `TextStyle` storing `TweakValue` directly.
+- [x] 2.1 Add `folio.core.dsl.tweaks` with `group()`, `color()`, `size_pt()`, `size_mm()`, `opacity()`, `letter_spacing()`, `stroke_width()`, `choice()`, `preset()`, and `font_choice()` helpers. Do not add `image()` in this change.
+- [x] 2.2 Re-export the `tweaks` namespace from `folio.core.dsl.__init__` and `folio.dsl` so users import `from folio.dsl import tweaks`.
+- [x] 2.3 Type live-eligible `TextStyle` fields (`font_size_pt`, `letter_spacing`, `fill`, opacity-related fields) and live-eligible element-attribute fields as `float | TweakValue` (or `str | TweakValue` for color); store wrappers without primitive coercion at construction.
+- [x] 2.4 Add DSL tests for colors in `fill`, numeric size values in `TextStyle`, group attribute access, duplicate keys, derived primitive expressions losing live metadata, and `TextStyle` storing `TweakValue` directly.
 
 ## 3. TOML Values and Diagnostics
 

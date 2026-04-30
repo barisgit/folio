@@ -4,6 +4,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from folio.core.dsl.tweaks import TweakValue
+
 if TYPE_CHECKING:
     from folio.core.model import Element, Markup, TextMetrics, TextSpan
 
@@ -25,11 +27,11 @@ class TextStyle:
     Tags: model, text, style
     """
 
-    font_size_pt: float | None = None
+    font_size_pt: float | TweakValue | None = None
     font_weight: int | None = None
-    fill: str | None = None
-    fill_opacity: float | None = None
-    letter_spacing: float | None = None
+    fill: str | TweakValue | None = None
+    fill_opacity: float | TweakValue | None = None
+    letter_spacing: float | TweakValue | None = None
     text_anchor: str | None = None
     font_family: str | None = None
     font_style: str | None = None

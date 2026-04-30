@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from folio.core.dsl import builtins as _builtins
-from folio.core.dsl import tokens
+from folio.core.dsl import tokens, tweaks
 from folio.core.dsl.charts import ChartHandle, chart
 from folio.core.dsl.styles import TextStyle
 from folio.core.layout.helpers import cols, flow_cols, grid
@@ -146,5 +146,6 @@ __all__ = [
     "transform_builder",
     "triangle",
     "tspan",
+    "tweaks",
     "wrapped_text",
 ]

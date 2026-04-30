@@ -71,7 +71,7 @@ def _dsl_public_names() -> set[str]:
             continue
         if isinstance(value, _future._Feature):
             continue
-        if isinstance(value, types.ModuleType) and name != "tokens":
+        if isinstance(value, types.ModuleType) and name not in {"tokens", "tweaks"}:
             continue
         exposed.add(name)
     return exposed
