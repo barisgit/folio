@@ -8,6 +8,7 @@ from pathlib import Path
 
 import folio.core.render.tokens as render_tokens
 from folio.core.dsl.styles import TextStyle, merge_text_style_attrs
+from folio.core.dsl.tweaks import TweakValue
 from folio.core.model import (
     Asset,
     DefNode,
@@ -395,15 +396,33 @@ def _hex_colors_in_attrs(attrs: Mapping[str, object]) -> set[str]:
     colors: set[str] = set()
     trusted_colors = _token_hex_colors()
     for value in attrs.values():
-        if isinstance(value, str) and _HEX_COLOR_RE.fullmatch(value):
-            lowered = value.lower()
+        candidate = _hex_string_candidate(value)
+        if candidate is not None and _HEX_COLOR_RE.fullmatch(candidate):
+            lowered = candidate.lower()
             if lowered not in trusted_colors:
                 colors.add(lowered)
         elif isinstance(value, TextStyle) and value.fill is not None:
-            lowered = value.fill.lower()
+            fill_candidate = _hex_string_candidate(value.fill)
+            if fill_candidate is None:
+                continue
+            lowered = fill_candidate.lower()
             if _HEX_COLOR_RE.fullmatch(lowered) and lowered not in trusted_colors:
                 colors.add(lowered)
     return colors
+
+
+def _hex_string_candidate(value: object) -> str | None:
+    """Return ``value`` as a hex-color string when one is plausibly stored.
+
+    Tweak helpers wrap colors in :class:`TweakValue`; they coerce to the
+    resolved hex string via ``str()``. Unrelated objects return ``None``.
+    """
+
+    if isinstance(value, str):
+        return value
+    if isinstance(value, TweakValue):
+        return str(value)
+    return None
 
 
 def _collect_text_span_colors(span: TextSpan, colors: set[str]) -> None:

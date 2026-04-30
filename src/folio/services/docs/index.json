@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-04-24T22:11:00Z",
+  "generated_at": "2026-04-30T15:19:57Z",
   "folio_version": "0.1.0",
   "symbols": [
     {
@@ -860,13 +860,13 @@
       "name": "TextStyle",
       "kind": "style",
       "module": "folio.dsl",
-      "signature": "TextStyle(font_size_pt: 'float | None' = None, font_weight: 'int | None' = None, fill: 'str | None' = None, fill_opacity: 'float | None' = None, letter_spacing: 'float | None' = None, text_anchor: 'str | None' = None, font_family: 'str | None' = None, font_style: 'str | None' = None) -> None",
+      "signature": "TextStyle(font_size_pt: 'float | TweakValue | None' = None, font_weight: 'int | None' = None, fill: 'str | TweakValue | None' = None, fill_opacity: 'float | TweakValue | None' = None, letter_spacing: 'float | TweakValue | None' = None, text_anchor: 'str | None' = None, font_family: 'str | None' = None, font_style: 'str | None' = None) -> None",
       "summary": "Reusable text styling preset consumable by text primitives.",
       "description": "All fields are optional; unset fields inherit from renderer defaults.\nA ``TextStyle`` is itself callable — ``style(element_id, x_mm, y_mm,\ncontent, **attrs)`` produces a text :class:`Element` with the style\napplied. Methods ``span``, ``multiline``, ``wrapped_text``,\n``measure_text``, and ``measure_wrapped_text`` forward to the matching\nDSL primitives with ``style=self`` bound.",
       "params": [
         {
           "name": "font_size_pt",
-          "type": "float | None",
+          "type": "float | TweakValue | None",
           "doc": ""
         },
         {
@@ -876,17 +876,17 @@
         },
         {
           "name": "fill",
-          "type": "str | None",
+          "type": "str | TweakValue | None",
           "doc": ""
         },
         {
           "name": "fill_opacity",
-          "type": "float | None",
+          "type": "float | TweakValue | None",
           "doc": ""
         },
         {
           "name": "letter_spacing",
-          "type": "float | None",
+          "type": "float | TweakValue | None",
           "doc": ""
         },
         {
@@ -921,7 +921,7 @@
         "text",
         "style"
       ],
-      "source": "folio.core.dsl.styles:11"
+      "source": "folio.core.dsl.styles:13"
     },
     {
       "id": "folio.dsl.TransformBuilder",
@@ -4870,6 +4870,23 @@
         "primitive"
       ],
       "source": "folio.core.dsl.builtins:1720"
+    },
+    {
+      "id": "folio.dsl.tweaks",
+      "name": "tweaks",
+      "kind": "helper",
+      "module": "folio.dsl",
+      "signature": "tweaks",
+      "summary": "Design-time tweak declaration model.",
+      "description": "Specs declare which design values are user-tunable through helpers in this\nmodule. Persistence (``theme.toml``), validation diagnostics, renderer\nintegration, and the browser playground are layered on top in later\nchanges; this module owns the data model only.\n\nAuthoring shape::\n\n    from folio.dsl import TextStyle, tweaks\n\n    theme = tweaks.group(\n        \"theme\",\n        primary=tweaks.color(default=\"#d9a64b\", label=\"Primary brand\"),\n        hero_size_pt=tweaks.size_pt(default=58, min=32, max=76),\n    )\n\n    HERO = TextStyle(font_size_pt=theme.hero_size_pt, fill=theme.primary)\n\nHelpers must be invoked inside an active :func:`tweak_context`. Spec\nloading wraps the load/render pipeline in such a context; tests can\nwrap calls explicitly.",
+      "params": [],
+      "returns": null,
+      "examples": [],
+      "tags": [
+        "tweaks",
+        "model"
+      ],
+      "source": "folio.core.dsl.tweaks:1"
     },
     {
       "id": "folio.dsl.wrapped_text",

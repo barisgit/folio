@@ -91,6 +91,7 @@ DSL_KINDS: dict[str, str] = {
     "grid": "helper",
     # Module re-export
     "tokens": "helper",
+    "tweaks": "helper",
 }
 
 

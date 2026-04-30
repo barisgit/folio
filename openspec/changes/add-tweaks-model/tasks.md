@@ -23,11 +23,11 @@
 
 ## 4. Spec Load and Build Integration
 
-- [ ] 4.1 Add a service-level helper that loads a spec, creates a tweak context, loads `theme.toml`, executes and renders the collection, and returns both `BuildResult` and a `TweakRegistry` snapshot.
-- [ ] 4.2 Update `folio validate` to use the helper and report invalid persisted tweak values as validation failures and unknown keys as warnings.
-- [ ] 4.3 Update `folio build` to use the helper and render artifacts from persisted tweak values; emit warnings for unknown persisted keys without failing the build.
-- [ ] 4.4 Ensure the last-build cache is refreshed from rendered SVGs that include the active tweak values.
-- [ ] 4.5 Add CLI tests for validate/build with valid values, invalid values, unknown key warnings, and specs without tweak declarations.
+- [x] 4.1 Add a service-level helper that loads a spec, creates a tweak context, loads `theme.toml`, executes and renders the collection, and returns both `BuildResult` and a `TweakRegistry` snapshot.
+- [x] 4.2 Update `folio validate` to use the helper and report invalid persisted tweak values as validation failures and unknown keys as warnings.
+- [x] 4.3 Update `folio build` to use the helper and render artifacts from persisted tweak values; emit warnings for unknown persisted keys without failing the build.
+- [x] 4.4 Ensure the last-build cache is refreshed from rendered SVGs that include the active tweak values.
+- [x] 4.5 Add CLI tests for validate/build with valid values, invalid values, unknown key warnings, and specs without tweak declarations.
 
 ## 5. Renderer Mode Flag and Live-Eligible Formatter
 

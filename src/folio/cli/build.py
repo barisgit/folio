@@ -9,7 +9,8 @@ import typer
 from rich.console import Console
 
 from folio.core.cache import cache_build
-from folio.core.dsl.loader import DslError, load_dsl_module, resolve_spec_path
+from folio.core.dsl.loader import DslError, resolve_spec_path
+from folio.core.dsl.tweak_values import TweakValuesError
 from folio.core.export.pipeline import execute_export_plan, plan_export_targets
 from folio.core.export.targets import (
     document_requested_targets,
@@ -17,10 +18,10 @@ from folio.core.export.targets import (
     reject_page_with_document_targets,
     reject_unknown_collection_targets,
 )
-from folio.core.render.pipeline import (
-    RenderError,
-    collection_from_module,
-    render_collection,
+from folio.core.render.pipeline import RenderError
+from folio.services.tweaks_load import (
+    TweakValidationError,
+    load_spec_with_tweaks,
 )
 
 console = Console()
@@ -61,13 +62,8 @@ def build_command(
     resolved_spec = resolve_spec_path(spec_path)
     resolved_out_dir = (out_dir or (resolved_spec.parent / "out")).expanduser().resolve()
     try:
-        dsl_module = load_dsl_module(resolved_spec)
-        collection = collection_from_module(dsl_module)
-        result = render_collection(
-            collection,
-            config_dir=resolved_spec.parent,
-            source_path=resolved_spec,
-        )
+        outcome = load_spec_with_tweaks(resolved_spec)
+        result = outcome.result
         reject_unknown_collection_targets(
             tuple(rd.document for rd in result.documents),
             requested_targets,
@@ -97,6 +93,13 @@ def build_command(
             plan = plan_export_targets(rendered_document.document, document_targets)
             written.extend(execute_export_plan(rendered_document, plan, resolved_out_dir))
         cached = None if no_cache else cache_build(result, spec_path=resolved_spec)
+    except TweakValuesError as exc:
+        console.print(f"[red]Build error:[/red] {exc}")
+        raise typer.Exit(1) from exc
+    except TweakValidationError as exc:
+        for diagnostic in exc.diagnostics:
+            console.print(f"[red]Tweak error[/red] {diagnostic.key}: {diagnostic.message}")
+        raise typer.Exit(1) from exc
     except DslError as exc:
         console.print(f"[red]Build error:[/red] {exc}")
         raise typer.Exit(1) from exc
@@ -104,6 +107,11 @@ def build_command(
         console.print(f"[red]Render error:[/red] {exc}")
         raise typer.Exit(2) from exc
 
+    for diagnostic in outcome.diagnostics:
+        if diagnostic.severity == "warning":
+            console.print(
+                f"[yellow]Tweak warning[/yellow] {diagnostic.key}: {diagnostic.message}"
+            )
     for path in written:
         console.print(f"wrote [green]{path}[/green]")
     if cached is not None:
