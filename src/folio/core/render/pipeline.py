@@ -5,10 +5,61 @@ import types
 import warnings
 from collections.abc import Mapping, Sequence
 from pathlib import Path
+from typing import Literal
 
 import folio.core.render.tokens as render_tokens
 from folio.core.dsl.styles import TextStyle, merge_text_style_attrs
 from folio.core.dsl.tweaks import TweakValue
+
+RenderMode = Literal["build", "playground"]
+"""Render mode for SVG output.
+
+``build`` (default) emits concrete resolved primitives for every
+attribute. ``playground`` is wired through the same render entry points
+so ``add-tweaks-playground`` can later emit ``var(--folio-tweak-...)``
+for live-safe attributes without re-touching call sites. In this change
+both modes produce identical concrete SVG.
+"""
+
+# Live-eligible attribute names accept ``TweakValue`` wrappers and route
+# through ``_format_live_eligible_value`` instead of ``_mm``/``_pt``
+# numeric normalization. Both source-side authored keys (``font_size_pt``)
+# and target-side SVG names (``font-size``) are listed so the normalizer
+# can match either form. Geometry attributes are intentionally absent.
+_LIVE_ELIGIBLE_ATTRS: frozenset[str] = frozenset(
+    {
+        "fill",
+        "stroke",
+        "opacity",
+        "fill_opacity",
+        "fill-opacity",
+        "stroke_opacity",
+        "stroke-opacity",
+        "font_size_pt",
+        "font-size",
+        "letter_spacing",
+        "letter-spacing",
+        "stroke_width_pt",
+        "stroke-width",
+    }
+)
+
+
+def _format_live_eligible_value(value: object, *, mode: RenderMode) -> object:
+    """Format a value for a live-eligible attribute.
+
+    Both modes return the resolved concrete primitive in this change.
+    ``add-tweaks-playground`` will branch here on ``mode == "playground"``
+    to emit ``var(--folio-tweak-<key>, <fallback>)`` for the live-safe
+    attribute allow-list.
+    """
+
+    del mode  # reserved for the playground-mode branch
+    if isinstance(value, TweakValue):
+        return value.value
+    return value
+
+
 from folio.core.model import (
     Asset,
     DefNode,
@@ -485,21 +536,35 @@ def _normalize_attr_name(key: str) -> str:
     return trimmed.replace("__", ":").replace("_", "-")
 
 
-def _normalize_svg_attrs(attrs: dict[str, object]) -> dict[str, object]:
+def _normalize_svg_attrs(
+    attrs: dict[str, object], *, mode: RenderMode = "build"
+) -> dict[str, object]:
     normalized: dict[str, object] = {}
     for key, value in attrs.items():
         if value is None:
             continue
-        if (key.endswith("_mm") or key.endswith("_pt")) and isinstance(value, int | float | str):
-            stripped = _normalize_attr_name(key[:-3])
+        ends_pt = key.endswith("_pt")
+        ends_mm = key.endswith("_mm")
+        normalized_key = _normalize_attr_name(key[:-3] if ends_pt or ends_mm else key)
+        if key in _LIVE_ELIGIBLE_ATTRS or normalized_key in _LIVE_ELIGIBLE_ATTRS:
+            formatted = _format_live_eligible_value(value, mode=mode)
+            # Preserve the numeric float formatting that the legacy ``_pt``
+            # branch used to apply (e.g. ``font_size_pt=8`` -> ``8.0``)
+            # so SVG attribute strings remain stable across the model
+            # change.
+            if ends_pt and isinstance(formatted, int | float):
+                formatted = float(formatted)
+            normalized[normalized_key] = formatted
+            continue
+        if (ends_mm or ends_pt) and isinstance(value, int | float | str | TweakValue):
             numeric = float(value)
-            normalized[stripped] = m(numeric) if key.endswith("_mm") else numeric
+            normalized[normalized_key] = m(numeric) if ends_mm else numeric
             continue
         normalized[_normalize_attr_name(key)] = value
     return normalized
 
 
-def _render_text_span(span: TextSpan) -> str:
+def _render_text_span(span: TextSpan, *, mode: RenderMode = "build") -> str:
     attrs = merge_text_style_attrs(
         dict(span.attrs),
         source=f"TextSpan {span.element_id or '<anonymous>'}",
@@ -507,13 +572,13 @@ def _render_text_span(span: TextSpan) -> str:
     )
     return tspan_mm(
         span.element_id,
-        _render_text_content(span.content),
+        _render_text_content(span.content, mode=mode),
         raw=True,
-        **_normalize_svg_attrs(attrs),
+        **_normalize_svg_attrs(attrs, mode=mode),
     )
 
 
-def _render_text_content(content: object) -> str:
+def _render_text_content(content: object, *, mode: RenderMode = "build") -> str:
     if content is None:
         return ""
     if isinstance(content, str):
@@ -522,7 +587,7 @@ def _render_text_content(content: object) -> str:
         return content.value
     parts = _text_parts(content, source="text render")
     return "".join(
-        _render_text_span(part)
+        _render_text_span(part, mode=mode)
         if isinstance(part, TextSpan)
         else part.value
         if isinstance(part, Markup)
@@ -531,16 +596,18 @@ def _render_text_content(content: object) -> str:
     )
 
 
-def _render_def_node(node: DefNode, *, config_dir: Path) -> str:
-    attrs = _normalize_svg_attrs(dict(node.attrs))
+def _render_def_node(
+    node: DefNode, *, config_dir: Path, mode: RenderMode = "build"
+) -> str:
+    attrs = _normalize_svg_attrs(dict(node.attrs), mode=mode)
     if node.element_id is not None:
         attrs = {"id": node.element_id, **attrs}
     children = []
     for child in node.children:
         if isinstance(child, DefNode):
-            children.append(_render_def_node(child, config_dir=config_dir))
+            children.append(_render_def_node(child, config_dir=config_dir, mode=mode))
         elif isinstance(child, Element):
-            children.append(_render_element(child, config_dir=config_dir))
+            children.append(_render_element(child, config_dir=config_dir, mode=mode))
         else:
             raise RenderError(f"Unsupported defs child in {node.tag}: {type(child)!r}")
     node_content = node.content.value if isinstance(node.content, Markup) else (node.content or "")
@@ -551,27 +618,40 @@ def _render_def_node(node: DefNode, *, config_dir: Path) -> str:
     return f"<{node.tag}{attr_text}>{content}</{node.tag}>\n"
 
 
-def _defs_block(defs: str | Markup | tuple[DefNode, ...], *, config_dir: Path) -> str:
+def _defs_block(
+    defs: str | Markup | tuple[DefNode, ...],
+    *,
+    config_dir: Path,
+    mode: RenderMode = "build",
+) -> str:
     if not defs:
         return ""
     if isinstance(defs, str | Markup):
         defs_text = defs.value if isinstance(defs, Markup) else defs
         return defs_text if defs_text.endswith("\n") else f"{defs_text}\n"
-    content = "".join(_render_def_node(node, config_dir=config_dir) for node in defs)
+    content = "".join(_render_def_node(node, config_dir=config_dir, mode=mode) for node in defs)
     return f"<defs>\n{content}</defs>\n"
 
 
-def _render_text(element: Element) -> str:
+def _render_text(element: Element, *, mode: RenderMode = "build") -> str:
     attrs = merge_text_style_attrs(
         dict(element.attrs),
         source=f"Text element {element.element_id}",
         for_span=False,
     )
-    size_pt = float(attrs.pop("size_pt", 12))
+    # Route live-eligible style fields through the live-eligible formatter
+    # before primitive coercion so the playground change can swap a
+    # ``var(--folio-tweak-...)`` string in here without re-touching call
+    # sites. Both modes return a concrete primitive in this change.
+    size_pt_raw = _format_live_eligible_value(attrs.pop("size_pt", 12), mode=mode)
+    fill_raw = _format_live_eligible_value(attrs.pop("fill", "#000000"), mode=mode)
+    letter_spacing_raw = attrs.pop("letter_spacing", None)
+    if letter_spacing_raw is not None:
+        letter_spacing_raw = _format_live_eligible_value(letter_spacing_raw, mode=mode)
+    size_pt = float(size_pt_raw)
     weight = int(attrs.pop("weight", 400))
-    fill = str(attrs.pop("fill", "#000000"))
+    fill = str(fill_raw)
     raw = bool(attrs.pop("raw", False))
-    letter_spacing = attrs.pop("letter_spacing", None)
     anchor = str(attrs.pop("anchor", "start"))
     family = attrs.pop("family", None)
     font_style = attrs.pop("font_style", None)
@@ -583,7 +663,7 @@ def _render_text(element: Element) -> str:
             )
         content = element.content.value if isinstance(element.content, Markup) else element.content
     else:
-        content = _render_text_content(element.content)
+        content = _render_text_content(element.content, mode=mode)
     return text_mm(
         element.element_id,
         element.x_mm,
@@ -592,23 +672,25 @@ def _render_text(element: Element) -> str:
         size_pt=size_pt,
         weight=weight,
         fill=fill,
-        letter_spacing=None if letter_spacing is None else float(letter_spacing),
+        letter_spacing=None if letter_spacing_raw is None else float(letter_spacing_raw),
         anchor=anchor,
         family=None if family is None else str(family),
         italic=italic,
         font_style=None if font_style is None else str(font_style),
         raw=True,
-        **_normalize_svg_attrs(attrs),
+        **_normalize_svg_attrs(attrs, mode=mode),
     )
 
 
-def _render_element(element: Element, *, config_dir: Path) -> str:
+def _render_element(
+    element: Element, *, config_dir: Path, mode: RenderMode = "build"
+) -> str:
     attrs = dict(element.attrs)
 
     if element.kind is ElementKind.RECT:
         width_mm = float(attrs.pop("width_mm"))
         height_mm = float(attrs.pop("height_mm"))
-        fill = str(attrs.pop("fill", "none"))
+        fill = str(_format_live_eligible_value(attrs.pop("fill", "none"), mode=mode))
         return rect_mm(
             element.element_id,
             element.x_mm,
@@ -616,25 +698,25 @@ def _render_element(element: Element, *, config_dir: Path) -> str:
             width_mm,
             height_mm,
             fill=fill,
-            **_normalize_svg_attrs(attrs),
+            **_normalize_svg_attrs(attrs, mode=mode),
         )
 
     if element.kind is ElementKind.CIRCLE:
         radius_mm = float(attrs.pop("radius_mm"))
-        fill = str(attrs.pop("fill", "none"))
+        fill = str(_format_live_eligible_value(attrs.pop("fill", "none"), mode=mode))
         return circle_mm(
             element.element_id,
             element.x_mm,
             element.y_mm,
             radius_mm,
             fill=fill,
-            **_normalize_svg_attrs(attrs),
+            **_normalize_svg_attrs(attrs, mode=mode),
         )
 
     if element.kind is ElementKind.ELLIPSE:
         rx_mm = float(attrs.pop("rx_mm"))
         ry_mm = float(attrs.pop("ry_mm"))
-        fill = str(attrs.pop("fill", "none"))
+        fill = str(_format_live_eligible_value(attrs.pop("fill", "none"), mode=mode))
         return ellipse_mm(
             element.element_id,
             element.x_mm,
@@ -642,11 +724,11 @@ def _render_element(element: Element, *, config_dir: Path) -> str:
             rx_mm,
             ry_mm,
             fill=fill,
-            **_normalize_svg_attrs(attrs),
+            **_normalize_svg_attrs(attrs, mode=mode),
         )
 
     if element.kind is ElementKind.TEXT:
-        return _render_text(element)
+        return _render_text(element, mode=mode)
 
     if element.kind is ElementKind.IMAGE:
         if not isinstance(element.content, Asset):
@@ -660,22 +742,29 @@ def _render_element(element: Element, *, config_dir: Path) -> str:
             element.y_mm,
             element.content.width_mm,
             element.content.height_mm,
-            **_normalize_svg_attrs(attrs),
+            **_normalize_svg_attrs(attrs, mode=mode),
         )
         if isinstance(clip_def, DefNode):
-            clip_markup = _render_def_node(clip_def, config_dir=config_dir)
+            clip_markup = _render_def_node(clip_def, config_dir=config_dir, mode=mode)
             return f"<defs>\n{clip_markup}</defs>\n{image_markup}"
         return image_markup
 
     if element.kind is ElementKind.GROUP:
         label = str(attrs.pop("label", element.element_id))
         content = "".join(
-            _render_element(child, config_dir=config_dir) for child in element.children
+            _render_element(child, config_dir=config_dir, mode=mode)
+            for child in element.children
         )
-        return group_mm(element.element_id, label, content, **_normalize_svg_attrs(attrs))
+        return group_mm(
+            element.element_id, label, content, **_normalize_svg_attrs(attrs, mode=mode)
+        )
 
     if element.kind is ElementKind.PATH:
-        return path(element.element_id, str(element.content or ""), **_normalize_svg_attrs(attrs))
+        return path(
+            element.element_id,
+            str(element.content or ""),
+            **_normalize_svg_attrs(attrs, mode=mode),
+        )
 
     if element.kind is ElementKind.POLYGON:
         if not isinstance(element.content, tuple):
@@ -683,7 +772,7 @@ def _render_element(element: Element, *, config_dir: Path) -> str:
         return polygon_mm(
             element.element_id,
             element.content,
-            **_normalize_svg_attrs(attrs),
+            **_normalize_svg_attrs(attrs, mode=mode),
         )
 
     if element.kind is ElementKind.POLYLINE:
@@ -692,7 +781,7 @@ def _render_element(element: Element, *, config_dir: Path) -> str:
         return polyline_mm(
             element.element_id,
             element.content,
-            **_normalize_svg_attrs(attrs),
+            **_normalize_svg_attrs(attrs, mode=mode),
         )
 
     if element.kind is ElementKind.LINE:
@@ -705,7 +794,7 @@ def _render_element(element: Element, *, config_dir: Path) -> str:
             element.y_mm,
             float(x2_mm),
             float(y2_mm),
-            **_normalize_svg_attrs(attrs),
+            **_normalize_svg_attrs(attrs, mode=mode),
         )
 
     raise RenderError(f"Unsupported element kind for {element.element_id}: {element.kind}")
@@ -716,8 +805,11 @@ def _render_page(
     *,
     config_dir: Path,
     document_defs: str | Markup | tuple[DefNode, ...] = (),
+    mode: RenderMode = "build",
 ) -> RenderedPage:
-    body = "".join(_render_element(element, config_dir=config_dir) for element in page.elements)
+    body = "".join(
+        _render_element(element, config_dir=config_dir, mode=mode) for element in page.elements
+    )
     root = group_mm(
         page.page_id,
         page.label or page.page_id,
@@ -725,13 +817,13 @@ def _render_page(
         **{
             "data-page-number": page.page_number,
             "data-page-id": page.page_id,
-            **_normalize_svg_attrs(page.attrs),
+            **_normalize_svg_attrs(page.attrs, mode=mode),
         },
     )
     content = (
         svg_open(page.width_mm, page.height_mm)
-        + _defs_block(document_defs, config_dir=config_dir)
-        + _defs_block(page.defs, config_dir=config_dir)
+        + _defs_block(document_defs, config_dir=config_dir, mode=mode)
+        + _defs_block(page.defs, config_dir=config_dir, mode=mode)
         + root
         + "</svg>\n"
     )
@@ -743,10 +835,12 @@ def _render_page(
     )
 
 
-def _render_document_pages(document: Document, *, config_dir: Path) -> list[RenderedPage]:
+def _render_document_pages(
+    document: Document, *, config_dir: Path, mode: RenderMode = "build"
+) -> list[RenderedPage]:
     validate_document(document)
     return [
-        _render_page(page, config_dir=config_dir, document_defs=document.defs)
+        _render_page(page, config_dir=config_dir, document_defs=document.defs, mode=mode)
         for page in sorted(document.pages, key=lambda page: page.page_number)
     ]
 
@@ -756,8 +850,9 @@ def render_document(
     *,
     config_dir: Path,
     source_path: Path | None = None,
+    mode: RenderMode = "build",
 ) -> BuildResult:
-    pages = _render_document_pages(document, config_dir=config_dir)
+    pages = _render_document_pages(document, config_dir=config_dir, mode=mode)
     config_hash = document.config_hash or (
         config_digest(source_path) if source_path is not None else ""
     )
@@ -773,12 +868,13 @@ def render_collection(
     *,
     config_dir: Path,
     source_path: Path | None = None,
+    mode: RenderMode = "build",
 ) -> BuildResult:
     config_hash = config_digest(source_path) if source_path is not None else ""
     rendered_documents: list[RenderedDocument] = []
     pages: list[RenderedPage] = []
     for document in collection.documents:
-        rendered_pages = _render_document_pages(document, config_dir=config_dir)
+        rendered_pages = _render_document_pages(document, config_dir=config_dir, mode=mode)
         rendered_documents.append(RenderedDocument(document=document, pages=rendered_pages))
         pages.extend(rendered_pages)
         if document.config_hash:
@@ -791,11 +887,15 @@ def build_pages(
     *,
     config_dir: Path,
     output_dir: Path | None = None,
+    mode: RenderMode = "build",
 ) -> BuildResult:
     module_file = getattr(dsl_module, "__file__", None)
     source_path = Path(module_file).resolve() if isinstance(module_file, str) else None
     result = render_collection(
-        collection_from_module(dsl_module), config_dir=config_dir, source_path=source_path
+        collection_from_module(dsl_module),
+        config_dir=config_dir,
+        source_path=source_path,
+        mode=mode,
     )
     if output_dir is not None:
         write_pages(result, output_dir)

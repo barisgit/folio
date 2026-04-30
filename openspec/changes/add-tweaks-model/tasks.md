@@ -31,10 +31,10 @@
 
 ## 5. Renderer Mode Flag and Live-Eligible Formatter
 
-- [ ] 5.1 Add a render-mode flag (`build` or `playground`) to the renderer entry points used by `folio build`.
-- [ ] 5.2 Add a dedicated value formatter path for live-eligible attributes that bypasses `_mm` / `_pt` numeric normalization; in this change both modes emit concrete resolved values.
-- [ ] 5.3 Ensure geometry, page size, layout, image, and text-flow values remain rebuild-only and concrete in both modes.
-- [ ] 5.4 Add renderer tests proving build SVGs contain concrete values for tweak-backed attributes, no `var(--folio-tweak-...)` appears in any output, and the playground mode entry point is exercised end to end.
+- [x] 5.1 Add a render-mode flag (`build` or `playground`) to the renderer entry points used by `folio build`.
+- [x] 5.2 Add a dedicated value formatter path for live-eligible attributes that bypasses `_mm` / `_pt` numeric normalization; in this change both modes emit concrete resolved values.
+- [x] 5.3 Ensure geometry, page size, layout, image, and text-flow values remain rebuild-only and concrete in both modes.
+- [x] 5.4 Add renderer tests proving build SVGs contain concrete values for tweak-backed attributes, no `var(--folio-tweak-...)` appears in any output, and the playground mode entry point is exercised end to end.
 
 ## 6. Starter, Docs, and Skill
 
