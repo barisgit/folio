@@ -140,9 +140,15 @@ design value in both `tokens.extend(...)` and `tweaks.group(...)`: use
 tweaks for sanctioned project-level knobs, and keep tokens for shared
 design constants that are not meant to be tuned per project.
 
+`folio dev` starts the optional browser playground for these approved
+`tweaks.group(...)` values. Use it for visual tuning when the user wants to
+adjust declared tweaks interactively; accepted edits persist to
+`<spec_dir>/theme.toml`, not arbitrary Python source.
+
 `folio validate` and `folio build` load `theme.toml`, validate values, and
-emit concrete production artifacts. `folio check` → `folio build` →
-`folio rasterize` → `folio reconcile` remains the authoritative workflow.
+emit concrete production artifacts. `folio dev` is only a design-time tuning
+step: `folio check` → `folio build` → `folio rasterize` → `folio reconcile`
+remains the authoritative workflow.
 
 ## Working in a Folio project directory
 
@@ -177,9 +183,10 @@ When editing, prefer:
 
 - Do not hand-edit generated SVGs in `out/`. The user may accept a
   `folio reconcile` pass later, but don't anticipate that.
-- Do not hand-edit built SVGs or screenshots to apply tweak changes. Edit
-  `theme.toml` for existing declared tweaks, or adjust the Python
-  declaration only when no approved tweak exists.
+- Do not hand-edit playground HTML, built SVGs, or screenshots to apply
+  tweak changes. Use `folio dev` or edit `theme.toml` for existing declared
+  tweaks, and adjust the Python declaration only when no approved tweak
+  exists.
 - Do not regenerate the bundled starter template. If the user wants to
   reset, they run `folio create` on a new path.
 - Do not invent DSL symbols or keyword arguments. If `folio docs show`

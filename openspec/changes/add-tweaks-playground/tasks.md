@@ -32,19 +32,19 @@
 
 ## 5. Edit Persistence and Debounce
 
-- [ ] 5.1 Debounce rebuild-mode edits server-side so dragging a slider does not trigger one rebuild per keystroke.
+- [x] 5.1 Debounce rebuild-mode edits server-side so dragging a slider does not trigger one rebuild per keystroke.
 - [x] 5.2 Debounce live-mode persistence so disk writes are not issued for every intermediate value while the browser CSS variable updates immediately.
 - [x] 5.3 Implement last-write-wins behavior for `theme.toml`: reread on each render; on accepted PATCH, overwrite the file with the playground's view of values.
-- [ ] 5.4 Add server/API tests for startup success, startup render failure, no-tweaks empty state, live edit persistence, rebuild edit rerender, rejected invalid edits, debounce coalescing, last-write-wins after external edit, and cache isolation.
+- [x] 5.4 Add server/API tests for startup success, startup render failure, no-tweaks empty state, live edit persistence, rebuild edit rerender, rejected invalid edits, debounce coalescing, last-write-wins after external edit, and cache isolation.
 
 ## 6. Skill and Starter README
 
-- [ ] 6.1 Update the bundled Folio `SKILL.md` to introduce `folio dev` as the browser playground for `folio.dsl.tweaks`-declared values, persisting to `<spec_dir>/theme.toml`, and to keep the production pipeline authoritative.
-- [ ] 6.2 Update the starter `README.md` to add a `folio dev` example while preserving the production pipeline guidance from `add-tweaks-model`.
+- [x] 6.1 Update the bundled Folio `SKILL.md` to introduce `folio dev` as the browser playground for `folio.dsl.tweaks`-declared values, persisting to `<spec_dir>/theme.toml`, and to keep the production pipeline authoritative.
+- [x] 6.2 Update the starter `README.md` to add a `folio dev` example while preserving the production pipeline guidance from `add-tweaks-model`.
 
 ## 7. Verification
 
-- [ ] 7.1 Run targeted unit tests for the renderer playground mode, dev server endpoints, edit persistence, and debounce behavior.
-- [ ] 7.2 Run the build-output regression test confirming `folio build` SVGs contain no `var(--folio-tweak-` references.
-- [ ] 7.3 Run the full project test suite.
-- [ ] 7.4 Run `openspec validate add-tweaks-playground --strict` and fix any proposal/spec/task validation issues.
+- [x] 7.1 Run targeted unit tests for the renderer playground mode, dev server endpoints, edit persistence, and debounce behavior.
+- [x] 7.2 Run the build-output regression test confirming `folio build` SVGs contain no `var(--folio-tweak-` references.
+- [x] 7.3 Run the full project test suite.
+- [x] 7.4 Run `openspec validate add-tweaks-playground --strict` and fix any proposal/spec/task validation issues.

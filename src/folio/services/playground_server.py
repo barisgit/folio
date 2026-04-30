@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import threading
+import time
 from dataclasses import asdict
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -30,6 +32,7 @@ class PlaygroundHTTPServer(ThreadingHTTPServer):
 
     spec_path: Path
     startup_state: PlaygroundState
+    update_debouncer: _PlaygroundUpdateDebouncer
 
 
 PLAYGROUND_HTML = """<!doctype html>
@@ -343,7 +346,71 @@ def create_playground_server(
     server = PlaygroundHTTPServer((host, port), _PlaygroundRequestHandler)
     server.spec_path = resolved_spec
     server.startup_state = startup_state
+    server.update_debouncer = _PlaygroundUpdateDebouncer(resolved_spec)
     return server
+
+
+class _PlaygroundUpdateDebouncer:
+    """Coalesce rapid PATCH updates into one persisted render cycle."""
+
+    def __init__(self, spec_path: Path, *, delay_seconds: float = 0.15) -> None:
+        self.spec_path = spec_path
+        self.delay_seconds = delay_seconds
+        self._condition = threading.Condition()
+        self._pending: dict[str, Any] = {}
+        self._version = 0
+        self._completed_version = 0
+        self._deadline = 0.0
+        self._worker_running = False
+        self._state: PlaygroundState | None = None
+        self._error: Exception | None = None
+
+    def apply(self, updates: dict[str, Any]) -> PlaygroundState:
+        """Apply updates after a quiet debounce window and return fresh state."""
+
+        with self._condition:
+            self._pending.update(updates)
+            self._version += 1
+            requested_version = self._version
+            self._deadline = time.monotonic() + self.delay_seconds
+            if not self._worker_running:
+                self._worker_running = True
+                threading.Thread(target=self._run, daemon=True).start()
+            while self._completed_version < requested_version:
+                self._condition.wait()
+            if self._error is not None:
+                raise self._error
+            assert self._state is not None
+            return self._state
+
+    def _run(self) -> None:
+        while True:
+            with self._condition:
+                while True:
+                    remaining = self._deadline - time.monotonic()
+                    if remaining <= 0:
+                        break
+                    self._condition.wait(timeout=remaining)
+                updates = dict(self._pending)
+                self._pending.clear()
+                apply_version = self._version
+
+            try:
+                state = apply_tweak_update(self.spec_path, updates)
+                error: Exception | None = None
+            except Exception as exc:  # pragma: no cover - surfaced through handler tests
+                state = None
+                error = exc
+
+            with self._condition:
+                self._completed_version = apply_version
+                self._state = state
+                self._error = error
+                self._condition.notify_all()
+                if self._pending:
+                    continue
+                self._worker_running = False
+                return
 
 
 def playground_url(server: ThreadingHTTPServer) -> str:
@@ -432,7 +499,7 @@ class _PlaygroundRequestHandler(BaseHTTPRequestHandler):
         try:
             payload = self._read_json_body()
             updates = _updates_from_payload(payload)
-            state = apply_tweak_update(self.server.spec_path, updates)
+            state = self.server.update_debouncer.apply(updates)
         except (ValueError, json.JSONDecodeError) as exc:
             self._send_json(HTTPStatus.BAD_REQUEST, {"diagnostics": [_error_payload(str(exc))]})
             return

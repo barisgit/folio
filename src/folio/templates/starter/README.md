@@ -17,6 +17,7 @@ pip install -e /path/to/folio   # until folio is published to PyPI
 
 ```bash
 folio validate       # parse + DSL tree validation
+folio dev            # optional browser playground for approved tweaks
 folio build          # render SVGs into ./out/
 folio rasterize      # rasterize cached last build to PNG
 folio check          # validate + ruff + ty (optionally --fix / --format)
@@ -34,9 +35,14 @@ Approved design values are declared in Python with `folio.dsl.tweaks` in
 adjust brand accents or display sizes without duplicating those values in
 `tokens.extend(...)`.
 
+Run `folio dev` to open a local browser playground for tuning those approved
+values. Playground edits persist back to `theme.toml`; they do not edit
+arbitrary Python source.
+
 Rendered output lands in `./out/`. The build cache lives in `./.cache/`.
-Both are git-ignored. `folio check`, `folio build`, `folio rasterize`, and
-`folio reconcile` remain the authoritative production workflow.
+Both are git-ignored. `folio dev` is for design-time tuning only;
+`folio check`, `folio build`, `folio rasterize`, and `folio reconcile` remain
+the authoritative production workflow.
 
 ## Agent workflow
 

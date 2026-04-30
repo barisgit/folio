@@ -51,6 +51,11 @@ def test_create_uses_builtin_defaults(tmp_path: Path) -> None:
     assert 'name = "my-doc"' in pyproject
     assert "[tool.ruff]" in pyproject
     assert "[tool.ruff.lint]" in pyproject
+    readme = (project_dir / "README.md").read_text(encoding="utf-8")
+    assert "folio dev" in readme
+    assert "browser playground" in readme
+    assert "theme.toml" in readme
+    assert "authoritative production workflow" in readme
 
 
 def test_create_starter_template_builds_end_to_end(tmp_path: Path) -> None:
@@ -101,6 +106,11 @@ def test_create_installs_skill_by_default(tmp_path: Path) -> None:
     assert command.exit_code == 0
     skill_file = project_dir / ".agents" / "skills" / "folio" / "SKILL.md"
     assert skill_file.is_file()
+    skill_text = skill_file.read_text(encoding="utf-8")
+    assert "folio dev" in skill_text
+    assert "browser playground" in skill_text
+    assert "theme.toml" in skill_text
+    assert "authoritative workflow" in skill_text
 
 
 def test_create_skips_python_and_tool_caches(tmp_path: Path) -> None:

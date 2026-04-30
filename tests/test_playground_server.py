@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from pathlib import Path
 from textwrap import dedent
@@ -11,11 +12,13 @@ from typing import Iterator
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
+from folio.core.cache import cache_build, cache_paths
 from folio.services.playground_server import (
     PlaygroundHTTPServer,
     create_playground_server,
     playground_url,
 )
+from folio.services.tweaks_load import load_spec_with_tweaks
 
 
 SPEC_WITH_TWEAKS = dedent(
@@ -237,6 +240,94 @@ def test_patch_api_tweaks_accepts_updates_object(tmp_path: Path) -> None:
 
     assert state["values"]["theme.hero_size_pt"] == 70.0  # type: ignore[index]
     assert "hero_size_pt = 70.0" in (tmp_path / "theme.toml").read_text(encoding="utf-8")
+
+
+def test_create_playground_server_fails_before_serving_invalid_spec(tmp_path: Path) -> None:
+    spec_path = _write_spec(
+        tmp_path,
+        "from folio.dsl import collection\n\n\ndef build():\n    raise RuntimeError('boom')\n",
+    )
+
+    try:
+        create_playground_server(spec_path, host="127.0.0.1", port=0)
+    except RuntimeError as exc:
+        assert "boom" in str(exc)
+    else:  # pragma: no cover - defensive
+        raise AssertionError("expected startup failure")
+
+
+def test_patch_api_tweaks_rebuild_edit_returns_rerendered_preview(tmp_path: Path) -> None:
+    spec_path = _write_spec(tmp_path)
+
+    with _running_server(spec_path) as base_url:
+        state = _json_patch(
+            base_url + "api/tweaks",
+            {"key": "theme.hero_size_pt", "value": 70},
+        )
+
+    assert state["values"]["theme.hero_size_pt"] == 70.0  # type: ignore[index]
+    assert 'font-size="var(--folio-tweak-theme-hero-size-pt, 70.0)"' in state["pages"][0]["svg"]  # type: ignore[index]
+
+
+def test_patch_api_tweaks_debounces_concurrent_updates(tmp_path: Path) -> None:
+    spec_path = _write_spec(tmp_path)
+
+    with _running_server(spec_path) as base_url:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            futures = [
+                executor.submit(
+                    _json_patch,
+                    base_url + "api/tweaks",
+                    {"key": "theme.primary", "value": "#ff3366"},
+                ),
+                executor.submit(
+                    _json_patch,
+                    base_url + "api/tweaks",
+                    {"key": "theme.hero_size_pt", "value": 70},
+                ),
+            ]
+            states = [future.result(timeout=5) for future in futures]
+
+    assert {state["values"]["theme.primary"] for state in states} == {"#ff3366"}  # type: ignore[index]
+    assert {state["values"]["theme.hero_size_pt"] for state in states} == {70.0}  # type: ignore[index]
+    written = (tmp_path / "theme.toml").read_text(encoding="utf-8")
+    assert 'primary = "#ff3366"' in written
+    assert "hero_size_pt = 70.0" in written
+
+
+def test_patch_api_tweaks_rereads_external_edit_before_write(tmp_path: Path) -> None:
+    spec_path = _write_spec(tmp_path)
+    values_path = tmp_path / "theme.toml"
+    values_path.write_text('[theme]\nprimary = "#111111"\nhero_size_pt = 60\n', encoding="utf-8")
+
+    with _running_server(spec_path) as base_url:
+        values_path.write_text('[theme]\nprimary = "#222222"\nhero_size_pt = 68\n', encoding="utf-8")
+        state = _json_patch(
+            base_url + "api/tweaks",
+            {"key": "theme.primary", "value": "#abcdef"},
+        )
+
+    written = values_path.read_text(encoding="utf-8")
+    assert state["values"]["theme.primary"] == "#abcdef"  # type: ignore[index]
+    assert state["values"]["theme.hero_size_pt"] == 68.0  # type: ignore[index]
+    assert 'primary = "#abcdef"' in written
+    assert "hero_size_pt = 68.0" in written
+
+
+def test_playground_server_api_does_not_modify_last_build_cache(tmp_path: Path) -> None:
+    spec_path = _write_spec(tmp_path)
+    build_outcome = load_spec_with_tweaks(spec_path.resolve())
+    cached = cache_build(build_outcome.result, spec_path=spec_path.resolve())
+    before_manifest = cached.manifest.read_text(encoding="utf-8")
+    before_page = cached.page_map[1].read_text(encoding="utf-8")
+
+    with _running_server(spec_path) as base_url:
+        _json_get(base_url + "api/state")
+        _json_patch(base_url + "api/tweaks", {"key": "theme.primary", "value": "#ff3366"})
+
+    assert cache_paths(spec_path.resolve()).root.exists()
+    assert cached.manifest.read_text(encoding="utf-8") == before_manifest
+    assert cached.page_map[1].read_text(encoding="utf-8") == before_page
 
 
 def test_patch_api_tweaks_invalid_edit_returns_400_and_preserves_file(tmp_path: Path) -> None:
