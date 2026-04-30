@@ -7,9 +7,9 @@
 
 ## 2. Spec Load Helper Cache Isolation
 
-- [ ] 2.1 Add an option to the spec load/render service helper that suppresses last-build cache writes; default remains "write cache" for `folio build`.
-- [ ] 2.2 Wire the dev server to use the no-cache option for every render and rerender.
-- [ ] 2.3 Add tests that running `folio dev` (or its underlying server entry point) does not modify the last-build cache directory.
+- [x] 2.1 Add an option to the spec load/render service helper that suppresses last-build cache writes; default remains "write cache" for `folio build`.
+- [x] 2.2 Wire the dev server to use the no-cache option for every render and rerender.
+- [x] 2.3 Add tests that running `folio dev` (or its underlying server entry point) does not modify the last-build cache directory.
 
 ## 3. `folio dev` Command and HTTP Server
 
@@ -34,7 +34,7 @@
 
 - [ ] 5.1 Debounce rebuild-mode edits server-side so dragging a slider does not trigger one rebuild per keystroke.
 - [ ] 5.2 Debounce live-mode persistence so disk writes are not issued for every intermediate value while the browser CSS variable updates immediately.
-- [ ] 5.3 Implement last-write-wins behavior for `theme.toml`: reread on each render; on accepted PATCH, overwrite the file with the playground's view of values.
+- [x] 5.3 Implement last-write-wins behavior for `theme.toml`: reread on each render; on accepted PATCH, overwrite the file with the playground's view of values.
 - [ ] 5.4 Add server/API tests for startup success, startup render failure, no-tweaks empty state, live edit persistence, rebuild edit rerender, rejected invalid edits, debounce coalescing, last-write-wins after external edit, and cache isolation.
 
 ## 6. Skill and Starter README

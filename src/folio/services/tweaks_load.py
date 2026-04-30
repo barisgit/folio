@@ -46,6 +46,7 @@ from folio.core.dsl.tweaks import (
 )
 from folio.core.render.pipeline import (
     BuildResult,
+    RenderMode,
     collection_from_module,
     render_collection,
     validate_document,
@@ -92,13 +93,17 @@ class SpecValidateResult:
     diagnostics: tuple[TweakDiagnostic, ...]
 
 
-def load_spec_with_tweaks(spec_path: Path) -> SpecLoadResult:
+def load_spec_with_tweaks(
+    spec_path: Path, *, render_mode: RenderMode = "build"
+) -> SpecLoadResult:
     """Load ``spec_path`` through a tweak context and render its collection.
 
     Raises :class:`TweakValuesError` when the values file cannot be
     parsed, :class:`TweakValidationError` when persisted values violate
     their declarations, and propagates ``DslError`` / ``RenderError``
-    from the underlying pipeline.
+    from the underlying pipeline. ``render_mode`` defaults to concrete
+    build output; the playground service passes ``"playground"`` without
+    changing build behavior.
     """
 
     values_path = resolve_values_file(spec_path)
@@ -123,6 +128,7 @@ def load_spec_with_tweaks(spec_path: Path) -> SpecLoadResult:
             collection,
             config_dir=spec_path.parent,
             source_path=spec_path,
+            mode=render_mode,
         )
 
     return SpecLoadResult(
