@@ -98,7 +98,7 @@ def test_playground_state_includes_pages_declarations_values_and_css_vars(tmp_pa
     assert len(state.pages) == 1
     assert state.pages[0].filename == "one.svg"
     assert 'fill="var(--folio-tweak-theme-primary, #445566)"' in state.pages[0].svg
-    assert 'font-size="var(--folio-tweak-theme-hero-size-pt, 64.0)"' in state.pages[0].svg
+    assert 'font-size="var(--folio-tweak-theme-hero-size-pt, 64.0pt)"' in state.pages[0].svg
     assert 'fill="#112233"' in state.pages[0].svg
     assert "var(--folio-tweak-theme-panel-width" not in state.pages[0].svg
     assert state.values["theme.primary"] == "#445566"
@@ -198,7 +198,7 @@ def test_apply_tweak_update_writes_deterministic_toml_and_returns_fresh_state(tm
     assert state.values["theme.primary"] == "#ff3366"
     assert state.values["theme.hero_size_pt"] == 70.0
     assert 'var(--folio-tweak-theme-primary, #ff3366)' in state.pages[0].svg
-    assert 'var(--folio-tweak-theme-hero-size-pt, 70.0)' in state.pages[0].svg
+    assert 'var(--folio-tweak-theme-hero-size-pt, 70.0pt)' in state.pages[0].svg
 
 
 def test_apply_tweak_update_accepts_single_key_value_form(tmp_path: Path) -> None:

@@ -54,9 +54,18 @@ def _format_live_eligible_value(value: object, *, mode: RenderMode) -> object:
     if isinstance(value, TweakValue):
         resolved = value.value
         if mode == "playground" and value.mode == "live":
-            return f"var({value.css_var}, {resolved})"
+            fallback = _format_live_css_value(value.declaration.kind, resolved)
+            return f"var({value.css_var}, {fallback})"
         return resolved
     return value
+
+
+def _format_live_css_value(kind: str, value: object) -> str:
+    if kind in {"size_pt", "letter_spacing"}:
+        return f"{float(value)}pt"
+    if kind == "size_mm":
+        return f"{float(value)}mm"
+    return str(value)
 
 
 def _float_if_numeric(value: object) -> object:

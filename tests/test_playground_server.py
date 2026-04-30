@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import threading
 from concurrent.futures import ThreadPoolExecutor
+from http import HTTPStatus
 from contextlib import contextmanager
 from pathlib import Path
 from textwrap import dedent
@@ -15,6 +16,7 @@ from urllib.request import Request, urlopen
 from folio.core.cache import cache_build, cache_paths
 from folio.services.playground_server import (
     PlaygroundHTTPServer,
+    _PlaygroundRequestHandler,
     create_playground_server,
     playground_url,
 )
@@ -162,7 +164,8 @@ def test_get_root_ui_applies_live_vars_and_debounces_persistence(tmp_path: Path)
         with urlopen(base_url, timeout=5) as response:
             body = response.read().decode("utf-8")
 
-    assert "style.setProperty(tweak.cssVar" in body
+    assert "style.setProperty(tweak.cssVar, liveCssValue" in body
+    assert "if (tweak.kind === 'size_pt' || tweak.kind === 'letter_spacing') return `${value}pt`;" in body
     assert "const DEBOUNCE_MS" in body
     assert "setTimeout(() => patchTweak" in body
     assert "clearTimeout(pendingTimers.get" in body
@@ -266,7 +269,7 @@ def test_patch_api_tweaks_rebuild_edit_returns_rerendered_preview(tmp_path: Path
         )
 
     assert state["values"]["theme.hero_size_pt"] == 70.0  # type: ignore[index]
-    assert 'font-size="var(--folio-tweak-theme-hero-size-pt, 70.0)"' in state["pages"][0]["svg"]  # type: ignore[index]
+    assert 'font-size="var(--folio-tweak-theme-hero-size-pt, 70.0pt)"' in state["pages"][0]["svg"]  # type: ignore[index]
 
 
 def test_patch_api_tweaks_debounces_concurrent_updates(tmp_path: Path) -> None:
@@ -374,3 +377,17 @@ def test_patch_api_tweaks_invalid_json_returns_400(tmp_path: Path) -> None:
             raise AssertionError("expected HTTP 400")
 
     assert payload["diagnostics"][0]["severity"] == "error"
+
+
+def test_send_body_ignores_client_disconnect() -> None:
+    class BrokenWriter:
+        def write(self, body: bytes) -> None:
+            raise BrokenPipeError
+
+    handler = object.__new__(_PlaygroundRequestHandler)
+    handler.send_response = lambda status: None  # type: ignore[method-assign]
+    handler.send_header = lambda name, value: None  # type: ignore[method-assign]
+    handler.end_headers = lambda: None  # type: ignore[method-assign]
+    handler.wfile = BrokenWriter()  # type: ignore[assignment]
+
+    handler._send_body(HTTPStatus.OK, b"{}", content_type="application/json")

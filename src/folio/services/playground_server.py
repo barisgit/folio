@@ -153,12 +153,19 @@ PLAYGROUND_HTML = """<!doctype html>
       pageSelectorEl.value = String(selectedPageIndex);
     }
 
+    function liveCssValue(tweak, value) {
+      if (value === null || value === undefined) return '';
+      if (tweak.kind === 'size_pt' || tweak.kind === 'letter_spacing') return `${value}pt`;
+      if (tweak.kind === 'size_mm') return `${value}mm`;
+      return String(value);
+    }
+
     function applyLiveCssVars() {
       if (!playgroundState) return;
       for (const tweak of playgroundState.tweaks) {
         if (tweak.mode === 'live' && tweak.cssVar) {
           const value = draftValues[tweak.key] ?? playgroundState.values[tweak.key] ?? tweak.default;
-          previewContainerEl.style.setProperty(tweak.cssVar, String(value));
+          previewContainerEl.style.setProperty(tweak.cssVar, liveCssValue(tweak, value));
         }
       }
     }
@@ -535,19 +542,20 @@ class _PlaygroundRequestHandler(BaseHTTPRequestHandler):
 
     def _send_json(self, status: HTTPStatus, payload: dict[str, Any]) -> None:
         body = json.dumps(payload, sort_keys=True).encode("utf-8")
-        self.send_response(status.value)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+        self._send_body(status, body, content_type="application/json")
 
     def _send_text(self, status: HTTPStatus, body: str, *, content_type: str) -> None:
-        encoded = body.encode("utf-8")
-        self.send_response(status.value)
-        self.send_header("Content-Type", content_type)
-        self.send_header("Content-Length", str(len(encoded)))
-        self.end_headers()
-        self.wfile.write(encoded)
+        self._send_body(status, body.encode("utf-8"), content_type=content_type)
+
+    def _send_body(self, status: HTTPStatus, body: bytes, *, content_type: str) -> None:
+        try:
+            self.send_response(status.value)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError):
+            return
 
 
 def _updates_from_payload(payload: dict[str, Any]) -> dict[str, Any]:

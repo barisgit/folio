@@ -79,7 +79,7 @@ def test_format_live_eligible_value_emits_css_var_for_live_playground_value() ->
             "var(--folio-tweak-theme-primary, #abc)"
         )
         assert _format_live_eligible_value(size, mode="playground") == (
-            "var(--folio-tweak-theme-size, 12.5)"
+            "var(--folio-tweak-theme-size, 12.5pt)"
         )
         assert _format_live_eligible_value(rebuilt, mode="playground") == 20.0
 
@@ -201,8 +201,8 @@ def test_render_document_playground_mode_emits_live_css_vars_only(tmp_path) -> N
     assert 'fill="var(--folio-tweak-theme-primary, #aabbcc)"' in playground_svg
     assert 'stroke="var(--folio-tweak-theme-primary, #aabbcc)"' in playground_svg
     assert 'stroke-width="var(--folio-tweak-theme-stroke, 2.0)"' in playground_svg
-    assert 'font-size="var(--folio-tweak-theme-hero, 18.0)"' in playground_svg
-    assert 'letter-spacing="var(--folio-tweak-theme-tracking, -0.5)"' in playground_svg
+    assert 'font-size="var(--folio-tweak-theme-hero, 18.0pt)"' in playground_svg
+    assert 'letter-spacing="var(--folio-tweak-theme-tracking, -0.5pt)"' in playground_svg
     assert 'fill="#ccddee"' in playground_svg
     assert 'width="56.69"' in playground_svg
 
