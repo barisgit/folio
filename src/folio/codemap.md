@@ -1,103 +1,35 @@
 # src/folio/
 
 ## Responsibility
-
-The `folio` package is a **Python DSL SVG page builder and reconciliation CLI**. It provides:
-1. A Python-based embedded DSL (`folio.dsl`) for declaratively authoring page layouts
-2. A Typer-based CLI (`folio.cli`) exposing subcommands for build, preview, check, validate, reconcile, create, and search
-3. A build artifact cache layer (`folio.cache`) with content-addressed SHA-256 manifests
-4. A pluggable preview rasterizer (`folio.preview`) with graceful degradation across four backends
+Root package for the Folio DSL page builder. Provides version info, CLI entry point, and re-exports the public DSL API. Orchestrates a layered architecture: `core/` (domain), `services/` (business logic, including tweak playground state/server services), `cli/` (commands), `interfaces/` (protocols).
 
 ## Design
-
-### CLI Architecture (Facade + Command Pattern)
-- `cli.py` is the **Typer application root** — wires 7 subcommands via `app.command()` and `app.add_typer()` to command functions exported from `folio.commands.*`
-- `__init__.py` re-exports all command callables for clean public API
-- `__main__.py` enables `python -m folio` entry point, delegating to `cli.app`
-
-### DSL Pipeline (Builder → Immutable Model → Renderer)
-- `dsl.loader`: Resolves spec paths, imports Python DSL modules dynamically via `importlib`, and extracts page configuration
-- `dsl.renderer`: Builds typed `BuildResult` objects from DSL modules, serializes to SVG strings, writes to disk
-
-### Cache Layer (Write-Through + Manifest Pattern)
-- `cache.py` uses **frozen dataclasses** (`CachePaths`, `CachedPage`, `CachedBuildFiles`) and content-addressed SHA-256 keys
-- `_spec_cache_key()` derives a stable cache key from spec path + 10-char hash
-- `cache_build()` writes all pages + a `manifest.json` atomically; `cached_pages()` reads and validates the manifest
-- `CacheError` is the unified exception for all cache miss/corruption scenarios
-
-### Preview Pipeline (Strategy + Fallback Chain)
-- `preview.py` implements a **fallback chain** across four backends (Playwright → CairoSVG → rsvg-convert → Inkscape)
-- `_default_viewport()` parses SVG `width`/`height` attributes, `viewBox`, or falls back to A4 at 96 DPI
-- `_render_svg_preview()` iterates the renderer list, catching exceptions, and raises `PreviewError` listing all failures
-
-### Command Modules (Thin Adapters)
-Each command in `commands/` is a thin adapter that:
-1. Resolves paths / arguments via `resolve_spec_path()`
-2. Calls domain logic (cache, DSL loader, reconcile, preview)
-3. Formats output via `rich.console.Console` and exits with semantic codes
-
-### Config Module
-- `config.py` is a stub reserved for project-specific config helpers
+- **Layered architecture**: core → services → cli, with interfaces defining protocols for each layer boundary.
+- **Facade re-exports**: `folio.dsl` and `folio.layout` are thin re-export facades over `folio.core.dsl` and `folio.core.layout` respectively.
+- `__init__.py` exposes only `__version__ = "0.1.0"`.
+- `__main__.py` delegates to `folio.cli.app` for `python -m folio` invocation.
+- `config.py` is a stub reserved for future project-specific config helpers.
+- `vendor/` bundles third-party code (qrcodegen.py) to avoid external dependencies.
+- `templates/starter/` contains Jinja2 project scaffolding for `folio create`.
 
 ## Flow
-
-### Build Pipeline
-```
-build_command(spec_path)
-  → resolve_spec_path()         [dsl.loader]
-  → load_dsl_module()            [dsl.loader]
-  → build_pages()                [dsl.renderer]
-  → write_pages()                [dsl.renderer]
-  → cache_build()                [cache.py]  (unless --no-cache)
-```
-
-### Rasterize Pipeline
-```
-rasterize_command(svg_path | spec_path)
-  → cached_pages() / render_preview_file()
-    → _render_svg_preview()
-      → [Playwright | CairoSVG | rsvg-convert | Inkscape]
-    → raster_output_path()       [cache.py]
-```
-
-### Reconcile Pipeline
-```
-reconcile_command(edited_svg | --all)
-  → cached_pages()               [cache.py]
-  → parse_svg()                  [reconcile.parse]
-  → diff_svgs()                   [reconcile.diff]
-  → report_payload() / print_report() [reconcile.report]
-  → reconcile_report_path()       [cache.py]
-```
-
-### Validation Pipeline
-```
-validate_command(spec_path)
-  → resolve_spec_path()
-  → load_dsl_module()
-  → collection_from_module()
-  → validate_document() for each document
-```
-
-### Check Pipeline
-```
-check_command(target)
-  → resolve_check_target()       [check.target]
-  → run_check()                  [check.runner]
-    → validate + lint + format + typecheck backends
-```
-
-### Create Pipeline
-```
-create_command(target_dir)
-  → _copy_template()             [importlib.resources]
-    → _render_jinja()            [jinja2]
-```
+1. `python -m folio` → `__main__.py` → `cli.app()` (Typer)
+2. `folio dev <spec>` → CLI resolves `build.py`, starts a local stdlib playground server, renders in playground mode, and persists approved tweaks to `theme.toml`
+3. DSL usage: `from folio.dsl import rect, text, tweaks, ...` → re-exported from `core.dsl`
+4. Layout usage: `from folio.layout import Columns, Grid, ...` → re-exported from `core.layout`
 
 ## Integration
+- **Depends on**: `cli/`, `core/`, `services/`, `interfaces/`, `skill/`, `vendor/`
+- **Consumed by**: End users via CLI or DSL imports
+- **Public API surface**: `folio.dsl.*` (DSL authoring), `folio.layout.*` (geometric helpers)
 
-- **Entry point**: `python -m folio` via `__main__.py` → `cli.py` → Typer app
-- **Script entry**: `folio` console script via `pyproject.toml` → `folio.cli:app`
-- **Depends on**: `folio.dsl`, `folio.cache`, `folio.preview`, `folio.check`, `folio.reconcile`, `folio.search`
-- **Consumed by**: End users (CLI), CI/CD pipelines (check/build/reconcile)
-- **Config**: `folio.config` is a reserved stub; actual config resolution lives in `dsl.loader` via `config_dir=`
+### Subdirectory Map
+| Directory | Responsibility | Codemap |
+|-----------|---------------|---------|
+| `core/` | Domain model, DSL, rendering, export, layout | [core/codemap.md](core/codemap.md) |
+| `cli/` | Typer CLI commands | [cli/codemap.md](cli/codemap.md) |
+| `services/` | Business logic services (check, docs, reconcile, search, tweaks, playground state/server) | [services/codemap.md](services/codemap.md) |
+| `interfaces/` | Runtime-checkable protocols (Builder, Renderer, Exporter, SearchProvider) | [interfaces/codemap.md](interfaces/codemap.md) |
+| `skill/` | Bundled Claude Code skill asset management | [skill/codemap.md](skill/codemap.md) |
+| `vendor/` | Vendored third-party libraries (qrcodegen) | — |
+| `templates/` | Jinja2 starter project scaffolding | — |
