@@ -23,17 +23,17 @@
 
 ## 4. Playground UI
 
-- [ ] 4.1 Build the minimal HTML/JS playground shell served by `folio dev` with page preview, page selection when multiple pages exist, and a tweak panel.
-- [ ] 4.2 Render controls per declaration type: color picker, numeric/range inputs with declared `min`/`max`, opacity, letter spacing, choices/presets/font choices.
-- [ ] 4.3 Apply live-mode edits immediately by setting the corresponding `--folio-tweak-...` custom property on the preview container.
-- [ ] 4.4 For rebuild-mode edits, show progress and replace rendered SVG previews after the rebuild completes.
-- [ ] 4.5 Show validation and render diagnostics next to affected controls or in a visible error area.
-- [ ] 4.6 Preserve pending edit state across page-selector changes.
+- [x] 4.1 Build the minimal HTML/JS playground shell served by `folio dev` with page preview, page selection when multiple pages exist, and a tweak panel.
+- [x] 4.2 Render controls per declaration type: color picker, numeric/range inputs with declared `min`/`max`, opacity, letter spacing, choices/presets/font choices.
+- [x] 4.3 Apply live-mode edits immediately by setting the corresponding `--folio-tweak-...` custom property on the preview container.
+- [x] 4.4 For rebuild-mode edits, show progress and replace rendered SVG previews after the rebuild completes.
+- [x] 4.5 Show validation and render diagnostics next to affected controls or in a visible error area.
+- [x] 4.6 Preserve pending edit state across page-selector changes.
 
 ## 5. Edit Persistence and Debounce
 
 - [ ] 5.1 Debounce rebuild-mode edits server-side so dragging a slider does not trigger one rebuild per keystroke.
-- [ ] 5.2 Debounce live-mode persistence so disk writes are not issued for every intermediate value while the browser CSS variable updates immediately.
+- [x] 5.2 Debounce live-mode persistence so disk writes are not issued for every intermediate value while the browser CSS variable updates immediately.
 - [x] 5.3 Implement last-write-wins behavior for `theme.toml`: reread on each render; on accepted PATCH, overwrite the file with the playground's view of values.
 - [ ] 5.4 Add server/API tests for startup success, startup render failure, no-tweaks empty state, live edit persistence, rebuild edit rerender, rejected invalid edits, debounce coalescing, last-write-wins after external edit, and cache isolation.
 

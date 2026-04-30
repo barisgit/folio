@@ -33,28 +33,292 @@ class PlaygroundHTTPServer(ThreadingHTTPServer):
 
 
 PLAYGROUND_HTML = """<!doctype html>
-<html lang=\"en\">
+<html lang="en">
 <head>
-  <meta charset=\"utf-8\">
-  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Folio Tweaks Playground</title>
+  <style>
+    :root { color-scheme: light dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    body { margin: 0; background: #10131a; color: #f4f6fb; }
+    button, input, select { font: inherit; }
+    #folio-playground { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr) 360px; }
+    .preview-pane { padding: 24px; overflow: auto; }
+    .toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+    .toolbar h1 { font-size: 18px; margin: 0 auto 0 0; }
+    #page-selector { min-width: 180px; }
+    #preview-container { background: #f7f7f7; border-radius: 16px; padding: 24px; min-height: 480px; box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35); }
+    #preview-frame svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+    .panel { border-left: 1px solid rgba(255, 255, 255, 0.12); background: #171b25; padding: 24px; overflow: auto; }
+    .panel h2 { font-size: 16px; margin: 0 0 12px; }
+    #status { color: #a9b2c7; margin: 0 0 16px; }
+    #diagnostics { margin: 0 0 16px; padding: 0; list-style: none; }
+    #diagnostics li { background: #4b1d25; border: 1px solid #a7475a; border-radius: 10px; color: #ffdce4; margin-bottom: 8px; padding: 8px 10px; }
+    .tweak-control { border-top: 1px solid rgba(255, 255, 255, 0.1); padding: 14px 0; }
+    .tweak-control label { display: block; font-weight: 700; margin-bottom: 6px; }
+    .tweak-meta { color: #95a0b8; font-size: 12px; margin-bottom: 8px; }
+    .tweak-row { display: flex; gap: 8px; align-items: center; }
+    .tweak-row input[type="text"], .tweak-row input[type="number"], .tweak-row select { flex: 1; min-width: 0; }
+    .tweak-row input[type="range"] { flex: 1; }
+    .control-diagnostic { color: #ffb4c2; font-size: 12px; margin-top: 6px; min-height: 1em; }
+    .is-invalid input, .is-invalid select { outline: 2px solid #ff6b84; }
+    .empty { color: #95a0b8; font-style: italic; }
+    @media (max-width: 900px) { #folio-playground { grid-template-columns: 1fr; } .panel { border-left: 0; border-top: 1px solid rgba(255, 255, 255, 0.12); } }
+  </style>
 </head>
 <body>
-  <main id=\"folio-playground\">
-    <h1>Folio Tweaks Playground</h1>
-    <p id=\"status\">Loading tweak state…</p>
-    <section id=\"pages\" aria-label=\"Rendered pages\"></section>
-    <section id=\"tweaks\" aria-label=\"Tweaks\"></section>
+  <main id="folio-playground">
+    <section class="preview-pane" aria-label="Rendered page preview">
+      <div class="toolbar">
+        <h1>Folio Tweaks Playground</h1>
+        <label for="page-selector">Page</label>
+        <select id="page-selector" aria-label="Select page"></select>
+      </div>
+      <div id="preview-container">
+        <div id="preview-frame" aria-live="polite"></div>
+      </div>
+    </section>
+    <aside class="panel" aria-label="Tweak controls">
+      <h2>Tweaks</h2>
+      <p id="status">Loading tweak state…</p>
+      <ul id="diagnostics" aria-live="polite"></ul>
+      <section id="tweak-panel" aria-label="Tweaks"></section>
+    </aside>
   </main>
   <script>
-    fetch('/api/state')
+    const API_STATE = '/api/state';
+    const API_TWEAKS = '/api/tweaks';
+    const DEBOUNCE_MS = 250;
+    const NUMERIC_KINDS = new Set(['size_pt', 'size_mm', 'opacity', 'letter_spacing', 'stroke_width']);
+
+    let playgroundState = null;
+    let selectedPageIndex = 0;
+    let draftValues = {};
+    const pendingTimers = new Map();
+
+    const statusEl = document.getElementById('status');
+    const diagnosticsEl = document.getElementById('diagnostics');
+    const tweakPanelEl = document.getElementById('tweak-panel');
+    const pageSelectorEl = document.getElementById('page-selector');
+    const previewContainerEl = document.getElementById('preview-container');
+    const previewFrameEl = document.getElementById('preview-frame');
+
+    function setStatus(message) {
+      statusEl.textContent = message;
+    }
+
+    function displayDiagnostics(diagnostics) {
+      diagnosticsEl.innerHTML = '';
+      document.querySelectorAll('.tweak-control').forEach((node) => node.classList.remove('is-invalid'));
+      document.querySelectorAll('.control-diagnostic').forEach((node) => { node.textContent = ''; });
+      for (const diagnostic of diagnostics || []) {
+        const item = document.createElement('li');
+        item.textContent = diagnostic.key ? `${diagnostic.key}: ${diagnostic.message}` : diagnostic.message;
+        diagnosticsEl.appendChild(item);
+        if (diagnostic.key) {
+          const control = document.querySelector(`[data-tweak-key="${CSS.escape(diagnostic.key)}"]`);
+          if (control) {
+            control.classList.add('is-invalid');
+            const detail = control.querySelector('.control-diagnostic');
+            if (detail) detail.textContent = diagnostic.message;
+          }
+        }
+      }
+    }
+
+    function mergeState(nextState) {
+      playgroundState = nextState;
+      for (const tweak of nextState.tweaks) {
+        if (!(tweak.key in draftValues)) {
+          draftValues[tweak.key] = nextState.values[tweak.key] ?? tweak.value ?? tweak.default;
+        }
+      }
+    }
+
+    function renderPageSelector() {
+      pageSelectorEl.innerHTML = '';
+      const pages = playgroundState?.pages || [];
+      pageSelectorEl.hidden = pages.length <= 1;
+      pageSelectorEl.previousElementSibling.hidden = pages.length <= 1;
+      pages.forEach((page, index) => {
+        const option = document.createElement('option');
+        option.value = String(index);
+        option.textContent = `Page ${page.pageNumber}: ${page.filename}`;
+        pageSelectorEl.appendChild(option);
+      });
+      if (selectedPageIndex >= pages.length) selectedPageIndex = 0;
+      pageSelectorEl.value = String(selectedPageIndex);
+    }
+
+    function applyLiveCssVars() {
+      if (!playgroundState) return;
+      for (const tweak of playgroundState.tweaks) {
+        if (tweak.mode === 'live' && tweak.cssVar) {
+          const value = draftValues[tweak.key] ?? playgroundState.values[tweak.key] ?? tweak.default;
+          previewContainerEl.style.setProperty(tweak.cssVar, String(value));
+        }
+      }
+    }
+
+    function renderPreview() {
+      const pages = playgroundState?.pages || [];
+      if (!pages.length) {
+        previewFrameEl.innerHTML = '<p class="empty">No pages rendered.</p>';
+        return;
+      }
+      previewFrameEl.innerHTML = pages[selectedPageIndex].svg;
+      applyLiveCssVars();
+    }
+
+    function controlInputType(tweak) {
+      if (tweak.kind === 'color') return 'color';
+      if (NUMERIC_KINDS.has(tweak.kind)) return 'number';
+      return 'text';
+    }
+
+    function normalizeInputValue(tweak, value) {
+      if (NUMERIC_KINDS.has(tweak.kind) && value !== '') return Number(value);
+      return value;
+    }
+
+    function buildInput(tweak) {
+      if ((tweak.kind === 'choice' || tweak.kind === 'preset' || tweak.kind === 'font_choice') && Array.isArray(tweak.options)) {
+        const select = document.createElement('select');
+        for (const optionValue of tweak.options) {
+          const option = document.createElement('option');
+          option.value = optionValue;
+          option.textContent = optionValue;
+          select.appendChild(option);
+        }
+        return select;
+      }
+
+      const input = document.createElement('input');
+      input.type = controlInputType(tweak);
+      if (input.type === 'number') {
+        input.step = tweak.kind === 'opacity' ? '0.01' : '0.1';
+        if (tweak.min !== null && tweak.min !== undefined) input.min = String(tweak.min);
+        if (tweak.max !== null && tweak.max !== undefined) input.max = String(tweak.max);
+      }
+      return input;
+    }
+
+    function renderControls() {
+      tweakPanelEl.innerHTML = '';
+      const tweaks = playgroundState?.tweaks || [];
+      if (!tweaks.length) {
+        tweakPanelEl.innerHTML = '<p class="empty">No tweaks declared in this spec.</p>';
+        return;
+      }
+
+      for (const tweak of tweaks) {
+        const wrapper = document.createElement('article');
+        wrapper.className = 'tweak-control';
+        wrapper.dataset.tweakKey = tweak.key;
+
+        const label = document.createElement('label');
+        label.textContent = tweak.label || tweak.name || tweak.key;
+        label.htmlFor = `tweak-${tweak.key.replace(/[^a-z0-9_-]/gi, '-')}`;
+
+        const meta = document.createElement('div');
+        meta.className = 'tweak-meta';
+        meta.textContent = `${tweak.key} · ${tweak.kind} · ${tweak.mode}`;
+
+        const row = document.createElement('div');
+        row.className = 'tweak-row';
+        const input = buildInput(tweak);
+        input.id = label.htmlFor;
+        input.value = String(draftValues[tweak.key] ?? playgroundState.values[tweak.key] ?? tweak.value ?? tweak.default ?? '');
+        input.addEventListener('input', () => handleTweakInput(tweak, input.value));
+        input.addEventListener('change', () => handleTweakInput(tweak, input.value));
+        row.appendChild(input);
+
+        if (input.type === 'number' && tweak.min !== null && tweak.min !== undefined && tweak.max !== null && tweak.max !== undefined) {
+          const range = document.createElement('input');
+          range.type = 'range';
+          range.min = String(tweak.min);
+          range.max = String(tweak.max);
+          range.step = input.step;
+          range.value = input.value;
+          range.addEventListener('input', () => {
+            input.value = range.value;
+            handleTweakInput(tweak, range.value);
+          });
+          input.addEventListener('input', () => { range.value = input.value; });
+          row.appendChild(range);
+        }
+
+        const diagnostic = document.createElement('div');
+        diagnostic.className = 'control-diagnostic';
+
+        wrapper.append(label, meta, row, diagnostic);
+        tweakPanelEl.appendChild(wrapper);
+      }
+    }
+
+    function renderAll() {
+      renderPageSelector();
+      renderPreview();
+      renderControls();
+      displayDiagnostics(playgroundState?.diagnostics || []);
+      setStatus(playgroundState?.tweaks?.length ? `${playgroundState.tweaks.length} tweak(s) loaded.` : 'No tweaks declared.');
+    }
+
+    function schedulePatch(tweak) {
+      if (pendingTimers.has(tweak.key)) clearTimeout(pendingTimers.get(tweak.key));
+      pendingTimers.set(tweak.key, setTimeout(() => patchTweak(tweak), DEBOUNCE_MS));
+    }
+
+    async function patchTweak(tweak) {
+      pendingTimers.delete(tweak.key);
+      if (tweak.mode !== 'live') setStatus('Rendering updated preview…');
+      else setStatus('Saving tweak…');
+      try {
+        const response = await fetch(API_TWEAKS, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: tweak.key, value: draftValues[tweak.key] }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          displayDiagnostics(payload.diagnostics || [{ severity: 'error', key: tweak.key, message: 'Update rejected.' }]);
+          setStatus('Update rejected.');
+          return;
+        }
+        mergeState(payload);
+        renderAll();
+      } catch (error) {
+        displayDiagnostics([{ severity: 'error', key: tweak.key, message: String(error) }]);
+        setStatus('Update failed.');
+      }
+    }
+
+    function handleTweakInput(tweak, rawValue) {
+      const value = normalizeInputValue(tweak, rawValue);
+      draftValues[tweak.key] = value;
+      if (tweak.mode === 'live' && tweak.cssVar) {
+        previewContainerEl.style.setProperty(tweak.cssVar, String(value));
+        setStatus('Preview updated. Saving…');
+      } else {
+        setStatus('Waiting to rerender…');
+      }
+      schedulePatch(tweak);
+    }
+
+    pageSelectorEl.addEventListener('change', () => {
+      selectedPageIndex = Number(pageSelectorEl.value || 0);
+      renderPreview();
+    });
+
+    fetch(API_STATE)
       .then((response) => response.json())
       .then((state) => {
-        document.getElementById('status').textContent =
-          state.tweaks.length ? `${state.tweaks.length} tweak(s) loaded.` : 'No tweaks declared.';
+        mergeState(state);
+        renderAll();
       })
       .catch((error) => {
-        document.getElementById('status').textContent = `Failed to load state: ${error}`;
+        displayDiagnostics([{ severity: 'error', key: null, message: `Failed to load state: ${error}` }]);
+        setStatus('Failed to load state.');
       });
   </script>
 </body>

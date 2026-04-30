@@ -135,6 +135,54 @@ def test_get_root_returns_html_shell(tmp_path: Path) -> None:
     assert "/api/state" in body
 
 
+def test_get_root_includes_playground_ui_hooks(tmp_path: Path) -> None:
+    spec_path = _write_spec(tmp_path)
+
+    with _running_server(spec_path) as base_url:
+        with urlopen(base_url, timeout=5) as response:
+            body = response.read().decode("utf-8")
+
+    assert 'id="page-selector"' in body
+    assert 'id="preview-container"' in body
+    assert 'id="preview-frame"' in body
+    assert 'id="tweak-panel"' in body
+    assert 'id="diagnostics"' in body
+    assert "renderPageSelector" in body
+    assert "renderControls" in body
+    assert "renderPreview" in body
+
+
+def test_get_root_ui_applies_live_vars_and_debounces_persistence(tmp_path: Path) -> None:
+    spec_path = _write_spec(tmp_path)
+
+    with _running_server(spec_path) as base_url:
+        with urlopen(base_url, timeout=5) as response:
+            body = response.read().decode("utf-8")
+
+    assert "style.setProperty(tweak.cssVar" in body
+    assert "const DEBOUNCE_MS" in body
+    assert "setTimeout(() => patchTweak" in body
+    assert "clearTimeout(pendingTimers.get" in body
+    assert "fetch(API_TWEAKS" in body
+    assert "JSON.stringify({ key: tweak.key" in body
+
+
+def test_get_root_ui_renders_controls_and_diagnostics(tmp_path: Path) -> None:
+    spec_path = _write_spec(tmp_path)
+
+    with _running_server(spec_path) as base_url:
+        with urlopen(base_url, timeout=5) as response:
+            body = response.read().decode("utf-8")
+
+    assert "if (tweak.kind === 'color') return 'color';" in body
+    assert "input.type = controlInputType(tweak)" in body
+    assert "range.type = 'range'" in body
+    assert "document.createElement('select')" in body
+    assert "displayDiagnostics" in body
+    assert "control-diagnostic" in body
+    assert "is-invalid" in body
+
+
 def test_get_api_state_returns_pages_tweaks_values_and_diagnostics(tmp_path: Path) -> None:
     spec_path = _write_spec(tmp_path)
     (tmp_path / "theme.toml").write_text('[theme]\nprimary = "#445566"\n', encoding="utf-8")
