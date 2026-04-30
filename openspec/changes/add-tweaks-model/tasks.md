@@ -41,9 +41,9 @@
 - [x] 6.1 Update the starter `theme.py` to declare a tweak group covering at least a brand color and a hero text size used by rendered pages; remove dual-homed token entries for those values.
 - [x] 6.2 Add a starter `theme.toml` with valid persisted values for the declared tweaks.
 - [x] 6.3 Update the starter `README.md` to explain `folio.dsl.tweaks` and `theme.toml`, with no playground references in this change.
-- [ ] 6.4 Add docstrings and examples for all public tweak helpers.
-- [ ] 6.5 Regenerate and commit the docs index so tweak helpers are searchable and examples pass.
-- [ ] 6.6 Update the bundled Folio skill to describe tweak declarations, `theme.toml`, and the tokens-vs-tweaks rule, while keeping `folio check -> build -> rasterize -> reconcile` authoritative.
+- [x] 6.4 Add docstrings and examples for all public tweak helpers.
+- [x] 6.5 Regenerate and commit the docs index so tweak helpers are searchable and examples pass.
+- [x] 6.6 Update the bundled Folio skill to describe tweak declarations, `theme.toml`, and the tokens-vs-tweaks rule, while keeping `folio check -> build -> rasterize -> reconcile` authoritative.
 
 ## 7. Verification
 

@@ -57,6 +57,23 @@ def test_covers_dsl_all_tokens_and_styles() -> None:
         assert f"folio.dsl.tokens.STYLES.{name}" in ids, f"missing folio.dsl.tokens.STYLES.{name}"
 
 
+def test_covers_public_tweak_helpers() -> None:
+    ids = {symbol.id for symbol in discover_all()}
+    for name in (
+        "group",
+        "color",
+        "size_pt",
+        "size_mm",
+        "opacity",
+        "letter_spacing",
+        "stroke_width",
+        "choice",
+        "preset",
+        "font_choice",
+    ):
+        assert f"folio.dsl.tweaks.{name}" in ids, f"missing folio.dsl.tweaks.{name}"
+
+
 def test_committed_index_matches_current_generator() -> None:
     committed = json.loads(index_path().read_text(encoding="utf-8"))
     current = build_index(generated_at=committed["generated_at"]).to_dict()

@@ -109,6 +109,41 @@ to import it.
 `folio docs` reads a JSON index that ships inside the installed wheel, so
 it works in any project folder regardless of where Folio itself lives.
 
+## Approved design tweaks: `folio.dsl.tweaks` + `theme.toml`
+
+Some projects expose sanctioned design knobs with `folio.dsl.tweaks` in
+Python. Declarations live in the spec modules (often `theme.py`); current
+values live in `theme.toml` next to `build.py`.
+
+```python
+from folio.dsl import TextStyle, tweaks
+
+theme = tweaks.group(
+    "theme",
+    brand=tweaks.color(default="#d9a64b", label="Brand accent"),
+    hero_size_pt=tweaks.size_pt(default=58, min=32, max=76),
+)
+
+DISPLAY = TextStyle(font_size_pt=theme.hero_size_pt, fill=theme.brand)
+```
+
+```toml
+[theme]
+brand = "#d9a64b"
+hero_size_pt = 58
+```
+
+When a requested change matches an existing tweak, edit `theme.toml` and
+then run the canonical pipeline. Change Python declarations only when the
+requested value is not already declared as tweakable. Do not duplicate one
+design value in both `tokens.extend(...)` and `tweaks.group(...)`: use
+tweaks for sanctioned project-level knobs, and keep tokens for shared
+design constants that are not meant to be tuned per project.
+
+`folio validate` and `folio build` load `theme.toml`, validate values, and
+emit concrete production artifacts. `folio check` → `folio build` →
+`folio rasterize` → `folio reconcile` remains the authoritative workflow.
+
 ## Working in a Folio project directory
 
 Folio projects are self-contained. A typical layout:
@@ -119,6 +154,7 @@ my-doc/
   pages.py         # page composition
   layout.py        # grid helpers
   theme.py         # project-level tokens / TextStyles
+  theme.toml       # current values for approved tweaks, when declared
   pyproject.toml   # uses [tool.folio] for config
   .agents/skills/folio/   # this skill, if installed
 ```
@@ -141,6 +177,9 @@ When editing, prefer:
 
 - Do not hand-edit generated SVGs in `out/`. The user may accept a
   `folio reconcile` pass later, but don't anticipate that.
+- Do not hand-edit built SVGs or screenshots to apply tweak changes. Edit
+  `theme.toml` for existing declared tweaks, or adjust the Python
+  declaration only when no approved tweak exists.
 - Do not regenerate the bundled starter template. If the user wants to
   reset, they run `folio create` on a new path.
 - Do not invent DSL symbols or keyword arguments. If `folio docs show`

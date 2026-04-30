@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-04-30T15:19:57Z",
+  "generated_at": "2026-04-30T15:43:56Z",
   "folio_version": "0.1.0",
   "symbols": [
     {
@@ -4887,6 +4887,621 @@
         "model"
       ],
       "source": "folio.core.dsl.tweaks:1"
+    },
+    {
+      "id": "folio.dsl.tweaks.TweakDeclaration",
+      "name": "TweakDeclaration",
+      "kind": "helper",
+      "module": "folio.dsl.tweaks",
+      "signature": "TweakDeclaration(key: 'str', group: 'str', name: 'str', kind: 'str', default: 'Any', mode: 'str', label: 'str | None' = None, min: 'float | None' = None, max: 'float | None' = None, options: 'tuple[str, ...] | None' = None) -> None",
+      "summary": "Frozen schema for one approved design-time tweak.",
+      "description": "Most authors do not construct this class directly. Use\n:func:`group` with helper declarations such as :func:`color` or\n:func:`size_pt`; Folio creates declarations and persists current\nvalues in ``theme.toml`` next to the spec.",
+      "params": [
+        {
+          "name": "key",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "group",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "name",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "kind",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "default",
+          "type": "Any",
+          "doc": ""
+        },
+        {
+          "name": "mode",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "label",
+          "type": "str | None",
+          "doc": ""
+        },
+        {
+          "name": "min",
+          "type": "float | None",
+          "doc": ""
+        },
+        {
+          "name": "max",
+          "type": "float | None",
+          "doc": ""
+        },
+        {
+          "name": "options",
+          "type": "tuple[str, ...] | None",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "None",
+        "doc": ""
+      },
+      "examples": [],
+      "tags": [
+        "tweaks",
+        "schema"
+      ],
+      "source": "folio.core.dsl.tweaks:67"
+    },
+    {
+      "id": "folio.dsl.tweaks.TweakDiagnostic",
+      "name": "TweakDiagnostic",
+      "kind": "helper",
+      "module": "folio.dsl.tweaks",
+      "signature": "TweakDiagnostic(severity: 'str', key: 'str | None', message: 'str') -> None",
+      "summary": "Non-fatal note collected during tweak resolution.",
+      "description": "",
+      "params": [
+        {
+          "name": "severity",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "key",
+          "type": "str | None",
+          "doc": ""
+        },
+        {
+          "name": "message",
+          "type": "str",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "None",
+        "doc": ""
+      },
+      "examples": [],
+      "tags": [],
+      "source": "folio.core.dsl.tweaks:106"
+    },
+    {
+      "id": "folio.dsl.tweaks.TweakGroup",
+      "name": "TweakGroup",
+      "kind": "helper",
+      "module": "folio.dsl.tweaks",
+      "signature": "TweakGroup(name: 'str', members: 'Mapping[str, TweakValue]') -> 'None'",
+      "summary": "Frozen attribute-access view over a registered tweak group.",
+      "description": "",
+      "params": [
+        {
+          "name": "name",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "members",
+          "type": "Mapping[str, TweakValue]",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "None",
+        "doc": ""
+      },
+      "examples": [],
+      "tags": [],
+      "source": "folio.core.dsl.tweaks:236"
+    },
+    {
+      "id": "folio.dsl.tweaks.TweakRegistry",
+      "name": "TweakRegistry",
+      "kind": "helper",
+      "module": "folio.dsl.tweaks",
+      "signature": "TweakRegistry(declarations: 'dict[str, TweakDeclaration]' = <factory>, values: 'dict[str, Any]' = <factory>, diagnostics: 'list[TweakDiagnostic]' = <factory>) -> None",
+      "summary": "Spec-scoped collection of tweak declarations and resolved values.",
+      "description": "",
+      "params": [
+        {
+          "name": "declarations",
+          "type": "dict[str, TweakDeclaration]",
+          "doc": ""
+        },
+        {
+          "name": "values",
+          "type": "dict[str, Any]",
+          "doc": ""
+        },
+        {
+          "name": "diagnostics",
+          "type": "list[TweakDiagnostic]",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "None",
+        "doc": ""
+      },
+      "examples": [],
+      "tags": [],
+      "source": "folio.core.dsl.tweaks:274"
+    },
+    {
+      "id": "folio.dsl.tweaks.TweakValue",
+      "name": "TweakValue",
+      "kind": "helper",
+      "module": "folio.dsl.tweaks",
+      "signature": "TweakValue(declaration: 'TweakDeclaration', registry: \"'TweakRegistry'\") -> 'None'",
+      "summary": "Resolved tweak value preserving declaration metadata.",
+      "description": "Primitive-coercible via ``__str__``, ``__float__``, ``__int__``, and\n``__bool__`` so it drops into existing DSL primitives. Live-eligible\nstyle fields (e.g. :class:`folio.dsl.TextStyle`) preserve the wrapper\ninstead of coercing it eagerly, so a future renderer can emit\n``var(--folio-tweak-...)`` for live attributes.\n\nThe wrapper holds a back-reference to its :class:`TweakRegistry` and\nreads the resolved primitive lazily through it. This makes persisted\nvalues applied *after* declaration registration visible to wrappers\nthat were already handed back to the spec, which is the order of\noperations used by the spec-load pipeline.",
+      "params": [
+        {
+          "name": "declaration",
+          "type": "TweakDeclaration",
+          "doc": ""
+        },
+        {
+          "name": "registry",
+          "type": "'TweakRegistry'",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "None",
+        "doc": ""
+      },
+      "examples": [],
+      "tags": [],
+      "source": "folio.core.dsl.tweaks:120"
+    },
+    {
+      "id": "folio.dsl.tweaks.choice",
+      "name": "choice",
+      "kind": "helper",
+      "module": "folio.dsl.tweaks",
+      "signature": "choice(*, default: 'str', options: 'Sequence[str]', label: 'str | None' = None, mode: 'str | None' = None) -> '_PendingDecl'",
+      "summary": "Declare a choice tweak from a fixed option list (rebuild by default).",
+      "description": "",
+      "params": [
+        {
+          "name": "default",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "options",
+          "type": "Sequence[str]",
+          "doc": ""
+        },
+        {
+          "name": "label",
+          "type": "str | None",
+          "doc": ""
+        },
+        {
+          "name": "mode",
+          "type": "str | None",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "_PendingDecl",
+        "doc": ""
+      },
+      "examples": [],
+      "tags": [],
+      "source": "folio.core.dsl.tweaks:567"
+    },
+    {
+      "id": "folio.dsl.tweaks.color",
+      "name": "color",
+      "kind": "helper",
+      "module": "folio.dsl.tweaks",
+      "signature": "color(*, default: 'str', label: 'str | None' = None, mode: 'str | None' = None) -> '_PendingDecl'",
+      "summary": "Declare an approved color value stored in ``theme.toml``.",
+      "description": "Color tweaks are live-mode by default and resolve to CSS-compatible\ncolor strings. Use them for sanctioned brand accents that designers\nmay tune without duplicating the same value in ``tokens.extend(...)``.",
+      "params": [
+        {
+          "name": "default",
+          "type": "str",
+          "doc": "Default color string, usually hex such as ``\"#d9a64b\"``."
+        },
+        {
+          "name": "label",
+          "type": "str | None",
+          "doc": "Optional human-readable label for tools and docs."
+        },
+        {
+          "name": "mode",
+          "type": "str | None",
+          "doc": "Optional edit mode override. ``\"live\"`` is the default; ``\"rebuild\"`` is also allowed."
+        }
+      ],
+      "returns": {
+        "type": "_PendingDecl",
+        "doc": "_PendingDecl: Pending declaration consumed by :func:`group`."
+      },
+      "examples": [
+        {
+          "code": "with tweaks.tweak_context():\n    theme = tweaks.group(\"theme\", primary=tweaks.color(default=\"#d9a64b\"))\n    str(theme.primary)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "tweaks",
+        "color"
+      ],
+      "source": "folio.core.dsl.tweaks:434"
+    },
+    {
+      "id": "folio.dsl.tweaks.font_choice",
+      "name": "font_choice",
+      "kind": "helper",
+      "module": "folio.dsl.tweaks",
+      "signature": "font_choice(*, default: 'str', options: 'Sequence[str]', label: 'str | None' = None, mode: 'str | None' = None) -> '_PendingDecl'",
+      "summary": "Declare a font-family choice tweak (rebuild by default).",
+      "description": "",
+      "params": [
+        {
+          "name": "default",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "options",
+          "type": "Sequence[str]",
+          "doc": ""
+        },
+        {
+          "name": "label",
+          "type": "str | None",
+          "doc": ""
+        },
+        {
+          "name": "mode",
+          "type": "str | None",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "_PendingDecl",
+        "doc": ""
+      },
+      "examples": [],
+      "tags": [],
+      "source": "folio.core.dsl.tweaks:591"
+    },
+    {
+      "id": "folio.dsl.tweaks.group",
+      "name": "group",
+      "kind": "helper",
+      "module": "folio.dsl.tweaks",
+      "signature": "group(name: 'str', **members: '_PendingDecl') -> 'TweakGroup'",
+      "summary": "Register a named group of tweaks and return an attribute-access view.",
+      "description": "Each keyword argument must be a value returned by another helper such\nas :func:`color`, :func:`size_pt`, or :func:`choice`. The dotted key\nbecomes ``f\"{name}.{member}\"``.",
+      "params": [
+        {
+          "name": "name",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "members",
+          "type": "_PendingDecl",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "TweakGroup",
+        "doc": ""
+      },
+      "examples": [],
+      "tags": [],
+      "source": "folio.core.dsl.tweaks:628"
+    },
+    {
+      "id": "folio.dsl.tweaks.letter_spacing",
+      "name": "letter_spacing",
+      "kind": "helper",
+      "module": "folio.dsl.tweaks",
+      "signature": "letter_spacing(*, default: 'float | int', label: 'str | None' = None, min: 'float | None' = None, max: 'float | None' = None, mode: 'str | None' = None) -> '_PendingDecl'",
+      "summary": "Declare a letter-spacing tweak in points (live by default).",
+      "description": "",
+      "params": [
+        {
+          "name": "default",
+          "type": "float | int",
+          "doc": ""
+        },
+        {
+          "name": "label",
+          "type": "str | None",
+          "doc": ""
+        },
+        {
+          "name": "min",
+          "type": "float | None",
+          "doc": ""
+        },
+        {
+          "name": "max",
+          "type": "float | None",
+          "doc": ""
+        },
+        {
+          "name": "mode",
+          "type": "str | None",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "_PendingDecl",
+        "doc": ""
+      },
+      "examples": [],
+      "tags": [],
+      "source": "folio.core.dsl.tweaks:529"
+    },
+    {
+      "id": "folio.dsl.tweaks.opacity",
+      "name": "opacity",
+      "kind": "helper",
+      "module": "folio.dsl.tweaks",
+      "signature": "opacity(*, default: 'float | int', label: 'str | None' = None, min: 'float | None' = 0.0, max: 'float | None' = 1.0, mode: 'str | None' = None) -> '_PendingDecl'",
+      "summary": "Declare an opacity tweak in [0, 1] (live by default).",
+      "description": "",
+      "params": [
+        {
+          "name": "default",
+          "type": "float | int",
+          "doc": ""
+        },
+        {
+          "name": "label",
+          "type": "str | None",
+          "doc": ""
+        },
+        {
+          "name": "min",
+          "type": "float | None",
+          "doc": ""
+        },
+        {
+          "name": "max",
+          "type": "float | None",
+          "doc": ""
+        },
+        {
+          "name": "mode",
+          "type": "str | None",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "_PendingDecl",
+        "doc": ""
+      },
+      "examples": [],
+      "tags": [],
+      "source": "folio.core.dsl.tweaks:510"
+    },
+    {
+      "id": "folio.dsl.tweaks.preset",
+      "name": "preset",
+      "kind": "helper",
+      "module": "folio.dsl.tweaks",
+      "signature": "preset(*, default: 'str', options: 'Sequence[str]', label: 'str | None' = None, mode: 'str | None' = None) -> '_PendingDecl'",
+      "summary": "Declare a preset tweak (rebuild by default).",
+      "description": "",
+      "params": [
+        {
+          "name": "default",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "options",
+          "type": "Sequence[str]",
+          "doc": ""
+        },
+        {
+          "name": "label",
+          "type": "str | None",
+          "doc": ""
+        },
+        {
+          "name": "mode",
+          "type": "str | None",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "_PendingDecl",
+        "doc": ""
+      },
+      "examples": [],
+      "tags": [],
+      "source": "folio.core.dsl.tweaks:579"
+    },
+    {
+      "id": "folio.dsl.tweaks.size_mm",
+      "name": "size_mm",
+      "kind": "helper",
+      "module": "folio.dsl.tweaks",
+      "signature": "size_mm(*, default: 'float | int', label: 'str | None' = None, min: 'float | None' = None, max: 'float | None' = None, mode: 'str | None' = None) -> '_PendingDecl'",
+      "summary": "Declare a layout size tweak in millimetres (rebuild by default).",
+      "description": "",
+      "params": [
+        {
+          "name": "default",
+          "type": "float | int",
+          "doc": ""
+        },
+        {
+          "name": "label",
+          "type": "str | None",
+          "doc": ""
+        },
+        {
+          "name": "min",
+          "type": "float | None",
+          "doc": ""
+        },
+        {
+          "name": "max",
+          "type": "float | None",
+          "doc": ""
+        },
+        {
+          "name": "mode",
+          "type": "str | None",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "_PendingDecl",
+        "doc": ""
+      },
+      "examples": [],
+      "tags": [],
+      "source": "folio.core.dsl.tweaks:491"
+    },
+    {
+      "id": "folio.dsl.tweaks.size_pt",
+      "name": "size_pt",
+      "kind": "helper",
+      "module": "folio.dsl.tweaks",
+      "signature": "size_pt(*, default: 'float | int', label: 'str | None' = None, min: 'float | None' = None, max: 'float | None' = None, mode: 'str | None' = None) -> '_PendingDecl'",
+      "summary": "Declare a typographic size tweak in points (live by default).",
+      "description": "",
+      "params": [
+        {
+          "name": "default",
+          "type": "float | int",
+          "doc": ""
+        },
+        {
+          "name": "label",
+          "type": "str | None",
+          "doc": ""
+        },
+        {
+          "name": "min",
+          "type": "float | None",
+          "doc": ""
+        },
+        {
+          "name": "max",
+          "type": "float | None",
+          "doc": ""
+        },
+        {
+          "name": "mode",
+          "type": "str | None",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "_PendingDecl",
+        "doc": ""
+      },
+      "examples": [],
+      "tags": [],
+      "source": "folio.core.dsl.tweaks:472"
+    },
+    {
+      "id": "folio.dsl.tweaks.stroke_width",
+      "name": "stroke_width",
+      "kind": "helper",
+      "module": "folio.dsl.tweaks",
+      "signature": "stroke_width(*, default: 'float | int', label: 'str | None' = None, min: 'float | None' = None, max: 'float | None' = None, mode: 'str | None' = None) -> '_PendingDecl'",
+      "summary": "Declare a presentation stroke-width tweak (live by default).",
+      "description": "",
+      "params": [
+        {
+          "name": "default",
+          "type": "float | int",
+          "doc": ""
+        },
+        {
+          "name": "label",
+          "type": "str | None",
+          "doc": ""
+        },
+        {
+          "name": "min",
+          "type": "float | None",
+          "doc": ""
+        },
+        {
+          "name": "max",
+          "type": "float | None",
+          "doc": ""
+        },
+        {
+          "name": "mode",
+          "type": "str | None",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "_PendingDecl",
+        "doc": ""
+      },
+      "examples": [],
+      "tags": [],
+      "source": "folio.core.dsl.tweaks:548"
+    },
+    {
+      "id": "folio.dsl.tweaks.tweak_context",
+      "name": "tweak_context",
+      "kind": "helper",
+      "module": "folio.dsl.tweaks",
+      "signature": "tweak_context(registry: 'TweakRegistry | None' = None) -> 'Iterator[TweakRegistry]'",
+      "summary": "Bind a fresh :class:`TweakRegistry` for the duration of the block.",
+      "description": "",
+      "params": [
+        {
+          "name": "registry",
+          "type": "TweakRegistry | None",
+          "doc": ""
+        }
+      ],
+      "returns": {
+        "type": "Iterator[TweakRegistry]",
+        "doc": ""
+      },
+      "examples": [],
+      "tags": [],
+      "source": "folio.core.dsl.tweaks:325"
     },
     {
       "id": "folio.dsl.wrapped_text",

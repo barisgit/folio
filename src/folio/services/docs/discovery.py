@@ -47,8 +47,23 @@ def _iter_dsl_all(dsl_module: Any) -> Iterable[Symbol]:
         value = getattr(dsl_module, name)
         if inspect.ismodule(value):
             yield _describe_module(name, value)
+            if name == "tweaks":
+                yield from _iter_tweak_symbols(value)
             continue
         yield _describe_callable_or_class(name, value, module=public_module_for(name))
+
+
+def _iter_tweak_symbols(module: Any) -> Iterable[Symbol]:
+    for name in getattr(module, "__all__", ()):  # pragma: no branch - stable public module
+        value = getattr(module, name)
+        if name.startswith("_") or inspect.ismodule(value):
+            continue
+        yield _describe_callable_or_class(
+            name,
+            value,
+            module="folio.dsl.tweaks",
+            kind="helper",
+        )
 
 
 def _iter_tokens_surface(tokens_module: Any) -> Iterable[Symbol]:
@@ -96,8 +111,10 @@ def _describe_module(name: str, module: Any) -> Symbol:
     )
 
 
-def _describe_callable_or_class(name: str, value: Any, *, module: str) -> Symbol:
-    kind = DSL_KINDS.get(name)
+def _describe_callable_or_class(
+    name: str, value: Any, *, module: str, kind: str | None = None
+) -> Symbol:
+    kind = kind or DSL_KINDS.get(name)
     if kind is None:
         raise DiscoveryError(f"missing kind registry entry for '{name}'")
     _validate_kind(name, kind)

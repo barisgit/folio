@@ -66,7 +66,15 @@ _COLOR_KEYWORDS = frozenset({"none", "transparent", "currentcolor", "inherit"})
 
 @dataclass(frozen=True, slots=True)
 class TweakDeclaration:
-    """Frozen description of a user-tunable design value."""
+    """Frozen schema for one approved design-time tweak.
+
+    Most authors do not construct this class directly. Use
+    :func:`group` with helper declarations such as :func:`color` or
+    :func:`size_pt`; Folio creates declarations and persists current
+    values in ``theme.toml`` next to the spec.
+
+    Tags: tweaks, schema
+    """
 
     key: str
     """Dotted key, e.g. ``"theme.primary"``."""
@@ -429,7 +437,28 @@ def color(
     label: str | None = None,
     mode: str | None = None,
 ) -> _PendingDecl:
-    """Declare a color tweak (live by default)."""
+    """Declare an approved color value stored in ``theme.toml``.
+
+    Color tweaks are live-mode by default and resolve to CSS-compatible
+    color strings. Use them for sanctioned brand accents that designers
+    may tune without duplicating the same value in ``tokens.extend(...)``.
+
+    Args:
+        default: Default color string, usually hex such as ``"#d9a64b"``.
+        label: Optional human-readable label for tools and docs.
+        mode: Optional edit mode override. ``"live"`` is the default;
+            ``"rebuild"`` is also allowed.
+
+    Returns:
+        _PendingDecl: Pending declaration consumed by :func:`group`.
+
+    Example:
+        with tweaks.tweak_context():
+            theme = tweaks.group("theme", primary=tweaks.color(default="#d9a64b"))
+            str(theme.primary)
+
+    Tags: tweaks, color
+    """
 
     _require(default, "color")
     normalized = normalize_color(default, kind="color")

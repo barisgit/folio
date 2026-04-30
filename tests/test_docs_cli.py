@@ -54,6 +54,21 @@ def test_search_returns_results() -> None:
     assert any("rect" in sym["id"] for sym in payload["matches"])
 
 
+def test_search_returns_tweak_helpers() -> None:
+    result = runner.invoke(app, ["docs", "search", "size_pt", "--json"])
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert any(sym["id"] == "folio.dsl.tweaks.size_pt" for sym in payload["matches"])
+
+
+def test_show_tweak_helper() -> None:
+    result = runner.invoke(app, ["docs", "show", "folio.dsl.tweaks.color", "--json"])
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["id"] == "folio.dsl.tweaks.color"
+    assert payload["kind"] == "helper"
+
+
 def test_search_empty_exit_zero() -> None:
     result = runner.invoke(app, ["docs", "search", "zzzzzz_no_match", "--json"])
     assert result.exit_code == 0
