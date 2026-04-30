@@ -18,6 +18,7 @@ from rich.console import Console
 from folio.cli.build import build_command
 from folio.cli.check import check_command
 from folio.cli.create import create_command
+from folio.cli.dev import dev_command
 from folio.cli.docs import docs_app
 from folio.cli.rasterize import rasterize_command
 from folio.cli.reconcile import reconcile_command
@@ -62,6 +63,7 @@ def main(
 
 app.command("build")(build_command)
 app.command("create")(create_command)
+app.command("dev")(dev_command)
 app.command("validate")(validate_command)
 app.command("rasterize")(rasterize_command)
 app.command("reconcile")(reconcile_command)

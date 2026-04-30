@@ -13,13 +13,13 @@
 
 ## 3. `folio dev` Command and HTTP Server
 
-- [ ] 3.1 Add a `folio dev` Typer command with spec resolution shared with `folio build`, plus `--host` (default `127.0.0.1`), `--port`, and `--open/--no-open` options.
-- [ ] 3.2 Implement a loopback HTTP server using stdlib server primitives that serves the playground shell, static assets, and JSON endpoints; report the served URL on stdout.
-- [ ] 3.3 Implement `GET /` returning the playground shell HTML.
-- [ ] 3.4 Implement `GET /api/state` returning rendered pages, tweak schema, resolved values, modes, warnings, and render diagnostics.
-- [ ] 3.5 Implement `PATCH /api/tweaks` that validates a value update against the tweak declaration, writes `<spec_dir>/theme.toml` deterministically on accept, and rejects invalid edits without writing.
-- [ ] 3.6 Implement `--open` browser-launch behavior with a safe no-op fallback in headless or unsupported environments.
-- [ ] 3.7 Implement startup behavior for missing/invalid spec, no-tweaks empty state, and configurable host/port.
+- [x] 3.1 Add a `folio dev` Typer command with spec resolution shared with `folio build`, plus `--host` (default `127.0.0.1`), `--port`, and `--open/--no-open` options.
+- [x] 3.2 Implement a loopback HTTP server using stdlib server primitives that serves the playground shell, static assets, and JSON endpoints; report the served URL on stdout.
+- [x] 3.3 Implement `GET /` returning the playground shell HTML.
+- [x] 3.4 Implement `GET /api/state` returning rendered pages, tweak schema, resolved values, modes, warnings, and render diagnostics.
+- [x] 3.5 Implement `PATCH /api/tweaks` that validates a value update against the tweak declaration, writes `<spec_dir>/theme.toml` deterministically on accept, and rejects invalid edits without writing.
+- [x] 3.6 Implement `--open` browser-launch behavior with a safe no-op fallback in headless or unsupported environments.
+- [x] 3.7 Implement startup behavior for missing/invalid spec, no-tweaks empty state, and configurable host/port.
 
 ## 4. Playground UI
 
