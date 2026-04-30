@@ -15,10 +15,8 @@ RenderMode = Literal["build", "playground"]
 """Render mode for SVG output.
 
 ``build`` (default) emits concrete resolved primitives for every
-attribute. ``playground`` is wired through the same render entry points
-so ``add-tweaks-playground`` can later emit ``var(--folio-tweak-...)``
-for live-safe attributes without re-touching call sites. In this change
-both modes produce identical concrete SVG.
+attribute. ``playground`` emits CSS custom properties for live-safe
+``TweakValue`` attributes while preserving concrete fallbacks.
 """
 
 # Live-eligible attribute names accept ``TweakValue`` wrappers and route
@@ -48,15 +46,22 @@ _LIVE_ELIGIBLE_ATTRS: frozenset[str] = frozenset(
 def _format_live_eligible_value(value: object, *, mode: RenderMode) -> object:
     """Format a value for a live-eligible attribute.
 
-    Both modes return the resolved concrete primitive in this change.
-    ``add-tweaks-playground`` will branch here on ``mode == "playground"``
-    to emit ``var(--folio-tweak-<key>, <fallback>)`` for the live-safe
-    attribute allow-list.
+    Build mode always returns the resolved concrete primitive. Playground
+    mode emits a CSS custom property reference only for live-mode tweak
+    values and includes the render-time resolved value as the fallback.
     """
 
-    del mode  # reserved for the playground-mode branch
     if isinstance(value, TweakValue):
-        return value.value
+        resolved = value.value
+        if mode == "playground" and value.mode == "live":
+            return f"var({value.css_var}, {resolved})"
+        return resolved
+    return value
+
+
+def _float_if_numeric(value: object) -> object:
+    if isinstance(value, int | float):
+        return float(value)
     return value
 
 
@@ -640,15 +645,14 @@ def _render_text(element: Element, *, mode: RenderMode = "build") -> str:
         for_span=False,
     )
     # Route live-eligible style fields through the live-eligible formatter
-    # before primitive coercion so the playground change can swap a
-    # ``var(--folio-tweak-...)`` string in here without re-touching call
-    # sites. Both modes return a concrete primitive in this change.
+    # before primitive coercion. Playground mode may return CSS variable
+    # strings here, so only concrete numeric values are float-normalized.
     size_pt_raw = _format_live_eligible_value(attrs.pop("size_pt", 12), mode=mode)
     fill_raw = _format_live_eligible_value(attrs.pop("fill", "#000000"), mode=mode)
     letter_spacing_raw = attrs.pop("letter_spacing", None)
     if letter_spacing_raw is not None:
         letter_spacing_raw = _format_live_eligible_value(letter_spacing_raw, mode=mode)
-    size_pt = float(size_pt_raw)
+    size_pt = _float_if_numeric(size_pt_raw)
     weight = int(attrs.pop("weight", 400))
     fill = str(fill_raw)
     raw = bool(attrs.pop("raw", False))
@@ -672,7 +676,9 @@ def _render_text(element: Element, *, mode: RenderMode = "build") -> str:
         size_pt=size_pt,
         weight=weight,
         fill=fill,
-        letter_spacing=None if letter_spacing_raw is None else float(letter_spacing_raw),
+        letter_spacing=(
+            None if letter_spacing_raw is None else _float_if_numeric(letter_spacing_raw)
+        ),
         anchor=anchor,
         family=None if family is None else str(family),
         italic=italic,

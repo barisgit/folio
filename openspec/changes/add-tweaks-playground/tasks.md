@@ -1,9 +1,9 @@
 ## 1. Renderer Playground Mode CSS Variables
 
-- [ ] 1.1 Activate the renderer's `playground` mode (introduced in `add-tweaks-model`) to emit `var(--folio-tweak-<dotted-key-with-dashes>, <fallback>)` for live-safe attributes only: `fill`, `stroke`, `opacity`, `fill-opacity`, `stroke-opacity`, `font-size`, `letter-spacing`, and presentation `stroke-width`.
-- [ ] 1.2 Ensure attributes outside the live-safe set, attributes backed by rebuild-mode tweaks, and all geometry attributes remain concrete in playground mode.
-- [ ] 1.3 Add a regression test that scans `folio build` SVG output and asserts no `var(--folio-tweak-` substring appears for any spec, including specs that declare live-mode tweaks.
-- [ ] 1.4 Add renderer tests for playground-mode output: live-safe attributes contain `var(--folio-tweak-...)` with concrete fallbacks, and non-live-safe attributes stay concrete.
+- [x] 1.1 Activate the renderer's `playground` mode (introduced in `add-tweaks-model`) to emit `var(--folio-tweak-<dotted-key-with-dashes>, <fallback>)` for live-safe attributes only: `fill`, `stroke`, `opacity`, `fill-opacity`, `stroke-opacity`, `font-size`, `letter-spacing`, and presentation `stroke-width`.
+- [x] 1.2 Ensure attributes outside the live-safe set, attributes backed by rebuild-mode tweaks, and all geometry attributes remain concrete in playground mode.
+- [x] 1.3 Add a regression test that scans `folio build` SVG output and asserts no `var(--folio-tweak-` substring appears for any spec, including specs that declare live-mode tweaks.
+- [x] 1.4 Add renderer tests for playground-mode output: live-safe attributes contain `var(--folio-tweak-...)` with concrete fallbacks, and non-live-safe attributes stay concrete.
 
 ## 2. Spec Load Helper Cache Isolation
 

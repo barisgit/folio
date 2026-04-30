@@ -137,6 +137,7 @@ def test_build_uses_persisted_color_in_rendered_svg(tmp_path: Path) -> None:
     assert command.exit_code == 0, command.output
     rendered = (out_dir / "one.svg").read_text(encoding="utf-8")
     assert "#112233" in rendered
+    assert "var(--folio-tweak-" not in rendered
 
 
 def test_build_aborts_on_invalid_value(tmp_path: Path) -> None:
@@ -167,3 +168,4 @@ def test_build_for_spec_without_theme_toml_succeeds(tmp_path: Path) -> None:
     rendered = (out_dir / "one.svg").read_text(encoding="utf-8")
     # Default color from declaration should be present.
     assert "#d9a64b" in rendered
+    assert "var(--folio-tweak-" not in rendered
