@@ -6,7 +6,6 @@ import json
 import mimetypes
 import threading
 import time
-from dataclasses import asdict
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib import resources
@@ -14,9 +13,13 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 from urllib.parse import unquote, urlsplit
 
+from pydantic import ValidationError
+
 from folio.services.playground import (
+    Diagnostic,
     PlaygroundState,
     PlaygroundUpdateError,
+    TweakUpdateRequest,
     apply_tweak_update,
     load_playground_state,
 )
@@ -134,51 +137,25 @@ def playground_url(server: ThreadingHTTPServer) -> str:
 
 
 def serialize_playground_state(state: PlaygroundState) -> dict[str, Any]:
-    """Convert playground state dataclasses to the HTTP JSON shape."""
+    """Convert playground state to the HTTP JSON shape.
 
-    return {
-        "specPath": str(state.spec_path),
-        "valuesPath": str(state.values_path),
-        "pages": [
-            {
-                "pageNumber": page.page_number,
-                "pageId": page.page_id,
-                "filename": page.filename,
-                "svg": page.svg,
-            }
-            for page in state.pages
-        ],
-        "tweaks": [
-            {
-                "key": tweak.key,
-                "group": tweak.group,
-                "name": tweak.name,
-                "kind": tweak.kind,
-                "mode": tweak.mode,
-                "value": tweak.value,
-                "default": tweak.default,
-                "cssVar": tweak.css_var,
-                "label": tweak.label,
-                "min": tweak.min,
-                "max": tweak.max,
-                "options": list(tweak.options) if tweak.options is not None else None,
-            }
-            for tweak in state.tweaks
-        ],
-        "values": dict(state.values),
-        "diagnostics": [_serialize_diagnostic(diagnostic) for diagnostic in state.diagnostics],
-    }
+    Output keys are camelCase via Pydantic field aliases; ``json.dumps`` is
+    invoked with ``sort_keys=True`` upstream so legacy clients that depend
+    on alphabetical key order continue to work.
+    """
+
+    return state.model_dump(mode="json", by_alias=True)
 
 
 def _serialize_diagnostic(diagnostic: Any) -> dict[str, Any]:
+    if isinstance(diagnostic, Diagnostic):
+        return diagnostic.model_dump(mode="json", by_alias=True)
     if hasattr(diagnostic, "severity") and hasattr(diagnostic, "message"):
-        return {
-            "severity": diagnostic.severity,
-            "key": diagnostic.key,
-            "message": diagnostic.message,
-        }
-    if hasattr(diagnostic, "__dataclass_fields__"):
-        return asdict(diagnostic)
+        return Diagnostic(
+            severity=diagnostic.severity,
+            key=getattr(diagnostic, "key", None),
+            message=diagnostic.message,
+        ).model_dump(mode="json", by_alias=True)
     return {"severity": "error", "key": None, "message": str(diagnostic)}
 
 
@@ -214,8 +191,15 @@ class _PlaygroundRequestHandler(BaseHTTPRequestHandler):
 
         try:
             payload = self._read_json_body()
-            updates = _updates_from_payload(payload)
-            state = self.server.update_debouncer.apply(updates)
+            request = TweakUpdateRequest.model_validate(payload)
+            state = self.server.update_debouncer.apply(request.as_updates())
+        except ValidationError as exc:
+            first = exc.errors()[0] if exc.errors() else {"msg": str(exc)}
+            self._send_json(
+                HTTPStatus.BAD_REQUEST,
+                {"diagnostics": [_error_payload(first.get("msg", str(exc)))]},
+            )
+            return
         except (ValueError, json.JSONDecodeError) as exc:
             self._send_json(HTTPStatus.BAD_REQUEST, {"diagnostics": [_error_payload(str(exc))]})
             return
@@ -309,20 +293,6 @@ def _is_safe_asset_name(asset_name: str) -> bool:
     return bool(asset_name) and not path.is_absolute() and all(
         part not in {"", ".", ".."} for part in path.parts
     )
-
-
-def _updates_from_payload(payload: dict[str, Any]) -> dict[str, Any]:
-    if "updates" in payload:
-        updates = payload["updates"]
-        if not isinstance(updates, dict):
-            raise ValueError("'updates' must be a JSON object")
-        return dict(updates)
-    if "key" in payload and "value" in payload:
-        key = payload["key"]
-        if not isinstance(key, str):
-            raise ValueError("'key' must be a string")
-        return {key: payload["value"]}
-    raise ValueError("expected {'updates': {...}} or {'key': ..., 'value': ...}")
 
 
 def _error_payload(message: str) -> dict[str, Any]:

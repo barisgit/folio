@@ -1,0 +1,96 @@
+{
+  "diagnostics": [],
+  "pages": [
+    {
+      "filename": "one.svg",
+      "pageId": "one",
+      "pageNumber": 1,
+      "svg": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n<svg xmlns=\"http://www.w3.org/2000/svg\"\n     xmlns:xlink=\"http://www.w3.org/1999/xlink\"\n     xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\"\n     width=\"210mm\" height=\"297mm\"\n     viewBox=\"0 0 595.28 841.89\"\n     font-family=\"Inter, 'Helvetica Neue', Arial, sans-serif\">\n<g id=\"one\" inkscape:label=\"one\" data-page-number=\"1\" data-page-id=\"one\">\n<rect id=\"panel\" x=\"0.0\" y=\"0.0\" width=\"113.39\" height=\"56.69\" fill=\"#112233\"/><text id=\"hero\" x=\"28.35\" y=\"56.69\" font-size=\"var(--folio-tweak-theme-hero-size-pt, 64.0pt)\" font-weight=\"400\" fill=\"var(--folio-tweak-theme-primary, #445566)\">Hi</text>\n</g>\n</svg>\n"
+    }
+  ],
+  "specPath": "<SPEC>",
+  "tweaks": [
+    {
+      "cssVar": "--folio-tweak-theme-primary",
+      "default": "#d9a64b",
+      "group": "theme",
+      "key": "theme.primary",
+      "kind": "color",
+      "label": null,
+      "max": null,
+      "min": null,
+      "mode": "live",
+      "name": "primary",
+      "options": null,
+      "value": "#445566"
+    },
+    {
+      "cssVar": "--folio-tweak-theme-hero-size-pt",
+      "default": 58.0,
+      "group": "theme",
+      "key": "theme.hero_size_pt",
+      "kind": "size_pt",
+      "label": null,
+      "max": 76,
+      "min": 32,
+      "mode": "live",
+      "name": "hero_size_pt",
+      "options": null,
+      "value": 64.0
+    },
+    {
+      "cssVar": "--folio-tweak-theme-panel-width",
+      "default": 40.0,
+      "group": "theme",
+      "key": "theme.panel_width",
+      "kind": "size_mm",
+      "label": null,
+      "max": null,
+      "min": null,
+      "mode": "rebuild",
+      "name": "panel_width",
+      "options": null,
+      "value": 40.0
+    },
+    {
+      "cssVar": "--folio-tweak-theme-rebuilt",
+      "default": "#112233",
+      "group": "theme",
+      "key": "theme.rebuilt",
+      "kind": "color",
+      "label": null,
+      "max": null,
+      "min": null,
+      "mode": "rebuild",
+      "name": "rebuilt",
+      "options": null,
+      "value": "#112233"
+    },
+    {
+      "cssVar": "--folio-tweak-theme-style",
+      "default": "bold",
+      "group": "theme",
+      "key": "theme.style",
+      "kind": "choice",
+      "label": null,
+      "max": null,
+      "min": null,
+      "mode": "rebuild",
+      "name": "style",
+      "options": [
+        "bold",
+        "light",
+        "calm"
+      ],
+      "value": "calm"
+    }
+  ],
+  "values": {
+    "theme.hero_size_pt": 64.0,
+    "theme.panel_width": 40.0,
+    "theme.primary": "#445566",
+    "theme.rebuilt": "#112233",
+    "theme.style": "calm"
+  },
+  "valuesPath": "<VALUES>"
+}

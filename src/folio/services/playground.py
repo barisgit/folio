@@ -8,10 +8,10 @@ rendered output, or update the last-build cache.
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
 from pathlib import Path
-from types import MappingProxyType
 from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from folio.core.dsl.tweak_values import (
     load_persisted_values,
@@ -27,28 +27,39 @@ from folio.core.dsl.tweaks import (
 from folio.services.tweaks_load import load_spec_with_tweaks
 
 __all__ = [
+    "Diagnostic",
     "PlaygroundPage",
     "PlaygroundState",
     "PlaygroundTweak",
     "PlaygroundUpdateError",
+    "TweakUpdateRequest",
     "apply_tweak_update",
     "load_playground_state",
 ]
 
 
-@dataclass(frozen=True, slots=True)
-class PlaygroundPage:
+# Aliases map snake_case Python field names to camelCase JSON keys that the
+# browser-facing playground has used since its first release. Serialization
+# uses ``model_dump(mode="json", by_alias=True)`` and validation accepts
+# either form via ``populate_by_name=True``.
+_BASE_CONFIG = ConfigDict(populate_by_name=True, frozen=True)
+
+
+class PlaygroundPage(BaseModel):
     """Rendered page data for playground previews."""
 
-    page_number: int
-    page_id: str
+    model_config = _BASE_CONFIG
+
+    page_number: int = Field(alias="pageNumber")
+    page_id: str = Field(alias="pageId")
     filename: str
     svg: str
 
 
-@dataclass(frozen=True, slots=True)
-class PlaygroundTweak:
+class PlaygroundTweak(BaseModel):
     """Serializable tweak declaration plus its current resolved value."""
+
+    model_config = _BASE_CONFIG
 
     key: str
     group: str
@@ -57,27 +68,84 @@ class PlaygroundTweak:
     mode: str
     value: Any
     default: Any
-    css_var: str
+    css_var: str = Field(alias="cssVar")
     label: str | None = None
-    min: float | None = None
-    max: float | None = None
+    # ``int | float`` keeps integer inputs serialized as integers (legacy parity);
+    # Pydantic would otherwise coerce 32 -> 32.0 under a plain ``float``.
+    min: int | float | None = None
+    max: int | float | None = None
     options: tuple[str, ...] | None = None
 
 
-@dataclass(frozen=True, slots=True)
-class PlaygroundState:
+class Diagnostic(BaseModel):
+    """Wire-format diagnostic shared with the browser."""
+
+    model_config = _BASE_CONFIG
+
+    severity: str
+    key: str | None = None
+    message: str
+
+    @classmethod
+    def from_tweak(cls, diagnostic: TweakDiagnostic) -> Diagnostic:
+        return cls(
+            severity=diagnostic.severity,
+            key=diagnostic.key,
+            message=diagnostic.message,
+        )
+
+
+class PlaygroundState(BaseModel):
     """Current playground render state.
 
     ``values`` is keyed by dotted tweak key and includes resolved defaults
     for declarations that are absent from ``theme.toml``.
     """
 
-    spec_path: Path
-    values_path: Path
+    model_config = _BASE_CONFIG
+
+    spec_path: Path = Field(alias="specPath")
+    values_path: Path = Field(alias="valuesPath")
     pages: tuple[PlaygroundPage, ...]
     tweaks: tuple[PlaygroundTweak, ...]
-    values: Mapping[str, Any]
-    diagnostics: tuple[TweakDiagnostic, ...]
+    values: dict[str, Any]
+    diagnostics: tuple[Diagnostic, ...]
+
+
+class TweakUpdateRequest(BaseModel):
+    """Wire-format PATCH body accepted by ``/api/tweaks``.
+
+    Two shapes are accepted: ``{"updates": {key: value, ...}}`` for batched
+    edits and ``{"key": ..., "value": ...}`` for single-key edits. The model
+    normalizes both into ``updates`` so callers can ignore the difference.
+    """
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    updates: dict[str, Any] | None = None
+    key: str | None = None
+    value: Any = None
+
+    @model_validator(mode="after")
+    def _normalize(self) -> TweakUpdateRequest:
+        if self.updates is not None and self.key is not None:
+            raise ValueError("pass either 'updates' or 'key'/'value', not both")
+        if self.updates is None and self.key is None:
+            raise ValueError(
+                "expected {'updates': {...}} or {'key': ..., 'value': ...}",
+            )
+        if self.updates is None:
+            assert self.key is not None
+            object.__setattr__(self, "updates", {self.key: self.value})
+            object.__setattr__(self, "key", None)
+            object.__setattr__(self, "value", None)
+        if not self.updates:
+            raise ValueError("at least one tweak update is required")
+        return self
+
+    def as_updates(self) -> dict[str, Any]:
+        assert self.updates is not None
+        return dict(self.updates)
 
 
 class PlaygroundUpdateError(Exception):
@@ -116,8 +184,8 @@ def load_playground_state(spec_path: Path) -> PlaygroundState:
             _serialize_declaration(decl, values[decl.key])
             for decl in snapshot.declarations
         ),
-        values=MappingProxyType(values),
-        diagnostics=tuple(outcome.diagnostics),
+        values=values,
+        diagnostics=tuple(Diagnostic.from_tweak(d) for d in outcome.diagnostics),
     )
 
 
