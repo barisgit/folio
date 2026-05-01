@@ -6,7 +6,7 @@ Folio SHALL maintain a single, generated TypeScript type module describing every
 
 #### Scenario: Generated types module exists in source
 - **WHEN** a maintainer inspects the playground frontend source
-- **THEN** the repository contains a generated TypeScript types module (e.g. `src/folio/playground_ui/api.generated.ts`) that declares the `PlaygroundState`, `PlaygroundTweak`, `PlaygroundPage`, and `Diagnostic` shapes
+- **THEN** the repository contains a generated TypeScript types module (e.g. `src/folio/playground_ui/api.generated.ts`) that declares both response shapes (`PlaygroundState`, `PlaygroundTweak`, `PlaygroundPage`, `Diagnostic`) and the `PATCH /api/tweaks` request shape (e.g. `TweakUpdateRequest`)
 - **AND** every other playground frontend module imports those shapes from the generated module rather than redeclaring them
 
 #### Scenario: Build step regenerates types from Python models
@@ -37,6 +37,11 @@ Folio SHALL implement the playground frontend as a component-based application u
 - **WHEN** the playground server responds to `GET /api/state` or `PATCH /api/tweaks`
 - **THEN** the JSON payload is produced by Python payload models that own serialization
 - **AND** the payload field names, types, and nesting match the generated TypeScript types module exactly
+
+#### Scenario: Wire shape preserved across model migration
+- **WHEN** the playground server serializes a state payload using the new typed payload models
+- **THEN** the emitted JSON keys, value types, and `null` handling match the legacy hand-rolled serialization byte-for-byte for any equivalent state
+- **AND** existing tests asserting field names like `pageNumber`, `pageId`, `cssVar`, `specPath`, and `valuesPath` continue to pass without modification
 
 ## MODIFIED Requirements
 

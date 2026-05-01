@@ -7,15 +7,16 @@ This worked while the UI fit in one file, but the boundary has two structural pr
 1. **No type contract.** Adding or renaming a field on the Python side does not break the TypeScript build. The browser silently produces `undefined` until QA or production catches it.
 2. **No component layer.** The UI imperatively rewrites large sub-trees on every render (custom dropdowns, swatch + hex pair, slider + chip pair, page list). Each new feature compounds the imperative state machine; multi-pane diffs, virtual scroll, and undo would require a partial rewrite anyway.
 
-The codebase ships as a Python wheel/sdist and `folio dev` must work for users with only Python installed. Vite, Bun, and Pydantic are acceptable as **maintainer** tooling but cannot be runtime requirements.
+The codebase ships as a Python wheel/sdist and `folio dev` must work for users with only Python installed. Vite, Bun, and the codegen helper are maintainer-only and cannot be runtime requirements. `pydantic` is acceptable as a small new runtime dependency: it is widely deployed, already transitively present in most Python environments, and replaces hand-written `dict[str, Any]` plumbing with a typed, JSON-schema-emitting model layer.
 
 ## Goals / Non-Goals
 
 **Goals:**
 - End-to-end type safety from the Python state model to every TypeScript component, with a single source of truth (Pydantic models on the Python side).
 - A component-based UI layer that scales to richer features (diff, virtual scroll, undo) without another rewrite.
-- Identical runtime contract for installed users: same URL paths, same JSON shape, same packaged-asset model, no new runtime dependencies.
+- Identical wire contract for installed users: same URL paths, same JSON field names and shapes, same packaged-asset model.
 - Same maintainer ergonomics: `bun run build:playground` produces the bundle, `manifest.json` tracks source hashes, asset-staleness checks still fire.
+- One new small runtime dependency (`pydantic>=2.0`); no other new runtime requirements.
 
 **Non-Goals:**
 - Switching to FastAPI, ASGI, uvicorn, or any non-stdlib HTTP runtime.
@@ -51,17 +52,26 @@ We keep `bun` as the script runner because the repo already standardizes on it a
 
 ### 3. Pydantic v2 models as the contract source
 
-The current playground state uses dataclasses converted to dicts in `serialize_playground_state()`. We replace those dataclasses with Pydantic v2 `BaseModel` classes inside `src/folio/services/playground.py` and let `model_dump(mode="json")` produce the wire payload. This:
+The current playground state uses dataclasses converted to dicts in `serialize_playground_state()`. We replace those dataclasses with Pydantic v2 `BaseModel` classes inside `src/folio/services/playground.py` and let `model_dump(mode="json", by_alias=True)` produce the wire payload. This:
 
 - Makes the JSON shape declarative and inspectable.
 - Gives us a JSON Schema for free via `model_json_schema()`.
-- Lets us run `datamodel-code-generator` (or an equivalent) at build time to emit `src/folio/playground_ui/api.generated.ts`.
+- Lets us run a small codegen helper at build time to emit `src/folio/playground_ui/api.generated.ts`.
+
+**Wire-shape preservation requirements** (these are non-negotiable to keep tests and the existing TypeScript consumer working):
+
+- Field aliases convert snake_case Python names to the existing camelCase JSON keys: `spec_path → specPath`, `values_path → valuesPath`, `page_number → pageNumber`, `page_id → pageId`, `css_var → cssVar`.
+- All currently emitted keys with `null` values must continue to be emitted. `Diagnostic.key` is `str | None` and currently appears as `"key": null` in JSON; that stays.
+- Optional fields like `label`, `min`, `max`, `options` continue to appear in every emitted tweak with `null`/`[]`/value as today.
+- The handler still passes the dumped dict through `json.dumps(..., sort_keys=True)` so existing snapshot ordering holds.
+- Both accepted PATCH request shapes (`{"updates": {...}}` and `{"key": ..., "value": ...}`) keep working; either by parsing them into a Pydantic discriminated-union request model, or by keeping the existing accept-both parser and modeling only the response side. Default plan: model both as `TweakUpdateRequest` so the generated TypeScript covers request payloads too.
 
 **Alternatives considered:**
 - *`TypedDict` + manual export*: fewer dependencies but no JSON Schema, no validation, and the codegen step would be hand-rolled.
 - *`msgspec`*: faster than Pydantic but less mainstream and weaker codegen ecosystem.
+- *Pydantic at build time only*: would force us to keep the dataclass + dict serializer at runtime and rederive JSON Schema by hand from dataclasses; gives up the main benefit of Pydantic for marginal savings.
 
-`pydantic` is added to the project's runtime dependencies because the server itself uses it for serialization. This is a small, established dependency (already pulled in transitively by many Folio peers) and we accept it.
+`pydantic>=2.0` is added to the project's runtime dependencies. This is a small, established library already transitively present in most Python deployments and is justified by replacing hand-rolled serialization.
 
 ### 4. Codegen step lives in `bun run build:playground`
 
@@ -71,7 +81,10 @@ The build script becomes a small orchestrator:
 2. Run `vite build --mode production` to bundle the Solid app into `src/folio/services/playground_assets/playground.{js,css}` plus `index.html`.
 3. Copy `index.html` into the asset directory (Vite handles this) and update `manifest.json` source-hashes to include all new source files.
 
-The build is reproducible and fails loudly if Python or Bun is missing.
+The build is reproducible and fails loudly if Python or Bun is missing. The codegen step:
+- Generates types for `PlaygroundState`, `PlaygroundTweak`, `PlaygroundPage`, `Diagnostic`, and `TweakUpdateRequest`.
+- Produces deterministic output across platforms (LF line endings, sorted unions, stable property order matching the Pydantic model declaration order).
+- Emits a leading `// AUTO-GENERATED — do not edit. Run \`bun run build:playground\`.` comment so contributors can not mistake it for hand-written code.
 
 **Alternatives considered:**
 - *Run codegen in CI only*: makes local dev confusing; same generated file would drift between dev and CI.
@@ -112,7 +125,8 @@ src/folio/playground_ui/
 
 ## Risks / Trade-offs
 
-- **Bundle size growth** → Solid + the new component split is still expected to land under 50 KB minified. We add a CI assertion that `playground.js` stays under 80 KB. If this trips, we investigate before merging.
+- **Bundle size growth** → Solid plus the component split is expected to land under 50 KB minified. We add a pytest assertion (in `tests/test_playground_server.py` or a sibling test) that the served `assets/playground.js` byte size stays under 80 KB. If this trips, we investigate before merging.
+- **Pydantic field-alias drift** → The codegen-drift test plus the existing `test_get_api_state_returns_pages_tweaks_values_and_diagnostics`-style assertions catch any silent rename. We additionally assert one snapshot of full `model_dump(by_alias=True)` against the legacy `serialize_playground_state` output during step 1 to prove byte-equivalence.
 - **Codegen drift between dev and committed file** → The codegen test described above makes drift a hard test failure rather than a silent skew. Maintainers run `bun run build:playground` before commit; the hatch_build.py custom hook already enforces that for sdists.
 - **Pydantic adds a runtime dependency** → `pydantic` is small, well-maintained, already common in the Python ecosystem, and the playground is the only place using it for now. We treat it as worth the trade.
 - **Solid is less mainstream than React** → For a self-contained ~1500-line app this does not matter. Solid's API is small, well-documented, and the migration is contained in one repo subtree.
@@ -120,17 +134,17 @@ src/folio/playground_ui/
 
 ## Migration Plan
 
-The migration is staged so each commit leaves the playground working:
+The migration is staged so each commit either keeps the existing UI fully working or replaces it atomically with the Solid equivalent. No commit is allowed to land a broken intermediate UI.
 
-1. **Pydantic models, no UI changes.** Convert `playground.py` dataclasses to Pydantic models. `serialize_playground_state` now calls `model_dump(mode="json")`. All existing tests must pass.
-2. **Codegen + types module.** Add the gen helper. Commit `api.generated.ts`. Update `main.ts` to import its types from the generated module instead of redeclaring them. UI is still vanilla TS but now type-safe.
-3. **Vite + Solid scaffold.** Add Vite, `solid-js`, `vite-plugin-solid` to `devDependencies`. Update `build.mjs` to invoke Vite. Replace `main.ts` with `main.tsx` mounting a stub `<App />`. Verify the bundle still loads and produces the same DOM shell.
-4. **Component port.** Move logic into Solid components in dependency order: store → diagnostics → tweak controls → tweak panel → page selector → page canvas → topbar → App. Each step keeps tests green.
-5. **Cleanup.** Remove dead code, update manifest source list, run full test suite, smoke-test `folio dev` against the starter project.
+1. **Pydantic models, no UI changes.** Convert `playground.py` dataclasses to Pydantic v2 models with the field aliases listed above; route serialization through `model_dump(mode="json", by_alias=True)`. Existing tests must pass without any modification.
+2. **Codegen + types module, vanilla UI keeps working.** Add the gen helper, wire it into `build.mjs`, commit the first `api.generated.ts`, and switch the existing `main.ts` to import types from the generated module. The UI is still vanilla TS but now imports its types from a generated source of truth. Add the codegen-drift test.
+3. **Refresh JS-substring tests in `tests/test_playground_server.py`** so they assert intent-level markers that are stable across the upcoming Solid rewrite (e.g. `"PlaygroundState"`, `'PATCH'`, `'/api/tweaks'`, `'cssVar'`). Land this before any Solid scaffold commit so step 4 does not break tests.
+4. **Atomic Solid + Vite cutover.** In a single commit: add Vite, `solid-js`, `vite-plugin-solid` to `devDependencies`; replace `main.ts` with `main.tsx` and the full set of components; update `build.mjs` to invoke Vite; rebuild assets; update `manifest.json` source-hash list. After this commit `folio dev` must render with full feature parity. There is no "placeholder `<App />`" intermediate commit.
+5. **Cleanup.** Remove dead vanilla-TS code paths, run the full test suite, smoke-test `folio dev` against the starter project, verify the wheel.
 
-If at any stage the bundle size, behavior, or test surface regresses unexpectedly, we roll back the most recent commit; earlier stages stay intact and shippable.
+If at any stage tests, behavior, or bundle size regress, we revert the most recent commit; earlier stages stay intact and shippable.
 
 ## Open Questions
 
 - *Which Python codegen tool to use?* Default plan: a tiny in-tree helper that walks `model_json_schema()` and emits TypeScript directly. Adopting `datamodel-code-generator` is heavier but more battle-tested. Decide during step 2 — choose the in-tree helper if the Pydantic models stay under ~5 types (they currently do).
-- *Where does the codegen helper live?* Suggested: `src/folio/_dev/gen_playground_types.py`, kept out of the wheel via the existing `tool.hatch.build.targets.wheel` exclude list. Confirm by inspecting the wheel after step 2.
+- *Where does the codegen helper live?* `src/folio/_dev/gen_playground_types.py`. Hatch's current `wheel` and `sdist` configs do not exclude this path; we add explicit `src/folio/_dev/**` and `src/folio/_dev/*` patterns to both `tool.hatch.build.targets.wheel.exclude` and `tool.hatch.build.targets.sdist.exclude`. Verified by inspecting a built wheel after step 2.
