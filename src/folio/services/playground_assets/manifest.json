@@ -3,8 +3,8 @@
   "sourceHashes": {
     "src/folio/playground_ui/index.html": "18664850ae69ab89e3e1040352e90d9adb4bb584fb87b883d9280540d2b978e9",
     "src/folio/playground_ui/main.tsx": "d533937336856ec028d0ba345ffa141d0b43890502ada1c5bb5f82b5f9569a87",
-    "src/folio/playground_ui/App.tsx": "f7e9fb087b67757611e214629d2bbcc907d54603655d5fbb2f4cc75b8b8fcd63",
-    "src/folio/playground_ui/state.ts": "519296d66ffc5c8da394d68c15ae0b4d51d90cdd7c0cca5f9675f986b36d622b",
+    "src/folio/playground_ui/App.tsx": "c7fa4d2189f2c9da6130d860ef70594a576b17f23ac54d075930a3ad932151ac",
+    "src/folio/playground_ui/state.ts": "2d6b58e3b6d213a7c5f51874a9e190b38be0d38393ef92c6773c24f47e53ec68",
     "src/folio/playground_ui/api.ts": "44c6aacc2a81698497ab68d9415ae8329355c6305f9c155c8b931a4f76b7c229",
     "src/folio/playground_ui/api.generated.ts": "9cc6d09622481586f6d8c2041e8892445254477cf4e1277da5faef2e1e01e2f2",
     "src/folio/playground_ui/styles.css": "8efc9c43e8cce2dd51639a78b2764c98b446e0352f43815be3b3eee746b5b9ab",

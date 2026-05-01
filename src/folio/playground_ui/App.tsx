@@ -499,10 +499,21 @@ function TweakControl(props: TweakControlProps) {
     props.store.controlDiagnostics().get(props.tweak.key) || "";
   const isInvalid = () => props.store.controlDiagnostics().has(props.tweak.key);
 
+  // Drag-style inputs (slider, color picker) keep updating the live
+  // preview via ``handleInput`` without hitting the server. The PATCH is
+  // only scheduled by ``handleCommit`` on a discrete release event
+  // (slider release, blur/Enter on a number/text field, color picker
+  // close, dropdown selection) so a mid-drag pause never cancels the
+  // ongoing gesture by replacing the DOM node from a server response.
   function handleInput(rawValue: string): void {
     const value = normalizeInputValue(props.tweak, rawValue);
     props.store.setDraftValue(props.tweak.key, value);
-    props.store.scheduleTweakPatch(props.tweak);
+  }
+
+  function handleCommit(rawValue: string): void {
+    const value = normalizeInputValue(props.tweak, rawValue);
+    props.store.setDraftValue(props.tweak.key, value);
+    props.store.commitTweak(props.tweak);
   }
 
   return (
@@ -529,19 +540,51 @@ function TweakControl(props: TweakControlProps) {
       {(() => {
         const t = props.tweak;
         if (isChoiceKind(t.kind) && Array.isArray(t.options)) {
-          return <SelectControl tweak={t} id={inputId()} initial={initialValue()} onInput={handleInput} />;
+          return (
+            <SelectControl
+              tweak={t}
+              id={inputId()}
+              initial={initialValue()}
+              onInput={handleInput}
+              onCommit={handleCommit}
+            />
+          );
         }
         if (t.kind === "color") {
-          return <ColorControl tweak={t} id={inputId()} initial={initialValue()} onInput={handleInput} />;
+          return (
+            <ColorControl
+              tweak={t}
+              id={inputId()}
+              initial={initialValue()}
+              onInput={handleInput}
+              onCommit={handleCommit}
+            />
+          );
         }
         if (
           isNumericKind(t.kind) &&
           t.min !== null && t.min !== undefined &&
           t.max !== null && t.max !== undefined
         ) {
-          return <SliderControl tweak={t} id={inputId()} initial={initialValue()} onInput={handleInput} />;
+          return (
+            <SliderControl
+              tweak={t}
+              id={inputId()}
+              initial={initialValue()}
+              onInput={handleInput}
+              onCommit={handleCommit}
+            />
+          );
         }
-        return <TextNumberControl tweak={t} id={inputId()} initial={initialValue()} onInput={handleInput} />;
+        return (
+          <TextNumberControl
+            tweak={t}
+            id={inputId()}
+            initial={initialValue()}
+            onInput={handleInput}
+            onCommit={handleCommit}
+          />
+        );
       })()}
 
       <div class="control-status" aria-live="polite">{pendingMessage()}</div>
@@ -554,7 +597,12 @@ interface ControlBaseProps {
   tweak: PlaygroundTweak;
   id: string;
   initial: string;
+  // Fires on every transient change (drag tick, keystroke). Updates the
+  // local draft + live preview only.
   onInput: (raw: string) => void;
+  // Fires on a discrete release/commit event (slider release, blur/Enter,
+  // color picker close, option pick). Triggers the debounced PATCH.
+  onCommit: (raw: string) => void;
 }
 
 function TextNumberControl(props: ControlBaseProps) {
@@ -569,7 +617,7 @@ function TextNumberControl(props: ControlBaseProps) {
         min={isNumber && props.tweak.min !== null && props.tweak.min !== undefined ? String(props.tweak.min) : undefined}
         max={isNumber && props.tweak.max !== null && props.tweak.max !== undefined ? String(props.tweak.max) : undefined}
         onInput={(e) => props.onInput(e.currentTarget.value)}
-        onChange={(e) => props.onInput(e.currentTarget.value)}
+        onChange={(e) => props.onCommit(e.currentTarget.value)}
       />
       <Show when={unitForKind(props.tweak.kind)}>
         {(unit) => <span class="tweak-unit">{unit()}</span>}
@@ -593,9 +641,14 @@ function SliderControl(props: ControlBaseProps) {
     return `${pct}%`;
   };
 
-  function emit(raw: string): void {
+  function preview(raw: string): void {
     setValue(raw);
     props.onInput(raw);
+  }
+
+  function commit(raw: string): void {
+    setValue(raw);
+    props.onCommit(raw);
   }
 
   return (
@@ -609,7 +662,8 @@ function SliderControl(props: ControlBaseProps) {
         value={value()}
         aria-label={props.tweak.label || props.tweak.name || props.tweak.key}
         style={{ "--track-progress": trackProgress() }}
-        onInput={(e) => emit(e.currentTarget.value)}
+        onInput={(e) => preview(e.currentTarget.value)}
+        onChange={(e) => commit(e.currentTarget.value)}
       />
       <div class="tweak-input">
         <input
@@ -619,8 +673,8 @@ function SliderControl(props: ControlBaseProps) {
           step={step}
           value={value()}
           aria-label={`${props.tweak.label || props.tweak.name || props.tweak.key} value`}
-          onInput={(e) => emit(e.currentTarget.value)}
-          onChange={(e) => emit(e.currentTarget.value)}
+          onInput={(e) => preview(e.currentTarget.value)}
+          onChange={(e) => commit(e.currentTarget.value)}
         />
         <Show when={unitForKind(props.tweak.kind)}>
           {(unit) => <span class="tweak-unit">{unit()}</span>}
@@ -636,16 +690,28 @@ function ColorControl(props: ControlBaseProps) {
     isHexColor(props.initial) ? props.initial : "#888888",
   );
 
-  function onPicker(value: string): void {
+  function onPickerInput(value: string): void {
     setPickerValue(value);
     setHex(value);
     props.onInput(value);
   }
 
-  function onHex(value: string): void {
+  function onPickerCommit(value: string): void {
+    setPickerValue(value);
+    setHex(value);
+    props.onCommit(value);
+  }
+
+  function onHexInput(value: string): void {
     setHex(value);
     if (isHexColor(value)) setPickerValue(value);
     props.onInput(value);
+  }
+
+  function onHexCommit(value: string): void {
+    setHex(value);
+    if (isHexColor(value)) setPickerValue(value);
+    props.onCommit(value);
   }
 
   return (
@@ -659,7 +725,8 @@ function ColorControl(props: ControlBaseProps) {
           type="color"
           id={props.id}
           value={pickerValue()}
-          onInput={(e) => onPicker(e.currentTarget.value)}
+          onInput={(e) => onPickerInput(e.currentTarget.value)}
+          onChange={(e) => onPickerCommit(e.currentTarget.value)}
         />
       </label>
       <div class="tweak-input">
@@ -668,7 +735,8 @@ function ColorControl(props: ControlBaseProps) {
           value={hex()}
           spellcheck={false}
           aria-label={`${props.tweak.label || props.tweak.name || props.tweak.key} hex value`}
-          onInput={(e) => onHex(e.currentTarget.value)}
+          onInput={(e) => onHexInput(e.currentTarget.value)}
+          onChange={(e) => onHexCommit(e.currentTarget.value)}
         />
       </div>
     </div>
@@ -736,7 +804,8 @@ function SelectControl(props: ControlBaseProps) {
 
   function pick(option: string): void {
     setValue(option);
-    props.onInput(option);
+    // Discrete commit: the user clicked an option, so PATCH right away.
+    props.onCommit(option);
     close();
   }
 

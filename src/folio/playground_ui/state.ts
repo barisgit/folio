@@ -85,7 +85,11 @@ export interface PlaygroundStore {
   setDraftValue: (key: string, value: unknown) => void;
   setSelectedPageIndex: (index: number) => void;
   setZoomMode: (mode: ZoomMode) => void;
-  scheduleTweakPatch: (tweak: PlaygroundTweak) => void;
+  // Mark a tweak as ready to commit. The actual PATCH is debounced so
+  // rapid commits (e.g. each keystroke in a number field) coalesce.
+  // Drag-style inputs should NOT call this on every input event; only on
+  // a discrete release event such as ``change``.
+  commitTweak: (tweak: PlaygroundTweak) => void;
 }
 
 export function createPlaygroundStore(): PlaygroundStore {
@@ -190,7 +194,7 @@ export function createPlaygroundStore(): PlaygroundStore {
     });
   }
 
-  function scheduleTweakPatch(tweak: PlaygroundTweak): void {
+  function commitTweak(tweak: PlaygroundTweak): void {
     const existing = debounceTimers.get(tweak.key);
     if (existing) clearTimeout(existing);
     const timer = setTimeout(() => {
@@ -246,7 +250,7 @@ export function createPlaygroundStore(): PlaygroundStore {
     setDraftValue,
     setSelectedPageIndex,
     setZoomMode,
-    scheduleTweakPatch,
+    commitTweak,
   };
 }
 
