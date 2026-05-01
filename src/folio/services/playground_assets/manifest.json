@@ -1,14 +1,18 @@
 {
   "build": "bun run build:playground",
   "sourceHashes": {
-    "src/folio/playground_ui/index.html": "214c32cb2aedef6fd0a49bd2e46b9cd975f99f257e67ab227bc7ff3b5477fffb",
-    "src/folio/playground_ui/main.ts": "52e41934bebcc65123cc344f3976c04c268fdcf86533d8c372fc1849dcf3338a",
-    "src/folio/playground_ui/styles.css": "6255fdcf9839a21e170cf47562302605faaf10ca05cedcc96e198c30c41ab9b3",
+    "src/folio/playground_ui/index.html": "18664850ae69ab89e3e1040352e90d9adb4bb584fb87b883d9280540d2b978e9",
+    "src/folio/playground_ui/main.tsx": "d533937336856ec028d0ba345ffa141d0b43890502ada1c5bb5f82b5f9569a87",
+    "src/folio/playground_ui/App.tsx": "e6cc7b690ef93a002e8b80c139425f060888e666a5eab045e7bd2f0751186111",
+    "src/folio/playground_ui/state.ts": "519296d66ffc5c8da394d68c15ae0b4d51d90cdd7c0cca5f9675f986b36d622b",
+    "src/folio/playground_ui/api.ts": "44c6aacc2a81698497ab68d9415ae8329355c6305f9c155c8b931a4f76b7c229",
     "src/folio/playground_ui/api.generated.ts": "9cc6d09622481586f6d8c2041e8892445254477cf4e1277da5faef2e1e01e2f2",
+    "src/folio/playground_ui/styles.css": "6255fdcf9839a21e170cf47562302605faaf10ca05cedcc96e198c30c41ab9b3",
+    "src/folio/playground_ui/vite.config.ts": "c7acdfc6da35971626eed49fe248ea79ab4d9200b13b3ef2d5ea6fb0a0347762",
     "src/folio/playground_ui/README.md": "a82e3d0e6eb59cf103858604f611ef6db5c04bbbfc0ad0ce3ff5b8d472304a4d",
-    "src/folio/playground_ui/build.mjs": "e24468c77edf1044a7b49adff87b010668a73da514545ae88e5c5ca053483ecd",
+    "src/folio/playground_ui/build.mjs": "85140aed50a4a2589aed4f4e150cc2300ab78dac1a9262f42e0524a902175cd1",
     "src/folio/_dev/gen_playground_types.py": "6a56fd1927ba9f893b6db93d1941413cadd46a236d337dcb5f3ce5a1993924b9",
-    "package.json": "663c48dd8bf5df68f3d9887408fd043fa7baee5a89bb9740c158301303bdd11b",
-    "bun.lock": "b75b7d75c3d2ee682500efd2b1647d57006878d2db8f9b1ba394a3955da78bef"
+    "package.json": "bb6af52ca3d32fdf834ed1e9cbeabc58abf647ee51d0bb77c8421b495351e369",
+    "bun.lock": "90863f59f10365afde10407fef1daec3c37735285cb64008b4fefd92f7ce6e1c"
   }
 }

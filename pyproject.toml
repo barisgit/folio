@@ -6,7 +6,7 @@ requires = ["hatchling>=1.25.0", "pydantic>=2.0,<3"]
 build-backend = "hatchling.build"
 
 [project]
-name = "folio"
+name = "folio-dsl"
 version = "0.1.0"
 description = "Python DSL SVG page builder and reconciliation CLI"
 readme = "README.md"

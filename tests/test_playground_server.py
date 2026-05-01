@@ -194,8 +194,10 @@ def test_get_static_playground_assets(tmp_path: Path) -> None:
     assert js_response.status == 200
     assert "javascript" in js_response.headers["Content-Type"]
     assert js_response.headers["Cache-Control"] == "no-store"
-    assert "var API_STATE = \"/api/state\"" in js_body
-    assert "var API_TWEAKS = \"/api/tweaks\"" in js_body
+    # The bundle is minified so identifier names are not stable; assert
+    # only the literal API path strings, which the bundler preserves.
+    assert "/api/state" in js_body
+    assert "/api/tweaks" in js_body
 
 
 def test_get_static_playground_asset_missing_returns_404(tmp_path: Path) -> None:

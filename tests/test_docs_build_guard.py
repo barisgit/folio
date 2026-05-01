@@ -29,6 +29,13 @@ def repo_copy(tmp_path: Path) -> Path:
             ".folio-cache",
             ".pytest_cache",
             ".ruff_cache",
+            # ``node_modules`` would otherwise be copied with its nested
+            # ``dist`` directories silently dropped by the ``"dist"``
+            # ignore pattern above, leaving a corrupt vendor tree where
+            # ``bun install --frozen-lockfile`` short-circuits because
+            # the lockfile says everything is already installed. The
+            # build hook will run ``bun install`` itself.
+            "node_modules",
         ),
         symlinks=False,
     )
