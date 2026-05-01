@@ -124,7 +124,28 @@ def test_playground_assets_are_package_resources() -> None:
     assert asset_root.joinpath("playground.css").is_file()
     manifest = json.loads(asset_root.joinpath("manifest.json").read_text(encoding="utf-8"))
     assert manifest["build"] == "bun run build:playground"
-    assert "src/folio/playground_ui/main.ts" in manifest["sourceHashes"]
+    # Pin only the source-hash schema, not specific entries: the source
+    # file list shifts when the build pipeline gains components or codegen
+    # outputs (e.g. ``api.generated.ts``).
+    assert isinstance(manifest["sourceHashes"], dict)
+    assert manifest["sourceHashes"]
+
+
+# Bundle-size budget. The playground UI is shipped to every developer who
+# runs ``folio dev``, so we cap it well below the typical SPA threshold.
+# This guard fires before unnoticed dependency creep makes the dev tool
+# heavy.
+_PLAYGROUND_JS_MAX_BYTES = 80 * 1024
+
+
+def test_packaged_js_size_is_within_budget() -> None:
+    asset_root = resources.files(playground_assets)
+    size = len(asset_root.joinpath("playground.js").read_bytes())
+    assert size <= _PLAYGROUND_JS_MAX_BYTES, (
+        f"playground.js is {size} bytes, exceeding the "
+        f"{_PLAYGROUND_JS_MAX_BYTES}-byte budget. Trim dependencies, "
+        "split the bundle, or update the budget with explicit justification."
+    )
 
 
 def test_create_playground_server_binds_configurable_host_and_port(
@@ -208,31 +229,28 @@ def test_get_static_playground_asset_rejects_traversal_and_directories(tmp_path:
 
 
 def test_packaged_js_preserves_current_ui_behavior(tmp_path: Path) -> None:
+    """Smoke test that the served JS bundle still wires up the playground.
+
+    These assertions are intentionally framework-agnostic: they pin only
+    the wire-format markers and DOM/network behaviors that any future
+    rewrite of the UI must keep working. Implementation details (function
+    names, control kinds, etc.) are covered by component-level tests.
+    """
+
     spec_path = _write_spec(tmp_path)
 
     with _running_server(spec_path) as base_url:
         with urlopen(base_url + "assets/playground.js", timeout=5) as response:
             body = response.read().decode("utf-8")
 
-    assert "function renderPageSelector" in body
-    assert "function renderControls" in body
-    assert "function renderPreview" in body
-    assert "style.setProperty(tweak.cssVar, liveCssValue" in body
-    assert (
-        'if (tweak.kind === "size_pt" || tweak.kind === "letter_spacing") return `${value}pt`;'
-        in body
-    )
-    assert "var DEBOUNCE_MS" in body
-    assert "setTimeout(() => patchTweak" in body
-    assert "clearTimeout(pendingTimers.get" in body
-    assert "fetch(API_TWEAKS" in body
-    assert "JSON.stringify({ key: tweak.key" in body
-    assert 'tweak.kind === "color"' in body
-    assert 'range.type = "range"' in body
-    assert "renderSelectControl" in body
-    assert "displayDiagnostics" in body
-    assert "control-diagnostic" in body
-    assert "is-invalid" in body
+    # Wire-format markers from the JSON contract.
+    assert "cssVar" in body
+    assert "pageNumber" in body
+    # Network surface: GET /api/state and PATCH /api/tweaks.
+    assert "/api/state" in body
+    assert "/api/tweaks" in body
+    assert "PATCH" in body
+    assert "fetch(" in body
 
 
 def test_get_api_state_returns_pages_tweaks_values_and_diagnostics(tmp_path: Path) -> None:

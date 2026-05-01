@@ -7,7 +7,7 @@
     "src/folio/playground_ui/api.generated.ts": "9cc6d09622481586f6d8c2041e8892445254477cf4e1277da5faef2e1e01e2f2",
     "src/folio/playground_ui/README.md": "a82e3d0e6eb59cf103858604f611ef6db5c04bbbfc0ad0ce3ff5b8d472304a4d",
     "src/folio/playground_ui/build.mjs": "e24468c77edf1044a7b49adff87b010668a73da514545ae88e5c5ca053483ecd",
-    "src/folio/_dev/gen_playground_types.py": "053f6b9d84844a1162b9ad2a932aba27df2dd404c0ecfdfa5e887a8b6cd47e06",
+    "src/folio/_dev/gen_playground_types.py": "6a56fd1927ba9f893b6db93d1941413cadd46a236d337dcb5f3ce5a1993924b9",
     "package.json": "663c48dd8bf5df68f3d9887408fd043fa7baee5a89bb9740c158301303bdd11b",
     "bun.lock": "b75b7d75c3d2ee682500efd2b1647d57006878d2db8f9b1ba394a3955da78bef"
   }
