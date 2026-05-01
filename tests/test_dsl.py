@@ -1213,3 +1213,47 @@ def test_validate_document_warns_on_non_token_hex_colors() -> None:
 
     with pytest.warns(ValidationWarning, match="#123456"):
         validate_document(document)
+
+
+def test_validate_document_does_not_warn_on_tweak_sourced_colors() -> None:
+    """Tweak-sourced colors are user-curated; they should not trigger the warning.
+
+    The non-token-hex warning exists to nudge spec authors toward
+    ``folio.dsl.tokens`` constants instead of raw hex literals. Colors
+    arriving via :func:`folio.dsl.tweaks.color` are already approved by the
+    user through the playground (or persisted ``theme.toml``), so they
+    should never trip the warning.
+    """
+    from folio.core.dsl.tweaks import TweakRegistry, tweak_context
+    from folio.dsl import TextStyle, text, tweaks
+
+    registry = TweakRegistry()
+    with tweak_context(registry):
+        theme = tweaks.group(
+            "theme",
+            primary=tweaks.color(default="#abcdef"),
+        )
+        document = render(
+            page(
+                page_id="cover",
+                filename="cover.svg",
+                page_number=1,
+                elements=[
+                    rect("panel", 0, 0, 10, 10, fill=theme.primary),
+                    text(
+                        "hero",
+                        10,
+                        20,
+                        "hi",
+                        style=TextStyle(fill=theme.primary),
+                    ),
+                ],
+            )
+        )
+
+        with warnings.catch_warnings(record=True) as recorded:
+            warnings.simplefilter("always")
+            validate_document(document)
+        assert not [w for w in recorded if w.category is ValidationWarning], (
+            f"unexpected ValidationWarning(s): {[str(w.message) for w in recorded]}"
+        )

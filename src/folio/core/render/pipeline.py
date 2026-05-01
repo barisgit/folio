@@ -461,12 +461,19 @@ def _hex_colors_in_attrs(attrs: Mapping[str, object]) -> set[str]:
     colors: set[str] = set()
     trusted_colors = _token_hex_colors()
     for value in attrs.values():
+        # Tweak-sourced colors are user-curated through the playground
+        # (or a persisted ``theme.toml``), so they bypass the
+        # "prefer tokens" nudge regardless of the resolved hex value.
+        if isinstance(value, TweakValue):
+            continue
         candidate = _hex_string_candidate(value)
         if candidate is not None and _HEX_COLOR_RE.fullmatch(candidate):
             lowered = candidate.lower()
             if lowered not in trusted_colors:
                 colors.add(lowered)
         elif isinstance(value, TextStyle) and value.fill is not None:
+            if isinstance(value.fill, TweakValue):
+                continue
             fill_candidate = _hex_string_candidate(value.fill)
             if fill_candidate is None:
                 continue
@@ -479,14 +486,14 @@ def _hex_colors_in_attrs(attrs: Mapping[str, object]) -> set[str]:
 def _hex_string_candidate(value: object) -> str | None:
     """Return ``value`` as a hex-color string when one is plausibly stored.
 
-    Tweak helpers wrap colors in :class:`TweakValue`; they coerce to the
-    resolved hex string via ``str()``. Unrelated objects return ``None``.
+    Plain ``str`` attribute values are returned as-is; everything else
+    (including :class:`TweakValue`, which is curated via the playground)
+    returns ``None``. Callers handle :class:`TweakValue` separately so the
+    non-token-hex warning never fires for tweak-sourced colors.
     """
 
     if isinstance(value, str):
         return value
-    if isinstance(value, TweakValue):
-        return str(value)
     return None
 
 
