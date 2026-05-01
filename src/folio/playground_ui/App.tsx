@@ -15,6 +15,7 @@ import {
   onCleanup,
   onMount,
 } from "solid-js";
+import { Portal } from "solid-js/web";
 
 import type { PlaygroundTweak } from "./api.generated";
 import {
@@ -677,15 +678,27 @@ function ColorControl(props: ControlBaseProps) {
 function SelectControl(props: ControlBaseProps) {
   const [open, setOpen] = createSignal(false);
   const [value, setValue] = createSignal(props.initial);
-  let wrapperEl: HTMLDivElement | undefined;
+  // Trigger viewport rect so the menu can be portaled to <body> and
+  // escape ``overflow: auto`` clipping on the surrounding tweak panel.
+  const [rect, setRect] = createSignal<{ top: number; left: number; width: number } | null>(null);
   let triggerEl: HTMLButtonElement | undefined;
+  let menuEl: HTMLDivElement | undefined;
 
   function close(): void {
     setOpen(false);
   }
 
+  function refreshRect(): void {
+    if (!triggerEl) return;
+    const r = triggerEl.getBoundingClientRect();
+    setRect({ top: r.bottom + 4, left: r.left, width: r.width });
+  }
+
   function onDocClick(event: MouseEvent): void {
-    if (wrapperEl && !wrapperEl.contains(event.target as Node)) close();
+    const target = event.target as Node;
+    if (triggerEl?.contains(target)) return;
+    if (menuEl?.contains(target)) return;
+    close();
   }
 
   function onDocKey(event: KeyboardEvent): void {
@@ -698,17 +711,27 @@ function SelectControl(props: ControlBaseProps) {
 
   createEffect(() => {
     if (open()) {
+      refreshRect();
       document.addEventListener("click", onDocClick, true);
       document.addEventListener("keydown", onDocKey);
+      // Close on scroll/resize: the menu is fixed-positioned, so any
+      // viewport change would unanchor it. Scroll listener is capture
+      // so it fires for the inner ``.tweak-panel`` scroll container too.
+      window.addEventListener("scroll", close, true);
+      window.addEventListener("resize", close);
     } else {
       document.removeEventListener("click", onDocClick, true);
       document.removeEventListener("keydown", onDocKey);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
     }
   });
 
   onCleanup(() => {
     document.removeEventListener("click", onDocClick, true);
     document.removeEventListener("keydown", onDocKey);
+    window.removeEventListener("scroll", close, true);
+    window.removeEventListener("resize", close);
   });
 
   function pick(option: string): void {
@@ -718,7 +741,7 @@ function SelectControl(props: ControlBaseProps) {
   }
 
   return (
-    <div ref={wrapperEl} class="tweak-select">
+    <div class="tweak-select">
       <button
         ref={triggerEl}
         type="button"
@@ -735,21 +758,35 @@ function SelectControl(props: ControlBaseProps) {
           </svg>
         </span>
       </button>
-      <div class="tweak-select-menu" classList={{ "is-open": open() }} role="listbox">
-        <For each={props.tweak.options || []}>
-          {(option) => (
-            <button
-              type="button"
-              class="tweak-select-option"
-              role="option"
-              aria-selected={option === value()}
-              onClick={() => pick(option)}
-            >
-              {option}
-            </button>
-          )}
-        </For>
-      </div>
+      <Show when={open() && rect()}>
+        <Portal>
+          <div
+            ref={menuEl}
+            class="tweak-select-menu is-open is-portal"
+            role="listbox"
+            style={{
+              position: "fixed",
+              top: `${rect()!.top}px`,
+              left: `${rect()!.left}px`,
+              width: `${rect()!.width}px`,
+            }}
+          >
+            <For each={props.tweak.options || []}>
+              {(option) => (
+                <button
+                  type="button"
+                  class="tweak-select-option"
+                  role="option"
+                  aria-selected={option === value()}
+                  onClick={() => pick(option)}
+                >
+                  {option}
+                </button>
+              )}
+            </For>
+          </div>
+        </Portal>
+      </Show>
     </div>
   );
 }

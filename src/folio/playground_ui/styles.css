@@ -865,6 +865,11 @@ button, input, select, textarea {
   z-index: 20;
   display: none;
 }
+/* Portal variant: rendered as a child of <body> with fixed coordinates so
+   the surrounding ``.tweak-panel`` ``overflow: auto`` cannot clip it. */
+.tweak-select-menu.is-portal {
+  z-index: 1000;
+}
 .tweak-select-menu.is-open { display: block; }
 .tweak-select-option {
   width: 100%;
