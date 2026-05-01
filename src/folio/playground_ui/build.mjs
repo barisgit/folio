@@ -16,7 +16,7 @@ const sourceFiles = [
   "src/folio/playground_ui/README.md",
   "src/folio/playground_ui/build.mjs",
   "package.json",
-  "package-lock.json",
+  "bun.lock",
 ];
 
 await mkdir(outDir, { recursive: true });
@@ -44,7 +44,7 @@ await writeFile(
 await writeFile(resolve(outDir, "__init__.py"), '"""Packaged static assets for `folio dev`."""\n', "utf8");
 
 const manifest = {
-  build: "npm run build:playground",
+  build: "bun run build:playground",
   sourceHashes: {},
 };
 for (const file of sourceFiles) {

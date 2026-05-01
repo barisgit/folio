@@ -123,7 +123,7 @@ def test_playground_assets_are_package_resources() -> None:
     assert asset_root.joinpath("playground.js").is_file()
     assert asset_root.joinpath("playground.css").is_file()
     manifest = json.loads(asset_root.joinpath("manifest.json").read_text(encoding="utf-8"))
-    assert manifest["build"] == "npm run build:playground"
+    assert manifest["build"] == "bun run build:playground"
     assert "src/folio/playground_ui/main.ts" in manifest["sourceHashes"]
 
 

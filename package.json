@@ -1,8 +1,9 @@
 {
   "private": true,
   "type": "module",
+  "packageManager": "bun@1.3.12",
   "scripts": {
-    "build:playground": "node src/folio/playground_ui/build.mjs"
+    "build:playground": "bun src/folio/playground_ui/build.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.25.0"

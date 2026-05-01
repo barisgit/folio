@@ -147,7 +147,7 @@ wants to adjust declared tweaks interactively; accepted edits persist to
 rendered pages as a document workspace with page navigation, zoom controls,
 diagnostics, and controls for declared tweaks.
 
-Installed Folio users do not need Node, npm, TypeScript, or frontend source
+Installed Folio users do not need Bun, Node, TypeScript, or frontend source
 files to run `folio dev`. The browser UI is served from packaged Folio assets;
 rebuilding the TypeScript/CSS playground assets is a Folio-maintainer task,
 not a project-authoring step.

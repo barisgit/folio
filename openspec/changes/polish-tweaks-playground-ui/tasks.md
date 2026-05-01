@@ -50,7 +50,7 @@
 
 ## 7. Documentation and guidance
 
-- [x] 7.1 Update generated starter README copy to describe the improved `folio dev` workspace and explicitly avoid any Node/npm requirement for project users.
+- [x] 7.1 Update generated starter README copy to describe the improved `folio dev` workspace and explicitly avoid any Bun/Node requirement for project users.
 - [x] 7.2 Update the bundled Folio skill to describe the polished playground workflow, packaged runtime assets, and production verification expectations.
 - [x] 7.3 Add maintainer-facing notes for rebuilding playground frontend assets and for verifying package-data inclusion.
 

@@ -5,7 +5,7 @@ The current `folio dev` playground proves the tweak model works, but the UI is s
 ## What Changes
 
 - Replace the monolithic embedded `PLAYGROUND_HTML` string with packaged static frontend assets compiled from TypeScript and CSS source.
-- Keep Node/TypeScript as a repository/developer build-time dependency only; installed Folio users running `folio dev` must not need Node, npm, or a frontend toolchain.
+- Keep Bun/TypeScript as repository/release build-time dependencies only; installed Folio users running `folio dev` must not need Bun, Node, or a frontend toolchain.
 - Serve the compiled playground UI from the existing stdlib HTTP server, preserving the current JSON API contract unless narrow static asset endpoints are needed.
 - Redesign the UI as a document/page workspace with a scrollable canvas, page cards, page labels, current-page navigation, and zoom modes (`fit width`, `fit page`, `100%`).
 - Polish the right-side tweak inspector with clearer control grouping, validation/diagnostic display, loading and error states, and responsive behavior.
@@ -29,4 +29,4 @@ The current `folio dev` playground proves the tweak model works, but the UI is s
 - Affected code likely includes `src/folio/services/playground_server.py`, a new frontend source directory, package-data configuration, tests for packaged assets/server responses, and documentation/skill/starter text.
 - The `folio dev` HTTP API remains local and stdlib-based: `GET /`, `GET /api/state`, and `PATCH /api/tweaks` continue to be the behavioral contract.
 - Python package artifacts must include compiled playground assets in wheels and sdists.
-- Development workflows gain a frontend build/check command, but runtime users do not gain a Node dependency.
+- Development and Python packaging workflows gain a Bun frontend build step, but runtime users do not gain a Bun or Node dependency.

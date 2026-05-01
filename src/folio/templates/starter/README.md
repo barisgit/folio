@@ -41,7 +41,7 @@ pages with page navigation, zoom controls, diagnostics, and tweak controls.
 Playground edits persist back to `theme.toml`; they do not edit arbitrary
 Python source.
 
-You do not need Node, npm, TypeScript, or the Folio playground source files to
+You do not need Bun, Node, TypeScript, or the Folio playground source files to
 use `folio dev` in this starter project. Folio ships the playground UI as
 packaged Python assets.
 

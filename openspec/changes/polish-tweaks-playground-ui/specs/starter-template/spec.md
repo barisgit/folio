@@ -9,10 +9,10 @@ Folio SHALL describe the polished `folio dev` playground in generated starter do
 - **THEN** the generated `README.md` describes `folio dev` as a browser playground with rendered page previews, page navigation, zoom controls, and tweak controls for approved values
 - **AND** includes a command example for launching the playground against the generated project
 
-#### Scenario: README says Node is not required for starter use
+#### Scenario: README says frontend tooling is not required for starter use
 - **WHEN** a user reads the generated starter `README.md`
 - **THEN** it explains that running `folio dev` in the generated project uses Folio's packaged playground UI
-- **AND** does not instruct the user to install Node, npm, or rebuild playground frontend assets to tune `theme.toml`
+- **AND** does not instruct the user to install Bun, Node, npm, or rebuild playground frontend assets to tune `theme.toml`
 
 #### Scenario: README preserves production workflow
 - **WHEN** a user reads the generated starter `README.md`
