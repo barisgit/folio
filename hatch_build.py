@@ -29,6 +29,7 @@ _IGNORED_KEYS = frozenset({"generated_at", "folio_version"})
 _REGEN_COMMAND = "python -m folio.services.docs.generate"
 _PLAYGROUND_ASSET_DIR = Path("src/folio/services/playground_assets")
 _PLAYGROUND_REQUIRED_ASSETS = ("index.html", "playground.js", "playground.css", "manifest.json")
+_PLAYGROUND_TYPES_REGEN_COMMAND = "python -m folio._dev.gen_playground_types"
 _PLAYGROUND_INSTALL_COMMAND = ("bun", "install", "--frozen-lockfile")
 _PLAYGROUND_REBUILD_COMMAND = ("bun", "run", "build:playground")
 
@@ -67,6 +68,7 @@ class FolioDocsIndexHook(BuildHookInterface):
                 f"Run `{_REGEN_COMMAND}` and commit the result."
             )
 
+        _generate_playground_types(root)
         _build_playground_assets(root)
         _check_playground_assets(root)
 
@@ -77,6 +79,31 @@ def _strip_ignored(payload: dict[str, Any]) -> dict[str, Any]:
 
 def _format_command(command: tuple[str, ...]) -> str:
     return " ".join(command)
+
+
+def _generate_playground_types(root: Path) -> None:
+    """Regenerate ``api.generated.ts`` from Pydantic models.
+
+    Runs in-process so wheel builds never ship a stale TS surface, even
+    if a maintainer forgot to commit a regenerated file. The codegen
+    helper itself lives under ``src/folio/_dev/`` and is excluded from
+    both the wheel and the sdist.
+    """
+
+    src_path = root / "src"
+    sys.path.insert(0, str(src_path))
+    try:
+        from folio._dev.gen_playground_types import main as gen_main  # noqa: PLC0415
+    finally:
+        try:
+            sys.path.remove(str(src_path))
+        except ValueError:
+            pass
+    if gen_main([]) != 0:
+        raise RuntimeError(
+            "folio playground type codegen failed. "
+            f"Run `{_PLAYGROUND_TYPES_REGEN_COMMAND}` and retry."
+        )
 
 
 def _build_playground_assets(root: Path) -> None:

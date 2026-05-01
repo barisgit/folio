@@ -1,45 +1,15 @@
+import type {
+  Diagnostic,
+  PlaygroundPage,
+  PlaygroundState,
+  PlaygroundTweak,
+} from "./api.generated";
+
 const API_STATE = "/api/state";
 const API_TWEAKS = "/api/tweaks";
 const DEBOUNCE_MS = 250;
 const NUMERIC_KINDS = new Set(["size_pt", "size_mm", "opacity", "letter_spacing", "stroke_width"]);
 const CHOICE_KINDS = new Set(["choice", "preset", "font_choice"]);
-
-type Diagnostic = {
-  severity: string;
-  key: string | null;
-  message: string;
-};
-
-type PlaygroundPage = {
-  pageNumber: number;
-  pageId: string;
-  filename: string;
-  svg: string;
-};
-
-type PlaygroundTweak = {
-  key: string;
-  group: string;
-  name: string;
-  kind: string;
-  mode: string;
-  value: unknown;
-  default: unknown;
-  cssVar: string;
-  label: string | null;
-  min: number | null;
-  max: number | null;
-  options: string[] | null;
-};
-
-type PlaygroundState = {
-  specPath: string;
-  valuesPath: string;
-  pages: PlaygroundPage[];
-  tweaks: PlaygroundTweak[];
-  values: Record<string, unknown>;
-  diagnostics: Diagnostic[];
-};
 
 type UpdateStatus = "idle" | "pending" | "saving" | "saved" | "error";
 type ZoomMode = "fit-width" | "fit-page" | "actual-size";

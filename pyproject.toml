@@ -1,5 +1,8 @@
 [build-system]
-requires = ["hatchling>=1.25.0"]
+# pydantic is needed at build time so the hatch hook can import the
+# Pydantic-backed playground models and regenerate api.generated.ts
+# before the bun bundling step.
+requires = ["hatchling>=1.25.0", "pydantic>=2.0,<3"]
 build-backend = "hatchling.build"
 
 [project]
@@ -31,6 +34,10 @@ dev = [
 ]
 
 [tool.hatch.build.targets.sdist]
+# ``src/folio/_dev`` ships in the sdist because it is a build input: the
+# wheel build hook imports it to regenerate ``api.generated.ts`` before
+# bundling. The wheel target below still excludes it so end users never
+# install dev-only modules.
 include = [
   "src/folio/**/*",
   "src/folio/**/.*",
@@ -64,6 +71,8 @@ exclude = [
   "**/.ty_cache",
   "node_modules",
   "node_modules/**",
+  "src/folio/_dev",
+  "src/folio/_dev/**",
 ]
 
 [tool.hatch.build.targets.wheel.hooks.custom]

@@ -9,12 +9,18 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "../../..");
 const outDir = resolve(repoRoot, "src/folio/services/playground_assets");
 
+// Bun's job is the JS/CSS bundle and asset copy. Python owns codegen of
+// `api.generated.ts` (run via `python -m folio._dev.gen_playground_types`
+// when Pydantic models change). The codegen-drift pytest gates correctness
+// in CI; nothing here calls into Python.
 const sourceFiles = [
   "src/folio/playground_ui/index.html",
   "src/folio/playground_ui/main.ts",
   "src/folio/playground_ui/styles.css",
+  "src/folio/playground_ui/api.generated.ts",
   "src/folio/playground_ui/README.md",
   "src/folio/playground_ui/build.mjs",
+  "src/folio/_dev/gen_playground_types.py",
   "package.json",
   "bun.lock",
 ];
