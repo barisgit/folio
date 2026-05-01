@@ -43,6 +43,7 @@ type PlaygroundState = {
 
 type UpdateStatus = "idle" | "pending" | "saving" | "saved" | "error";
 type ZoomMode = "fit-width" | "fit-page" | "actual-size";
+type GlobalStatus = "idle" | "loading" | "saving" | "ok" | "error";
 
 type PendingUpdate = {
   timer: ReturnType<typeof setTimeout> | null;
@@ -58,16 +59,25 @@ const draftValues: Record<string, unknown> = {};
 const pendingUpdates = new Map<string, PendingUpdate>();
 const pendingTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const controlDiagnostics = new Map<string, string>();
+let pageObserver: IntersectionObserver | null = null;
+let savedPulseTimer: ReturnType<typeof setTimeout> | null = null;
+let suppressObserverUntil = 0;
 
 const statusEl = requireElement("status");
+const statusDotEl = requireElement("status-dot");
+const specPathEl = requireElement("spec-path");
+const tweakCountEl = requireElement("tweak-count");
 const diagnosticsEl = requireElement("diagnostics");
 const tweakPanelEl = requireElement("tweak-panel");
-const pageSelectorEl = requireElement("page-selector") as HTMLSelectElement;
+const pageSelectorHostEl = requireElement("page-selector-host");
 const previewContainerEl = requireElement("preview-container");
 const previewFrameEl = requireElement("preview-frame");
 const prevPageButtonEl = requireElement("prev-page") as HTMLButtonElement;
 const nextPageButtonEl = requireElement("next-page") as HTMLButtonElement;
 const zoomButtonEls = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-zoom-mode]"));
+
+let pageSelectorTriggerEl: HTMLButtonElement | null = null;
+let pageSelectorMenuEl: HTMLDivElement | null = null;
 
 function requireElement(id: string): HTMLElement {
   const element = document.getElementById(id);
@@ -75,8 +85,15 @@ function requireElement(id: string): HTMLElement {
   return element;
 }
 
-function setStatus(message: string): void {
+function setStatus(message: string, kind: GlobalStatus = "idle"): void {
   statusEl.textContent = message;
+  statusDotEl.dataset.state = kind;
+  if (kind === "ok") {
+    if (savedPulseTimer) clearTimeout(savedPulseTimer);
+    savedPulseTimer = setTimeout(() => {
+      statusDotEl.dataset.state = "idle";
+    }, 1600);
+  }
 }
 
 function pendingStatus(key: string): PendingUpdate {
@@ -145,10 +162,6 @@ function currentPageCount(): number {
   return playgroundState?.pages.length || 0;
 }
 
-function currentPage(): PlaygroundPage | null {
-  return playgroundState?.pages[selectedPageIndex] || null;
-}
-
 function selectPage(index: number, scrollIntoView = true): void {
   const count = currentPageCount();
   if (!count) {
@@ -157,26 +170,132 @@ function selectPage(index: number, scrollIntoView = true): void {
     return;
   }
   selectedPageIndex = Math.max(0, Math.min(index, count - 1));
+  // Programmatic scroll triggers the IntersectionObserver mid-animation;
+  // suppress its updates briefly so the selector doesn't flicker.
+  if (scrollIntoView) suppressObserverUntil = Date.now() + 600;
   renderPageSelector();
-  updateSelectedPageCard(scrollIntoView);
+  updateSelectedPageMarker(scrollIntoView);
 }
 
 function renderPageSelector(): void {
-  pageSelectorEl.innerHTML = "";
   const pages = playgroundState?.pages || [];
-  pageSelectorEl.disabled = pages.length === 0;
+  pageSelectorHostEl.innerHTML = "";
+
+  const trigger = document.createElement("button");
+  trigger.type = "button";
+  trigger.className = "page-selector-trigger";
+  trigger.id = "page-selector-trigger";
+  trigger.disabled = pages.length === 0;
+  trigger.setAttribute("aria-haspopup", "listbox");
+  trigger.setAttribute("aria-expanded", "false");
+
+  const current = pages[selectedPageIndex];
+  const total = pages.length;
+  const indexLabel = total
+    ? `${pad2(selectedPageIndex + 1)} / ${pad2(total)}`
+    : "—";
+  const indexParts = indexLabel.split(" / ");
+
+  const indexSpan = document.createElement("span");
+  indexSpan.className = "pst-index";
+  indexSpan.textContent = indexParts[0];
+  const sepSpan = document.createElement("span");
+  sepSpan.className = "pst-sep";
+  sepSpan.textContent = ` / `;
+  const totalSpan = document.createElement("span");
+  totalSpan.className = "pst-total";
+  totalSpan.textContent = indexParts[1] || "";
+  trigger.append(indexSpan, sepSpan, totalSpan);
+
+  if (current) {
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "pst-name";
+    nameSpan.textContent = current.filename;
+    nameSpan.title = current.filename;
+    trigger.append(nameSpan);
+  }
+
+  const caret = document.createElement("span");
+  caret.className = "pst-caret";
+  caret.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg>';
+  trigger.append(caret);
+
+  const menu = document.createElement("div");
+  menu.className = "page-selector-menu";
+  menu.setAttribute("role", "listbox");
+  menu.id = "page-selector-menu";
+
+  pages.forEach((page, index) => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.className = "page-selector-option";
+    option.setAttribute("role", "option");
+    option.setAttribute("aria-selected", String(index === selectedPageIndex));
+    option.dataset.index = String(index);
+
+    const optIndex = document.createElement("span");
+    optIndex.className = "pso-index";
+    optIndex.textContent = pad2(page.pageNumber);
+    const optName = document.createElement("span");
+    optName.className = "pso-name";
+    optName.textContent = page.filename;
+    option.append(optIndex, optName);
+    option.addEventListener("click", () => {
+      selectPage(index, true);
+      closePageSelector();
+    });
+    menu.appendChild(option);
+  });
+
+  trigger.addEventListener("click", () => {
+    if (trigger.getAttribute("aria-expanded") === "true") {
+      closePageSelector();
+    } else {
+      openPageSelector();
+    }
+  });
+
+  pageSelectorHostEl.append(trigger, menu);
+  pageSelectorTriggerEl = trigger;
+  pageSelectorMenuEl = menu;
+
   prevPageButtonEl.disabled = pages.length === 0 || selectedPageIndex <= 0;
   nextPageButtonEl.disabled = pages.length === 0 || selectedPageIndex >= pages.length - 1;
-  pages.forEach((page, index) => {
-    const option = document.createElement("option");
-    option.value = String(index);
-    option.textContent = `Page ${page.pageNumber}`;
-    option.title = page.filename;
-    pageSelectorEl.appendChild(option);
-  });
-  if (selectedPageIndex >= pages.length) selectedPageIndex = 0;
-  pageSelectorEl.value = String(selectedPageIndex);
-  pageSelectorEl.setAttribute("aria-label", pages.length ? `Selected page ${selectedPageIndex + 1} of ${pages.length}` : "No pages rendered");
+}
+
+function pad2(n: number): string {
+  return n < 10 ? `0${n}` : String(n);
+}
+
+function openPageSelector(): void {
+  if (!pageSelectorTriggerEl || !pageSelectorMenuEl) return;
+  pageSelectorTriggerEl.setAttribute("aria-expanded", "true");
+  pageSelectorMenuEl.classList.add("is-open");
+  document.addEventListener("click", outsidePageSelectorClick, true);
+  document.addEventListener("keydown", pageSelectorKeydown);
+  // scroll selected option into view
+  const selected = pageSelectorMenuEl.querySelector<HTMLElement>('[aria-selected="true"]');
+  if (selected) selected.scrollIntoView({ block: "nearest" });
+}
+
+function closePageSelector(): void {
+  if (!pageSelectorTriggerEl || !pageSelectorMenuEl) return;
+  pageSelectorTriggerEl.setAttribute("aria-expanded", "false");
+  pageSelectorMenuEl.classList.remove("is-open");
+  document.removeEventListener("click", outsidePageSelectorClick, true);
+  document.removeEventListener("keydown", pageSelectorKeydown);
+}
+
+function outsidePageSelectorClick(event: MouseEvent): void {
+  if (!pageSelectorHostEl.contains(event.target as Node)) closePageSelector();
+}
+
+function pageSelectorKeydown(event: KeyboardEvent): void {
+  if (event.key === "Escape") {
+    event.preventDefault();
+    closePageSelector();
+    pageSelectorTriggerEl?.focus();
+  }
 }
 
 function liveCssValue(tweak: PlaygroundTweak, value: unknown): string {
@@ -196,66 +315,109 @@ function applyLiveCssVars(): void {
   }
 }
 
+function disconnectPageObserver(): void {
+  if (pageObserver) {
+    pageObserver.disconnect();
+    pageObserver = null;
+  }
+}
+
+function attachPageObserver(): void {
+  disconnectPageObserver();
+  if (!("IntersectionObserver" in window)) return;
+  const sheets = Array.from(previewFrameEl.querySelectorAll<HTMLElement>(".page-sheet"));
+  if (!sheets.length) return;
+
+  pageObserver = new IntersectionObserver(
+    (entries) => {
+      if (Date.now() < suppressObserverUntil) return;
+      // Pick the entry closest to the centre of the viewport.
+      let bestIndex = -1;
+      let bestRatio = 0;
+      for (const entry of entries) {
+        if (entry.isIntersecting && entry.intersectionRatio > bestRatio) {
+          const idx = Number((entry.target as HTMLElement).dataset.pageIndex);
+          if (!Number.isNaN(idx)) {
+            bestRatio = entry.intersectionRatio;
+            bestIndex = idx;
+          }
+        }
+      }
+      if (bestIndex >= 0 && bestIndex !== selectedPageIndex) {
+        selectedPageIndex = bestIndex;
+        renderPageSelector();
+        updateSelectedPageMarker(false);
+      }
+    },
+    {
+      root: previewContainerEl,
+      threshold: [0.25, 0.5, 0.75],
+      rootMargin: "-20% 0px -20% 0px",
+    },
+  );
+
+  for (const sheet of sheets) pageObserver.observe(sheet);
+}
+
 function renderPreview(): void {
   const pages = playgroundState?.pages || [];
+  disconnectPageObserver();
   previewFrameEl.innerHTML = "";
-  previewContainerEl.classList.toggle("is-empty", pages.length === 0);
   previewContainerEl.dataset.zoom = zoomMode;
 
   if (isLoadingState) {
-    previewFrameEl.appendChild(emptyState("Loading rendered pages…", "The local server is preparing the playground state."));
+    previewFrameEl.appendChild(emptyState("Rendering…", "Folio is preparing your document."));
     return;
   }
 
   if (!pages.length) {
     const message = playgroundState?.diagnostics?.length
-      ? "The document did not render. Fix the diagnostics, then reload the playground."
+      ? "Fix the diagnostics on the right and reload."
       : "No rendered pages are available for this document.";
     previewFrameEl.appendChild(emptyState("No pages rendered", message));
     return;
   }
 
   pages.forEach((page, index) => {
-    const card = document.createElement("article");
-    card.className = "page-card";
-    card.dataset.pageIndex = String(index);
-    card.dataset.pageId = page.pageId;
-    card.tabIndex = 0;
-    card.setAttribute("role", "button");
-    card.setAttribute("aria-label", `Select page ${page.pageNumber}`);
-
-    const label = document.createElement("header");
-    label.className = "page-label";
-    label.innerHTML = `<span>Page ${page.pageNumber}</span><small>${escapeHtml(page.filename)}</small>`;
-
-    const sheet = document.createElement("div");
+    const sheet = document.createElement("section");
     sheet.className = "page-sheet";
+    sheet.dataset.pageIndex = String(index);
+    sheet.dataset.pageId = page.pageId;
+    sheet.tabIndex = -1;
+    sheet.setAttribute("aria-label", `Page ${page.pageNumber} — ${page.filename}`);
     sheet.innerHTML = page.svg;
-
-    card.append(label, sheet);
-    card.addEventListener("click", () => selectPage(index, false));
-    card.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        selectPage(index, false);
-      }
-    });
-    previewFrameEl.appendChild(card);
+    previewFrameEl.appendChild(sheet);
   });
 
   applyLiveCssVars();
-  updateSelectedPageCard(false);
+  updateSelectedPageMarker(false);
+  attachPageObserver();
 }
 
-function updateSelectedPageCard(scrollIntoView: boolean): void {
-  const cards = Array.from(previewFrameEl.querySelectorAll<HTMLElement>(".page-card"));
-  cards.forEach((card, index) => {
-    const selected = index === selectedPageIndex;
-    card.classList.toggle("is-selected", selected);
-    card.setAttribute("aria-pressed", String(selected));
-    if (selected && scrollIntoView) card.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  });
-  renderPageSelector();
+function updateSelectedPageMarker(scrollIntoView: boolean): void {
+  const sheets = Array.from(previewFrameEl.querySelectorAll<HTMLElement>(".page-sheet"));
+  if (scrollIntoView) {
+    const target = sheets[selectedPageIndex];
+    if (target) target.scrollIntoView({ block: "start", behavior: "smooth" });
+  }
+  // Re-render trigger label (selected index changed)
+  if (pageSelectorTriggerEl) {
+    const indexEl = pageSelectorTriggerEl.querySelector<HTMLElement>(".pst-index");
+    if (indexEl) indexEl.textContent = pad2(selectedPageIndex + 1);
+    const nameEl = pageSelectorTriggerEl.querySelector<HTMLElement>(".pst-name");
+    const current = playgroundState?.pages[selectedPageIndex];
+    if (nameEl && current) {
+      nameEl.textContent = current.filename;
+      nameEl.title = current.filename;
+    }
+  }
+  if (pageSelectorMenuEl) {
+    pageSelectorMenuEl.querySelectorAll<HTMLElement>(".page-selector-option").forEach((opt) => {
+      opt.setAttribute("aria-selected", String(Number(opt.dataset.index) === selectedPageIndex));
+    });
+  }
+  prevPageButtonEl.disabled = currentPageCount() === 0 || selectedPageIndex <= 0;
+  nextPageButtonEl.disabled = currentPageCount() === 0 || selectedPageIndex >= currentPageCount() - 1;
 }
 
 function emptyState(title: string, detail: string): HTMLElement {
@@ -282,37 +444,17 @@ function escapeHtml(value: string): string {
   });
 }
 
-function controlInputType(tweak: PlaygroundTweak): string {
-  if (tweak.kind === "color") return "color";
-  if (NUMERIC_KINDS.has(tweak.kind)) return "number";
-  return "text";
+function unitForKind(kind: string): string {
+  if (kind === "size_pt" || kind === "letter_spacing") return "pt";
+  if (kind === "size_mm") return "mm";
+  if (kind === "opacity") return "α";
+  if (kind === "stroke_width") return "px";
+  return "";
 }
 
 function normalizeInputValue(tweak: PlaygroundTweak, value: string): string | number {
   if (NUMERIC_KINDS.has(tweak.kind) && value !== "") return Number(value);
   return value;
-}
-
-function buildInput(tweak: PlaygroundTweak): HTMLInputElement | HTMLSelectElement {
-  if (CHOICE_KINDS.has(tweak.kind) && Array.isArray(tweak.options)) {
-    const select = document.createElement("select");
-    for (const optionValue of tweak.options) {
-      const option = document.createElement("option");
-      option.value = optionValue;
-      option.textContent = optionValue;
-      select.appendChild(option);
-    }
-    return select;
-  }
-
-  const input = document.createElement("input");
-  input.type = controlInputType(tweak);
-  if (input.type === "number") {
-    input.step = tweak.kind === "opacity" ? "0.01" : "0.1";
-    if (tweak.min !== null && tweak.min !== undefined) input.min = String(tweak.min);
-    if (tweak.max !== null && tweak.max !== undefined) input.max = String(tweak.max);
-  }
-  return input;
 }
 
 function groupedTweaks(tweaks: PlaygroundTweak[]): Map<string, PlaygroundTweak[]> {
@@ -329,10 +471,12 @@ function groupedTweaks(tweaks: PlaygroundTweak[]): Map<string, PlaygroundTweak[]
 function renderControls(): void {
   tweakPanelEl.innerHTML = "";
   const tweaks = playgroundState?.tweaks || [];
+  tweakCountEl.textContent = String(tweaks.length);
+
   if (!tweaks.length) {
     const empty = emptyState(
       "No approved tweaks",
-      "This document renders successfully, but it has not declared any approved tweakable values yet. Page previews remain available for inspection.",
+      "This document renders, but it has not declared any tweakable values yet. Add an `approve` block to expose controls.",
     );
     empty.classList.add("inspector-empty");
     tweakPanelEl.appendChild(empty);
@@ -361,53 +505,266 @@ function renderControl(tweak: PlaygroundTweak): HTMLElement {
   const wrapper = document.createElement("article");
   wrapper.className = "tweak-control";
   wrapper.dataset.tweakKey = tweak.key;
+  wrapper.dataset.kind = tweak.kind;
 
+  const head = document.createElement("div");
+  head.className = "tweak-control-head";
   const label = document.createElement("label");
   label.textContent = tweak.label || tweak.name || tweak.key;
   label.htmlFor = `tweak-${safeId(tweak.key)}`;
-
   const meta = document.createElement("div");
   meta.className = "tweak-meta";
-  meta.textContent = `${tweak.key} · ${tweak.kind} · ${tweak.mode}`;
+  const keySpan = document.createElement("span");
+  keySpan.className = "tm-key";
+  keySpan.textContent = tweak.key;
+  const sep1 = document.createElement("span");
+  sep1.className = "tm-sep";
+  sep1.textContent = "·";
+  const kindSpan = document.createElement("span");
+  kindSpan.className = "tm-kind";
+  kindSpan.textContent = tweak.kind;
+  const sep2 = document.createElement("span");
+  sep2.className = "tm-sep";
+  sep2.textContent = "·";
+  const modeSpan = document.createElement("span");
+  modeSpan.className = "tm-mode";
+  modeSpan.dataset.mode = tweak.mode;
+  modeSpan.textContent = tweak.mode;
+  meta.append(keySpan, sep1, kindSpan, sep2, modeSpan);
+  head.append(label, meta);
+  wrapper.appendChild(head);
 
-  const row = document.createElement("div");
-  row.className = "tweak-row";
-  const input = buildInput(tweak);
-  input.id = label.htmlFor;
-  input.value = String(draftValues[tweak.key] ?? playgroundState?.values[tweak.key] ?? tweak.value ?? tweak.default ?? "");
-  input.setAttribute("aria-describedby", `${input.id}-status ${input.id}-diagnostic`);
-  input.addEventListener("input", () => handleTweakInput(tweak, input.value));
-  input.addEventListener("change", () => handleTweakInput(tweak, input.value));
-  row.appendChild(input);
+  const initialValue = String(
+    draftValues[tweak.key] ?? playgroundState?.values[tweak.key] ?? tweak.value ?? tweak.default ?? "",
+  );
 
-  if (input instanceof HTMLInputElement && input.type === "number" && tweak.min !== null && tweak.min !== undefined && tweak.max !== null && tweak.max !== undefined) {
-    const range = document.createElement("input");
-    range.type = "range";
-    range.min = String(tweak.min);
-    range.max = String(tweak.max);
-    range.step = input.step;
-    range.value = input.value;
-    range.setAttribute("aria-label", `${label.textContent} slider`);
-    range.addEventListener("input", () => {
-      input.value = range.value;
-      handleTweakInput(tweak, range.value);
-    });
-    input.addEventListener("input", () => {
-      range.value = input.value;
-    });
-    row.appendChild(range);
+  if (CHOICE_KINDS.has(tweak.kind) && Array.isArray(tweak.options)) {
+    wrapper.appendChild(renderSelectControl(tweak, label.htmlFor, initialValue));
+  } else if (tweak.kind === "color") {
+    wrapper.appendChild(renderColorControl(tweak, label.htmlFor, initialValue));
+  } else if (
+    NUMERIC_KINDS.has(tweak.kind) &&
+    tweak.min !== null &&
+    tweak.min !== undefined &&
+    tweak.max !== null &&
+    tweak.max !== undefined
+  ) {
+    wrapper.appendChild(renderSliderControl(tweak, label.htmlFor, initialValue));
+  } else {
+    wrapper.appendChild(renderTextOrNumberControl(tweak, label.htmlFor, initialValue));
   }
 
   const status = document.createElement("div");
-  status.id = `${input.id}-status`;
+  status.id = `${label.htmlFor}-status`;
   status.className = "control-status";
   status.setAttribute("aria-live", "polite");
+  status.textContent = "Saved";
 
   const diagnostic = document.createElement("div");
-  diagnostic.id = `${input.id}-diagnostic`;
+  diagnostic.id = `${label.htmlFor}-diagnostic`;
   diagnostic.className = "control-diagnostic";
 
-  wrapper.append(label, meta, row, status, diagnostic);
+  wrapper.append(status, diagnostic);
+  return wrapper;
+}
+
+function renderTextOrNumberControl(tweak: PlaygroundTweak, id: string, initial: string): HTMLElement {
+  const inputBox = document.createElement("div");
+  inputBox.className = "tweak-input";
+  const input = document.createElement("input");
+  input.type = NUMERIC_KINDS.has(tweak.kind) ? "number" : "text";
+  if (input.type === "number") {
+    input.step = tweak.kind === "opacity" ? "0.01" : "0.1";
+    if (tweak.min !== null && tweak.min !== undefined) input.min = String(tweak.min);
+    if (tweak.max !== null && tweak.max !== undefined) input.max = String(tweak.max);
+  }
+  input.id = id;
+  input.value = initial;
+  input.addEventListener("input", () => handleTweakInput(tweak, input.value));
+  input.addEventListener("change", () => handleTweakInput(tweak, input.value));
+  inputBox.appendChild(input);
+  const unit = unitForKind(tweak.kind);
+  if (unit) {
+    const u = document.createElement("span");
+    u.className = "tweak-unit";
+    u.textContent = unit;
+    inputBox.appendChild(u);
+  }
+  return inputBox;
+}
+
+function renderSliderControl(tweak: PlaygroundTweak, id: string, initial: string): HTMLElement {
+  const wrapper = document.createElement("div");
+  wrapper.className = "tweak-slider";
+
+  const range = document.createElement("input");
+  range.type = "range";
+  range.min = String(tweak.min);
+  range.max = String(tweak.max);
+  range.step = tweak.kind === "opacity" ? "0.01" : "0.1";
+  range.value = initial;
+  range.id = id;
+  range.setAttribute("aria-label", tweak.label || tweak.name || tweak.key);
+  setRangeProgress(range);
+
+  const inputBox = document.createElement("div");
+  inputBox.className = "tweak-input";
+  const numberInput = document.createElement("input");
+  numberInput.type = "number";
+  numberInput.step = range.step;
+  numberInput.min = String(tweak.min);
+  numberInput.max = String(tweak.max);
+  numberInput.value = initial;
+  numberInput.setAttribute("aria-label", `${tweak.label || tweak.name || tweak.key} value`);
+  inputBox.appendChild(numberInput);
+  const unit = unitForKind(tweak.kind);
+  if (unit) {
+    const u = document.createElement("span");
+    u.className = "tweak-unit";
+    u.textContent = unit;
+    inputBox.appendChild(u);
+  }
+
+  range.addEventListener("input", () => {
+    numberInput.value = range.value;
+    setRangeProgress(range);
+    handleTweakInput(tweak, range.value);
+  });
+  numberInput.addEventListener("input", () => {
+    range.value = numberInput.value;
+    setRangeProgress(range);
+    handleTweakInput(tweak, numberInput.value);
+  });
+  numberInput.addEventListener("change", () => handleTweakInput(tweak, numberInput.value));
+
+  wrapper.append(range, inputBox);
+  return wrapper;
+}
+
+function setRangeProgress(range: HTMLInputElement): void {
+  const min = Number(range.min);
+  const max = Number(range.max);
+  const value = Number(range.value);
+  if (!Number.isFinite(min) || !Number.isFinite(max) || max === min) return;
+  const pct = Math.max(0, Math.min(1, (value - min) / (max - min))) * 100;
+  range.style.setProperty("--track-progress", `${pct}%`);
+}
+
+function renderColorControl(tweak: PlaygroundTweak, id: string, initial: string): HTMLElement {
+  const wrapper = document.createElement("div");
+  wrapper.className = "tweak-color";
+
+  const swatchLabel = document.createElement("label");
+  swatchLabel.className = "tweak-swatch";
+  swatchLabel.style.setProperty("--swatch-color", initial || "#888");
+  swatchLabel.setAttribute("aria-label", `Pick color for ${tweak.label || tweak.name || tweak.key}`);
+
+  const colorInput = document.createElement("input");
+  colorInput.type = "color";
+  colorInput.value = isHexColor(initial) ? initial : "#888888";
+  colorInput.id = id;
+  swatchLabel.appendChild(colorInput);
+
+  const inputBox = document.createElement("div");
+  inputBox.className = "tweak-input";
+  const hexInput = document.createElement("input");
+  hexInput.type = "text";
+  hexInput.value = initial;
+  hexInput.spellcheck = false;
+  hexInput.setAttribute("aria-label", `${tweak.label || tweak.name || tweak.key} hex value`);
+  inputBox.appendChild(hexInput);
+
+  colorInput.addEventListener("input", () => {
+    hexInput.value = colorInput.value;
+    swatchLabel.style.setProperty("--swatch-color", colorInput.value);
+    handleTweakInput(tweak, colorInput.value);
+  });
+  hexInput.addEventListener("input", () => {
+    if (isHexColor(hexInput.value)) {
+      colorInput.value = hexInput.value;
+      swatchLabel.style.setProperty("--swatch-color", hexInput.value);
+    }
+    handleTweakInput(tweak, hexInput.value);
+  });
+
+  wrapper.append(swatchLabel, inputBox);
+  return wrapper;
+}
+
+function isHexColor(value: string): boolean {
+  return /^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(value);
+}
+
+function renderSelectControl(tweak: PlaygroundTweak, id: string, initial: string): HTMLElement {
+  const wrapper = document.createElement("div");
+  wrapper.className = "tweak-select";
+
+  const trigger = document.createElement("button");
+  trigger.type = "button";
+  trigger.className = "tweak-select-trigger";
+  trigger.id = id;
+  trigger.setAttribute("aria-haspopup", "listbox");
+  trigger.setAttribute("aria-expanded", "false");
+
+  const valueSpan = document.createElement("span");
+  valueSpan.className = "tst-value";
+  valueSpan.textContent = initial || "—";
+  const caret = document.createElement("span");
+  caret.className = "tst-caret";
+  caret.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg>';
+  trigger.append(valueSpan, caret);
+
+  const menu = document.createElement("div");
+  menu.className = "tweak-select-menu";
+  menu.setAttribute("role", "listbox");
+
+  const options = tweak.options || [];
+  for (const optionValue of options) {
+    const opt = document.createElement("button");
+    opt.type = "button";
+    opt.className = "tweak-select-option";
+    opt.setAttribute("role", "option");
+    opt.setAttribute("aria-selected", String(optionValue === initial));
+    opt.textContent = optionValue;
+    opt.addEventListener("click", () => {
+      valueSpan.textContent = optionValue;
+      menu.querySelectorAll<HTMLElement>(".tweak-select-option").forEach((o) => {
+        o.setAttribute("aria-selected", String(o.textContent === optionValue));
+      });
+      closeSelect();
+      handleTweakInput(tweak, optionValue);
+    });
+    menu.appendChild(opt);
+  }
+
+  function openSelect() {
+    trigger.setAttribute("aria-expanded", "true");
+    menu.classList.add("is-open");
+    document.addEventListener("click", outside, true);
+    document.addEventListener("keydown", esc);
+  }
+  function closeSelect() {
+    trigger.setAttribute("aria-expanded", "false");
+    menu.classList.remove("is-open");
+    document.removeEventListener("click", outside, true);
+    document.removeEventListener("keydown", esc);
+  }
+  function outside(event: MouseEvent) {
+    if (!wrapper.contains(event.target as Node)) closeSelect();
+  }
+  function esc(event: KeyboardEvent) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeSelect();
+      trigger.focus();
+    }
+  }
+  trigger.addEventListener("click", () => {
+    if (trigger.getAttribute("aria-expanded") === "true") closeSelect();
+    else openSelect();
+  });
+
+  wrapper.append(trigger, menu);
   return wrapper;
 }
 
@@ -438,15 +795,36 @@ function renderZoomControls(): void {
   }
 }
 
+function renderTopMeta(): void {
+  if (!playgroundState) {
+    specPathEl.textContent = "—";
+    specPathEl.title = "";
+    return;
+  }
+  const path = playgroundState.specPath || "—";
+  // Shorten — show last two path segments to keep topbar compact.
+  const segments = path.split("/").filter(Boolean);
+  const shortened = segments.length > 2 ? `…/${segments.slice(-2).join("/")}` : path;
+  specPathEl.textContent = shortened;
+  specPathEl.title = path;
+}
+
 function renderAll(): void {
+  renderTopMeta();
   renderPageSelector();
   renderZoomControls();
   renderPreview();
   renderControls();
   displayDiagnostics(playgroundState?.diagnostics || []);
-  if (isLoadingState) setStatus("Loading playground state…");
-  else if (playgroundState?.tweaks?.length) setStatus(`${playgroundState.tweaks.length} tweak(s) loaded.`);
-  else setStatus("No tweaks declared. Page previews are still available.");
+  if (isLoadingState) {
+    setStatus("Loading…", "loading");
+  } else if (playgroundState?.diagnostics?.some((d) => d.severity === "error")) {
+    setStatus(`${playgroundState.diagnostics.length} diagnostic(s)`, "error");
+  } else if (playgroundState?.tweaks?.length) {
+    setStatus(`${playgroundState.tweaks.length} tweak${playgroundState.tweaks.length === 1 ? "" : "s"} ready`, "ok");
+  } else {
+    setStatus("Ready · no tweaks declared", "idle");
+  }
 }
 
 function schedulePatch(tweak: PlaygroundTweak): void {
@@ -455,14 +833,13 @@ function schedulePatch(tweak: PlaygroundTweak): void {
   pendingTimers.set(tweak.key, timer);
   const update = pendingStatus(tweak.key);
   update.timer = timer;
-  setPendingStatus(tweak.key, "pending", "Waiting to save…");
+  setPendingStatus(tweak.key, "pending", "Pending");
 }
 
 async function patchTweak(tweak: PlaygroundTweak): Promise<void> {
   pendingTimers.delete(tweak.key);
-  setPendingStatus(tweak.key, "saving", tweak.mode === "live" ? "Saving…" : "Saving and rerendering…");
-  if (tweak.mode !== "live") setStatus("Rendering updated preview…");
-  else setStatus("Saving tweak…");
+  setPendingStatus(tweak.key, "saving", tweak.mode === "live" ? "Saving" : "Rerendering");
+  setStatus(tweak.mode === "live" ? "Saving tweak…" : "Rendering preview…", "saving");
   try {
     const response = await fetch(API_TWEAKS, {
       method: "PATCH",
@@ -473,18 +850,18 @@ async function patchTweak(tweak: PlaygroundTweak): Promise<void> {
     if (!response.ok) {
       const diagnostics = payload.diagnostics || [{ severity: "error", key: tweak.key, message: "Update rejected." }];
       displayDiagnostics(diagnostics);
-      setPendingStatus(tweak.key, "error", "Invalid value");
-      setStatus("Update rejected.");
+      setPendingStatus(tweak.key, "error", "Invalid");
+      setStatus("Update rejected", "error");
       return;
     }
     mergeState(payload);
     controlDiagnostics.delete(tweak.key);
-    setPendingStatus(tweak.key, "saved", tweak.mode === "live" ? "Saved" : "Saved and rerendered");
+    setPendingStatus(tweak.key, "saved", "Saved");
     renderAll();
   } catch (error) {
     displayDiagnostics([{ severity: "error", key: tweak.key, message: String(error) }]);
-    setPendingStatus(tweak.key, "error", "Update failed");
-    setStatus("Update failed.");
+    setPendingStatus(tweak.key, "error", "Failed");
+    setStatus("Update failed", "error");
   }
 }
 
@@ -494,9 +871,9 @@ function handleTweakInput(tweak: PlaygroundTweak, rawValue: string): void {
   controlDiagnostics.delete(tweak.key);
   if (tweak.mode === "live" && tweak.cssVar) {
     previewContainerEl.style.setProperty(tweak.cssVar, liveCssValue(tweak, value));
-    setStatus("Preview updated. Saving…");
+    setStatus("Preview updated · saving", "saving");
   } else {
-    setStatus("Waiting to rerender…");
+    setStatus("Awaiting rerender…", "saving");
   }
   schedulePatch(tweak);
 }
@@ -511,7 +888,7 @@ async function loadState(): Promise<void> {
       playgroundState = { specPath: "", valuesPath: "", pages: [], tweaks: [], values: {}, diagnostics: state.diagnostics || [] };
       isLoadingState = false;
       renderAll();
-      setStatus("Failed to render state.");
+      setStatus("Failed to render state", "error");
       return;
     }
     mergeState(state as PlaygroundState);
@@ -521,13 +898,9 @@ async function loadState(): Promise<void> {
     playgroundState = { specPath: "", valuesPath: "", pages: [], tweaks: [], values: {}, diagnostics: [{ severity: "error", key: null, message: `Failed to load state: ${error}` }] };
     isLoadingState = false;
     renderAll();
-    setStatus("Failed to load state.");
+    setStatus("Failed to load state", "error");
   }
 }
-
-pageSelectorEl.addEventListener("change", () => {
-  selectPage(Number(pageSelectorEl.value || 0));
-});
 
 prevPageButtonEl.addEventListener("click", () => selectPage(selectedPageIndex - 1));
 nextPageButtonEl.addEventListener("click", () => selectPage(selectedPageIndex + 1));
@@ -549,5 +922,8 @@ zoomButtonEls.forEach((button) => {
     renderZoomControls();
   });
 });
+
+// Keep escapeHtml export-ish alive in case other paths import (no-op when unused).
+void escapeHtml;
 
 loadState();

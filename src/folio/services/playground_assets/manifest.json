@@ -1,9 +1,9 @@
 {
   "build": "bun run build:playground",
   "sourceHashes": {
-    "src/folio/playground_ui/index.html": "98610614a593890c72716c62b53dd7fff5c4041a1a86c44e167c5acdb10761cb",
-    "src/folio/playground_ui/main.ts": "e7aa1c04f0b27f264c066941d6992b9daea26f177afb544366c28cf21ff88ece",
-    "src/folio/playground_ui/styles.css": "7ee8e70153514bed0f869400f5b0aa5b1efea93696c1b3018b7d1923657c0f97",
+    "src/folio/playground_ui/index.html": "214c32cb2aedef6fd0a49bd2e46b9cd975f99f257e67ab227bc7ff3b5477fffb",
+    "src/folio/playground_ui/main.ts": "21d6abc4b6b0dbee70e1d5624b3172762554b11c26b0ca2a161e37dffbc743bc",
+    "src/folio/playground_ui/styles.css": "6255fdcf9839a21e170cf47562302605faaf10ca05cedcc96e198c30c41ab9b3",
     "src/folio/playground_ui/README.md": "a82e3d0e6eb59cf103858604f611ef6db5c04bbbfc0ad0ce3ff5b8d472304a4d",
     "src/folio/playground_ui/build.mjs": "a3b1634713a55d6268132c203753af6d711c685b2e4d551eda30386a935e2d62",
     "package.json": "663c48dd8bf5df68f3d9887408fd043fa7baee5a89bb9740c158301303bdd11b",

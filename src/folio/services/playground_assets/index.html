@@ -4,41 +4,74 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Folio Tweaks Playground</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="/assets/playground.css">
 </head>
 <body>
   <main id="folio-playground">
+    <header class="topbar" aria-label="Playground header">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M5 4h10l4 4v12H5z"/>
+            <path d="M15 4v4h4"/>
+            <path d="M9 12h6M9 16h6"/>
+          </svg>
+        </span>
+        <div class="brand-text">
+          <span class="brand-eyebrow">FOLIO · DEV</span>
+          <span class="brand-title">Playground</span>
+        </div>
+      </div>
+
+      <div class="topbar-meta" aria-label="Active document">
+        <span class="meta-eyebrow">SPEC</span>
+        <span class="meta-value" id="spec-path" title="">—</span>
+      </div>
+
+      <div class="topbar-status" aria-label="Render status">
+        <span class="status-dot" id="status-dot" data-state="idle" aria-hidden="true"></span>
+        <span class="status-text" id="status" role="status" aria-live="polite">Loading tweak state…</span>
+      </div>
+    </header>
+
     <section class="workspace" aria-label="Rendered document workspace">
-      <header class="toolbar" aria-label="Document controls">
-        <div class="title-block">
-          <p class="eyebrow">Folio dev</p>
-          <h1>Playground</h1>
+      <div class="workspace-toolbar" aria-label="Document controls">
+        <div class="page-nav" aria-label="Page navigation">
+          <button id="prev-page" type="button" class="ghost-button" aria-label="Previous page" title="Previous page (PgUp)">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <div class="page-selector" id="page-selector-host"></div>
+          <button id="next-page" type="button" class="ghost-button" aria-label="Next page" title="Next page (PgDn)">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
         </div>
-        <div class="toolbar-group" aria-label="Page navigation">
-          <button id="prev-page" type="button" aria-label="Previous page">Previous</button>
-          <label for="page-selector">Page</label>
-          <select id="page-selector" aria-label="Select page"></select>
-          <button id="next-page" type="button" aria-label="Next page">Next</button>
+
+        <div class="zoom-segments" role="tablist" aria-label="Zoom mode">
+          <button type="button" role="tab" data-zoom-mode="fit-width" aria-pressed="true" title="Fit to width">Width</button>
+          <button type="button" role="tab" data-zoom-mode="fit-page" aria-pressed="false" title="Fit page in view">Page</button>
+          <button type="button" role="tab" data-zoom-mode="actual-size" aria-pressed="false" title="100%">100%</button>
         </div>
-        <fieldset class="zoom-controls" aria-label="Zoom controls">
-          <legend>Zoom</legend>
-          <button type="button" data-zoom-mode="fit-width" aria-pressed="true">Fit width</button>
-          <button type="button" data-zoom-mode="fit-page" aria-pressed="false">Fit page</button>
-          <button type="button" data-zoom-mode="actual-size" aria-pressed="false">100%</button>
-        </fieldset>
-      </header>
-      <div id="preview-container" class="page-canvas" tabindex="0" aria-live="polite" aria-label="Scrollable document pages">
+      </div>
+
+      <div id="preview-container" class="page-canvas" tabindex="0" aria-label="Scrollable document pages">
         <div id="preview-frame" class="page-stack"></div>
       </div>
     </section>
+
     <aside class="panel" aria-label="Tweak controls">
-      <div class="panel-heading">
-        <p class="eyebrow">Approved values</p>
-        <h2>Tweaks</h2>
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow">APPROVED VALUES</p>
+          <h2>Tweaks</h2>
+        </div>
+        <span class="panel-count" id="tweak-count" aria-live="polite">0</span>
       </div>
-      <p id="status" role="status" aria-live="polite">Loading tweak state…</p>
-      <ul id="diagnostics" aria-live="polite" aria-label="Playground diagnostics"></ul>
-      <section id="tweak-panel" aria-label="Tweaks"></section>
+
+      <ul id="diagnostics" class="diagnostics" aria-live="polite" aria-label="Playground diagnostics" hidden></ul>
+      <section id="tweak-panel" class="tweak-panel" aria-label="Tweaks"></section>
     </aside>
   </main>
   <script type="module" src="/assets/playground.js"></script>

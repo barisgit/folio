@@ -227,10 +227,9 @@ def test_packaged_js_preserves_current_ui_behavior(tmp_path: Path) -> None:
     assert "clearTimeout(pendingTimers.get" in body
     assert "fetch(API_TWEAKS" in body
     assert "JSON.stringify({ key: tweak.key" in body
-    assert 'if (tweak.kind === "color") return "color";' in body
-    assert 'input.type = controlInputType(tweak)' in body
+    assert 'tweak.kind === "color"' in body
     assert 'range.type = "range"' in body
-    assert 'document.createElement("select")' in body
+    assert "renderSelectControl" in body
     assert "displayDiagnostics" in body
     assert "control-diagnostic" in body
     assert "is-invalid" in body
