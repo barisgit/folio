@@ -232,7 +232,7 @@ create_playground_server(spec)
             └─ PATCH /api/tweaks  → debounced apply_tweak_update() + fresh state
 ```
 
-- `PlaygroundPage`, `PlaygroundTweak`, `PlaygroundState` — frozen dataclasses for the JSON-facing playground state model.
+- `PlaygroundPage`, `PlaygroundTweak`, `PlaygroundState`, `Diagnostic`, `TweakUpdateRequest` — Pydantic v2 `BaseModel` classes for the JSON-facing playground state model. Snake-case Python fields carry camelCase aliases (`spec_path → specPath`, `page_number → pageNumber`, `css_var → cssVar`, etc.) so `model_dump(mode="json", by_alias=True)` produces byte-for-byte the same wire format as the previous hand-rolled serializer. The Pydantic models are the single source of truth for the JSON contract; `src/folio/_dev/gen_playground_types.py` (excluded from wheels/sdists) projects them into `src/folio/playground_ui/api.generated.ts` so the Solid frontend gets matching TypeScript types.
 - `load_playground_state(spec_path)` — renders in playground mode and returns pages, tweak declarations, resolved values, values path, and diagnostics without touching the last-build cache.
 - `apply_tweak_update(spec_path, updates|key/value)` — rereads current `theme.toml`, validates proposed edits against current declarations, writes deterministic TOML, and returns a fresh state; invalid edits raise `PlaygroundUpdateError` without writing.
 - `PlaygroundHTTPServer` — stdlib `ThreadingHTTPServer` bound to one spec path with startup state and an update debouncer.
@@ -408,7 +408,7 @@ SvgSearchResponse  →  CLI renders results
 | `services/reconcile/__init__.py` | *(empty)* |
 | `services/search/__init__.py` | `PROVIDERS`, `Provider`, `SearchResult`, `fetch_stock`, `fetch_stock_multi` |
 | `services/tweaks_load.py` | `SpecLoadResult`, `SpecValidateResult`, `TweakValidationError`, `load_spec_with_tweaks`, `validate_spec_with_tweaks` |
-| `services/playground.py` | `PlaygroundPage`, `PlaygroundState`, `PlaygroundTweak`, `PlaygroundUpdateError`, `apply_tweak_update`, `load_playground_state` |
+| `services/playground.py` | `Diagnostic`, `PlaygroundPage`, `PlaygroundState`, `PlaygroundTweak`, `PlaygroundUpdateError`, `TweakUpdateRequest`, `apply_tweak_update`, `load_playground_state` |
 | `services/playground_server.py` | `PlaygroundHTTPServer`, `create_playground_server`, `playground_url`, `serialize_playground_state` |
 
 ---

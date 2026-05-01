@@ -195,9 +195,14 @@ def test_get_static_playground_assets(tmp_path: Path) -> None:
     assert "javascript" in js_response.headers["Content-Type"]
     assert js_response.headers["Cache-Control"] == "no-store"
     # The bundle is minified so identifier names are not stable; assert
-    # only the literal API path strings, which the bundler preserves.
+    # only literal strings the bundler preserves: the API paths and the
+    # `#root` mount point that proves Solid `render(...)` wiring made it
+    # into the bundle. `solid-track` is an internal Solid runtime symbol
+    # that survives minification and confirms the Solid runtime shipped.
     assert "/api/state" in js_body
     assert "/api/tweaks" in js_body
+    assert "#root" in js_body
+    assert "solid-track" in js_body
 
 
 def test_get_static_playground_asset_missing_returns_404(tmp_path: Path) -> None:
