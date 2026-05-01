@@ -38,6 +38,7 @@ __all__ = [
     "load_persisted_values",
     "resolve_values_file",
     "validate_persisted_values",
+    "write_persisted_raw",
     "write_persisted_values",
 ]
 
@@ -295,6 +296,40 @@ def write_persisted_values(path: Path, registry: TweakRegistry) -> None:
     if lines:
         # Drop the final blank between the last group and EOF, replace
         # it with a single trailing newline.
+        while lines and lines[-1] == "":
+            lines.pop()
+        text = "\n".join(lines) + "\n"
+    else:
+        text = ""
+
+    path.write_text(text, encoding="utf-8")
+
+
+def write_persisted_raw(
+    path: Path, raw: Mapping[str, Mapping[str, Any]]
+) -> None:
+    """Write only the entries in ``raw`` to ``path`` as deterministic TOML.
+
+    Unlike :func:`write_persisted_values`, this does not consult a
+    registry: it serialises exactly the groups/members supplied,
+    skipping empty groups. Used by reset flows that have already
+    pruned persisted entries and need the file to reflect that
+    pruning rather than re-emit defaults for every declaration.
+    """
+
+    lines: list[str] = []
+    for group_name in sorted(raw):
+        members = raw[group_name]
+        if not members:
+            continue
+        lines.append(f"[{group_name}]")
+        for member_name in sorted(members):
+            lines.append(
+                f"{member_name} = {_format_value(members[member_name])}"
+            )
+        lines.append("")
+
+    if lines:
         while lines and lines[-1] == "":
             lines.pop()
         text = "\n".join(lines) + "\n"

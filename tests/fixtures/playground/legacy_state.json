@@ -13,6 +13,7 @@
     {
       "cssVar": "--folio-tweak-theme-primary",
       "default": "#d9a64b",
+      "diverged": true,
       "group": "theme",
       "key": "theme.primary",
       "kind": "color",
@@ -27,6 +28,7 @@
     {
       "cssVar": "--folio-tweak-theme-hero-size-pt",
       "default": 58.0,
+      "diverged": true,
       "group": "theme",
       "key": "theme.hero_size_pt",
       "kind": "size_pt",
@@ -41,6 +43,7 @@
     {
       "cssVar": "--folio-tweak-theme-panel-width",
       "default": 40.0,
+      "diverged": false,
       "group": "theme",
       "key": "theme.panel_width",
       "kind": "size_mm",
@@ -55,6 +58,7 @@
     {
       "cssVar": "--folio-tweak-theme-rebuilt",
       "default": "#112233",
+      "diverged": false,
       "group": "theme",
       "key": "theme.rebuilt",
       "kind": "color",
@@ -69,6 +73,7 @@
     {
       "cssVar": "--folio-tweak-theme-style",
       "default": "bold",
+      "diverged": true,
       "group": "theme",
       "key": "theme.style",
       "kind": "choice",

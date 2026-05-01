@@ -29,6 +29,7 @@ from folio.services.playground import (
     PlaygroundPage,
     PlaygroundState,
     PlaygroundTweak,
+    ResetTweakRequest,
     TweakUpdateRequest,
 )
 
@@ -41,6 +42,7 @@ _MODELS = (
     PlaygroundTweak,
     PlaygroundState,
     TweakUpdateRequest,
+    ResetTweakRequest,
 )
 
 _HEADER = (
@@ -68,6 +70,14 @@ def _ts_for_python_type(annotation: Any) -> str:
         return "null"
     if annotation is Any:
         return "unknown"
+    if origin is typing.Literal:
+        # Render Literal["a", "b"] as a sorted union of TS string/number
+        # literals so generated types reflect the constraint exactly.
+        members = [
+            f'"{a}"' if isinstance(a, str) else repr(a)
+            for a in args
+        ]
+        return " | ".join(sorted(members))
     if annotation is str:
         return "string"
     if annotation in (int, float):
@@ -131,10 +141,13 @@ def _interface_for_model(model: type) -> str:
         # may omit the key. Pydantic's ``model_dump`` always emits every
         # declared field, so we never mark fields optional here; nullable
         # values are expressed as ``| null`` instead. The sole exception
-        # is ``TweakUpdateRequest`` whose two shapes share fields: there
-        # we mark all top-level fields optional via the dedicated path
-        # below.
-        optional = "?" if model is TweakUpdateRequest else ""
+        # is ``TweakUpdateRequest`` whose two shapes share fields and
+        # ``ResetTweakRequest`` whose ``key``/``group`` are scope-
+        # dependent: there we mark all top-level fields optional via
+        # this dedicated path.
+        optional = (
+            "?" if model in (TweakUpdateRequest, ResetTweakRequest) else ""
+        )
         lines.append(f"  {wire_name}{optional}: {ts_type};")
     lines.append("}")
     return "\n".join(lines)

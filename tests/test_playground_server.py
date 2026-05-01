@@ -116,6 +116,28 @@ def _json_patch(url: str, payload: dict[str, object]) -> dict[str, object]:
         return json.loads(response.read().decode("utf-8"))
 
 
+def _json_post(url: str, payload: dict[str, object]) -> dict[str, object]:
+    data = json.dumps(payload).encode("utf-8")
+    request = Request(
+        url,
+        data=data,
+        method="POST",
+        headers={"Content-Type": "application/json"},
+    )
+    with urlopen(request, timeout=5) as response:
+        assert response.status == 200
+        return json.loads(response.read().decode("utf-8"))
+
+
+def _tweak_by_key(
+    state: dict[str, object], key: str
+) -> dict[str, object]:
+    for tweak in state["tweaks"]:  # type: ignore[union-attr]
+        if tweak["key"] == key:  # type: ignore[index]
+            return tweak  # type: ignore[return-value]
+    raise AssertionError(f"tweak {key!r} missing from state")
+
+
 def test_playground_assets_are_package_resources() -> None:
     asset_root = resources.files(playground_assets)
 
@@ -451,6 +473,180 @@ def test_patch_api_tweaks_invalid_json_returns_400(tmp_path: Path) -> None:
             raise AssertionError("expected HTTP 400")
 
     assert payload["diagnostics"][0]["severity"] == "error"
+
+
+def test_get_api_state_reports_diverged_flag(tmp_path: Path) -> None:
+    spec_path = _write_spec(tmp_path)
+    (tmp_path / "theme.toml").write_text(
+        '[theme]\nprimary = "#ff3366"\n', encoding="utf-8"
+    )
+
+    with _running_server(spec_path) as base_url:
+        state = _json_get(base_url + "api/state")
+
+    assert _tweak_by_key(state, "theme.primary")["diverged"] is True
+    assert _tweak_by_key(state, "theme.hero_size_pt")["diverged"] is False
+
+
+def test_post_api_tweaks_reset_scope_tweak_drops_single_key(
+    tmp_path: Path,
+) -> None:
+    spec_path = _write_spec(tmp_path)
+    values_path = tmp_path / "theme.toml"
+
+    with _running_server(spec_path) as base_url:
+        _json_patch(
+            base_url + "api/tweaks",
+            {"updates": {"theme.primary": "#ff3366", "theme.hero_size_pt": 70}},
+        )
+        assert 'primary = "#ff3366"' in values_path.read_text(encoding="utf-8")
+
+        state = _json_post(
+            base_url + "api/tweaks/reset",
+            {"scope": "tweak", "key": "theme.primary"},
+        )
+
+    written = values_path.read_text(encoding="utf-8")
+    assert "primary" not in written
+    assert "hero_size_pt = 70.0" in written
+    primary = _tweak_by_key(state, "theme.primary")
+    assert primary["diverged"] is False
+    # Default re-applied after reset.
+    assert primary["value"] == "#d9a64b"
+    assert _tweak_by_key(state, "theme.hero_size_pt")["diverged"] is True
+
+
+def test_post_api_tweaks_reset_scope_group_clears_group_only(
+    tmp_path: Path,
+) -> None:
+    spec_body = dedent(
+        """
+        from folio.dsl import TextStyle, collection, document, page, text, tweaks
+
+        theme = tweaks.group(
+            "theme",
+            primary=tweaks.color(default="#d9a64b"),
+        )
+        layout = tweaks.group(
+            "layout",
+            margin=tweaks.size_mm(default=10.0, min=0, max=40),
+        )
+
+        HERO = TextStyle(fill=theme.primary)
+
+
+        def build():
+            return collection(
+                document(
+                    "demo",
+                    pages=[
+                        page(
+                            page_id="one",
+                            filename="one.svg",
+                            page_number=1,
+                            elements=[text("hero", 10, 20, "Hi", style=HERO)],
+                        )
+                    ],
+                )
+            )
+        """
+    ).strip() + "\n"
+    spec_path = _write_spec(tmp_path, spec_body)
+    values_path = tmp_path / "theme.toml"
+
+    with _running_server(spec_path) as base_url:
+        _json_patch(
+            base_url + "api/tweaks",
+            {
+                "updates": {
+                    "theme.primary": "#ff3366",
+                    "layout.margin": 24.0,
+                }
+            },
+        )
+
+        state = _json_post(
+            base_url + "api/tweaks/reset",
+            {"scope": "group", "group": "theme"},
+        )
+
+    written = values_path.read_text(encoding="utf-8")
+    assert "[theme]" not in written
+    assert "margin = 24.0" in written
+    assert _tweak_by_key(state, "theme.primary")["diverged"] is False
+    assert _tweak_by_key(state, "layout.margin")["diverged"] is True
+
+
+def test_post_api_tweaks_reset_scope_all_unlinks_values_file(
+    tmp_path: Path,
+) -> None:
+    spec_path = _write_spec(tmp_path)
+    values_path = tmp_path / "theme.toml"
+
+    with _running_server(spec_path) as base_url:
+        _json_patch(
+            base_url + "api/tweaks",
+            {"key": "theme.primary", "value": "#ff3366"},
+        )
+        assert values_path.exists()
+
+        state = _json_post(
+            base_url + "api/tweaks/reset",
+            {"scope": "all"},
+        )
+
+    assert not values_path.exists()
+    for tweak in state["tweaks"]:  # type: ignore[union-attr]
+        assert tweak["diverged"] is False  # type: ignore[index]
+
+
+def test_post_api_tweaks_reset_rejects_mismatched_scope(
+    tmp_path: Path,
+) -> None:
+    spec_path = _write_spec(tmp_path)
+
+    with _running_server(spec_path) as base_url:
+        request = Request(
+            base_url + "api/tweaks/reset",
+            data=json.dumps({"scope": "tweak"}).encode("utf-8"),
+            method="POST",
+            headers={"Content-Type": "application/json"},
+        )
+        try:
+            urlopen(request, timeout=5)
+        except HTTPError as exc:
+            assert exc.code == 400
+            payload = json.loads(exc.read().decode("utf-8"))
+        else:  # pragma: no cover - defensive
+            raise AssertionError("expected HTTP 400")
+
+    assert payload["diagnostics"][0]["severity"] == "error"
+    assert "key" in payload["diagnostics"][0]["message"]
+
+
+def test_post_api_tweaks_reset_unknown_key_returns_400(
+    tmp_path: Path,
+) -> None:
+    spec_path = _write_spec(tmp_path)
+
+    with _running_server(spec_path) as base_url:
+        request = Request(
+            base_url + "api/tweaks/reset",
+            data=json.dumps(
+                {"scope": "tweak", "key": "theme.unknown"}
+            ).encode("utf-8"),
+            method="POST",
+            headers={"Content-Type": "application/json"},
+        )
+        try:
+            urlopen(request, timeout=5)
+        except HTTPError as exc:
+            assert exc.code == 400
+            payload = json.loads(exc.read().decode("utf-8"))
+        else:  # pragma: no cover - defensive
+            raise AssertionError("expected HTTP 400")
+
+    assert payload["diagnostics"][0]["key"] == "theme.unknown"
 
 
 def test_send_body_ignores_client_disconnect() -> None:

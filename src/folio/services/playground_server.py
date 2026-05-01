@@ -19,7 +19,9 @@ from folio.services.playground import (
     Diagnostic,
     PlaygroundState,
     PlaygroundUpdateError,
+    ResetTweakRequest,
     TweakUpdateRequest,
+    apply_tweak_reset,
     apply_tweak_update,
     load_playground_state,
 )
@@ -67,7 +69,12 @@ def create_playground_server(
 
 
 class _PlaygroundUpdateDebouncer:
-    """Coalesce rapid PATCH updates into one persisted render cycle."""
+    """Coalesce rapid PATCH updates into one persisted render cycle.
+
+    Reset operations (``reset_*``) are dispatched through the same
+    serializer as PATCH so they cannot race against an in-flight write.
+    They run synchronously after the current PATCH batch drains.
+    """
 
     def __init__(self, spec_path: Path, *, delay_seconds: float = 0.15) -> None:
         self.spec_path = spec_path
@@ -80,6 +87,9 @@ class _PlaygroundUpdateDebouncer:
         self._worker_running = False
         self._state: PlaygroundState | None = None
         self._error: Exception | None = None
+        # Reset operations bypass the PATCH debounce window but share
+        # this lock so they serialize against any in-flight worker.
+        self._reset_lock = threading.Lock()
 
     def apply(self, updates: dict[str, Any]) -> PlaygroundState:
         """Apply updates after a quiet debounce window and return fresh state."""
@@ -98,6 +108,24 @@ class _PlaygroundUpdateDebouncer:
                 raise self._error
             assert self._state is not None
             return self._state
+
+    def reset(self, request: ResetTweakRequest) -> PlaygroundState:
+        """Drain any pending PATCH batch, then apply ``request``.
+
+        Resets are intentionally not coalesced: each one drops a known
+        scope from ``theme.toml`` and returns the resulting state. They
+        block until any concurrent PATCH worker completes so the file
+        on disk reflects every committed edit before the reset runs.
+        """
+
+        with self._reset_lock:
+            self._wait_for_idle()
+            return apply_tweak_reset(self.spec_path, request)
+
+    def _wait_for_idle(self) -> None:
+        with self._condition:
+            while self._worker_running:
+                self._condition.wait()
 
     def _run(self) -> None:
         while True:
@@ -126,6 +154,7 @@ class _PlaygroundUpdateDebouncer:
                 if self._pending:
                     continue
                 self._worker_running = False
+                self._condition.notify_all()
                 return
 
 
@@ -193,6 +222,45 @@ class _PlaygroundRequestHandler(BaseHTTPRequestHandler):
             payload = self._read_json_body()
             request = TweakUpdateRequest.model_validate(payload)
             state = self.server.update_debouncer.apply(request.as_updates())
+        except ValidationError as exc:
+            first = exc.errors()[0] if exc.errors() else {"msg": str(exc)}
+            self._send_json(
+                HTTPStatus.BAD_REQUEST,
+                {"diagnostics": [_error_payload(first.get("msg", str(exc)))]},
+            )
+            return
+        except (ValueError, json.JSONDecodeError) as exc:
+            self._send_json(HTTPStatus.BAD_REQUEST, {"diagnostics": [_error_payload(str(exc))]})
+            return
+        except PlaygroundUpdateError as exc:
+            self._send_json(
+                HTTPStatus.BAD_REQUEST,
+                {
+                    "diagnostics": [
+                        _serialize_diagnostic(diagnostic) for diagnostic in exc.diagnostics
+                    ]
+                },
+            )
+            return
+        except Exception as exc:  # pragma: no cover - exact exception types vary by spec failure
+            self._send_json(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                {"diagnostics": [_error_payload(str(exc))]},
+            )
+            return
+
+        self._send_json(HTTPStatus.OK, serialize_playground_state(state))
+
+    def do_POST(self) -> None:  # noqa: N802 - stdlib handler API
+        path = urlsplit(self.path).path
+        if path != "/api/tweaks/reset":
+            self._send_json(HTTPStatus.NOT_FOUND, {"diagnostics": [_error_payload("not found")]})
+            return
+
+        try:
+            payload = self._read_json_body()
+            request = ResetTweakRequest.model_validate(payload)
+            state = self.server.update_debouncer.reset(request)
         except ValidationError as exc:
             first = exc.errors()[0] if exc.errors() else {"msg": str(exc)}
             self._send_json(

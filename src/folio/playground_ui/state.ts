@@ -6,8 +6,13 @@
 
 import { createSignal } from "solid-js";
 
-import type { Diagnostic, PlaygroundState, PlaygroundTweak } from "./api.generated";
-import { fetchState, patchTweakValue } from "./api";
+import type {
+  Diagnostic,
+  PlaygroundState,
+  PlaygroundTweak,
+  ResetTweakRequest,
+} from "./api.generated";
+import { fetchState, patchTweakValue, resetTweaks } from "./api";
 
 export type UpdateStatus = "idle" | "pending" | "saving" | "saved" | "error";
 export type ZoomMode = "fit-width" | "fit-page" | "actual-size";
@@ -90,6 +95,7 @@ export interface PlaygroundStore {
   // Drag-style inputs should NOT call this on every input event; only on
   // a discrete release event such as ``change``.
   commitTweak: (tweak: PlaygroundTweak) => void;
+  resetTweaks: (request: ResetTweakRequest) => Promise<void>;
 }
 
 export function createPlaygroundStore(): PlaygroundStore {
@@ -237,6 +243,58 @@ export function createPlaygroundStore(): PlaygroundStore {
     }
   }
 
+  async function resetTweaksAction(request: ResetTweakRequest): Promise<void> {
+    setStatus(
+      request.scope === "all"
+        ? "Resetting all tweaks…"
+        : request.scope === "group"
+        ? `Resetting ${request.group}…`
+        : `Resetting ${request.key}…`,
+      "saving",
+    );
+    try {
+      const next = await resetTweaks(request);
+      // Drop drafts for affected keys so the merge picks up the
+      // freshly-resolved value instead of the in-flight draft.
+      setDraftValues((prev) => {
+        const out = { ...prev };
+        for (const tweak of next.tweaks) {
+          if (
+            request.scope === "all" ||
+            (request.scope === "group" && tweak.group === request.group) ||
+            (request.scope === "tweak" && tweak.key === request.key)
+          ) {
+            delete out[tweak.key];
+          }
+        }
+        return out;
+      });
+      setPendingUpdates((prev) => {
+        const out = new Map(prev);
+        for (const tweak of next.tweaks) {
+          if (
+            request.scope === "all" ||
+            (request.scope === "group" && tweak.group === request.group) ||
+            (request.scope === "tweak" && tweak.key === request.key)
+          ) {
+            out.delete(tweak.key);
+          }
+        }
+        return out;
+      });
+      mergeFreshState(next);
+      setStatus("Reset to defaults", "ok");
+    } catch (error: unknown) {
+      const payload = (error as { payload?: { diagnostics?: Diagnostic[] } }).payload;
+      const diagnostics: Diagnostic[] = payload?.diagnostics || [
+        { severity: "error", key: null, message: String(error) },
+      ];
+      setControlDiagnostics(diagnosticsByKey(diagnostics));
+      setState((prev) => (prev ? { ...prev, diagnostics } : prev));
+      setStatus("Reset rejected", "error");
+    }
+  }
+
   return {
     state,
     draftValues,
@@ -251,6 +309,7 @@ export function createPlaygroundStore(): PlaygroundStore {
     setSelectedPageIndex,
     setZoomMode,
     commitTweak,
+    resetTweaks: resetTweaksAction,
   };
 }
 

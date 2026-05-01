@@ -27,6 +27,7 @@ export interface PlaygroundTweak {
   min: null | number;
   max: null | number;
   options: null | string[];
+  diverged: boolean;
 }
 
 export interface PlaygroundState {
@@ -42,4 +43,10 @@ export interface TweakUpdateRequest {
   updates?: Record<string, unknown> | null;
   key?: null | string;
   value?: unknown;
+}
+
+export interface ResetTweakRequest {
+  scope?: "all" | "group" | "tweak";
+  key?: null | string;
+  group?: null | string;
 }

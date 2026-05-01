@@ -9,12 +9,13 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from folio.core.dsl.tweak_values import (
     load_persisted_values,
+    write_persisted_raw,
     resolve_values_file,
     validate_persisted_values,
     write_persisted_values,
@@ -32,7 +33,9 @@ __all__ = [
     "PlaygroundState",
     "PlaygroundTweak",
     "PlaygroundUpdateError",
+    "ResetTweakRequest",
     "TweakUpdateRequest",
+    "apply_tweak_reset",
     "apply_tweak_update",
     "load_playground_state",
 ]
@@ -75,6 +78,9 @@ class PlaygroundTweak(BaseModel):
     min: int | float | None = None
     max: int | float | None = None
     options: tuple[str, ...] | None = None
+    # True iff a persisted entry exists for this key in ``theme.toml``;
+    # i.e. the rendered value diverges from the spec-code default.
+    diverged: bool = False
 
 
 class Diagnostic(BaseModel):
@@ -148,6 +154,44 @@ class TweakUpdateRequest(BaseModel):
         return dict(self.updates)
 
 
+class ResetTweakRequest(BaseModel):
+    """Wire-format POST body accepted by ``/api/tweaks/reset``.
+
+    Three scopes are supported:
+
+    - ``scope="tweak"`` with ``key``: drop a single dotted key.
+    - ``scope="group"`` with ``group``: drop every key in that group.
+    - ``scope="all"``: drop every persisted value.
+
+    Resetting removes the entry from ``theme.toml`` so the spec-code
+    default re-applies on the next render. If the file ends up empty it
+    is unlinked rather than left as a zero-byte file.
+    """
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    scope: Literal["tweak", "group", "all"]
+    key: str | None = None
+    group: str | None = None
+
+    @model_validator(mode="after")
+    def _validate_scope(self) -> ResetTweakRequest:
+        if self.scope == "tweak":
+            if not self.key:
+                raise ValueError("scope='tweak' requires a 'key' field")
+            if self.group is not None:
+                raise ValueError("scope='tweak' must not include 'group'")
+        elif self.scope == "group":
+            if not self.group:
+                raise ValueError("scope='group' requires a 'group' field")
+            if self.key is not None:
+                raise ValueError("scope='group' must not include 'key'")
+        else:  # "all"
+            if self.key is not None or self.group is not None:
+                raise ValueError("scope='all' must not include 'key' or 'group'")
+        return self
+
+
 class PlaygroundUpdateError(Exception):
     """Raised when a playground edit cannot be accepted."""
 
@@ -168,6 +212,7 @@ def load_playground_state(spec_path: Path) -> PlaygroundState:
         decl.key: snapshot.values.get(decl.key, decl.default)
         for decl in snapshot.declarations
     }
+    diverged_keys = _persisted_keys(values_path)
     return PlaygroundState(
         spec_path=resolved_spec,
         values_path=values_path,
@@ -181,7 +226,9 @@ def load_playground_state(spec_path: Path) -> PlaygroundState:
             for page in outcome.result.pages
         ),
         tweaks=tuple(
-            _serialize_declaration(decl, values[decl.key])
+            _serialize_declaration(
+                decl, values[decl.key], diverged=decl.key in diverged_keys
+            )
             for decl in snapshot.declarations
         ),
         values=values,
@@ -245,7 +292,87 @@ def apply_tweak_update(
     return load_playground_state(resolved_spec)
 
 
-def _serialize_declaration(decl: TweakDeclaration, value: Any) -> PlaygroundTweak:
+def apply_tweak_reset(
+    spec_path: Path,
+    request: ResetTweakRequest,
+) -> PlaygroundState:
+    """Drop persisted entries per ``request`` and return fresh state.
+
+    The spec is reloaded so unknown keys/groups are diagnosed against
+    the current declarations; the values file is rewritten with the
+    surviving entries (or unlinked when nothing remains).
+    """
+
+    resolved_spec = spec_path.expanduser().resolve()
+    values_path = resolve_values_file(resolved_spec)
+
+    state = load_playground_state(resolved_spec)
+    registry = _registry_from_state(state)
+
+    raw = _mutable_raw(load_persisted_values(values_path))
+
+    if request.scope == "tweak":
+        assert request.key is not None
+        if request.key not in registry.declarations:
+            raise PlaygroundUpdateError(
+                (
+                    TweakDiagnostic(
+                        severity="error",
+                        key=request.key,
+                        message=f"unknown tweak key {request.key!r}",
+                    ),
+                )
+            )
+        group, member = _split_key(request.key)
+        members = raw.get(group)
+        if members is not None and member in members:
+            del members[member]
+            if not members:
+                del raw[group]
+    elif request.scope == "group":
+        assert request.group is not None
+        known_groups = {decl.group for decl in registry.declarations.values()}
+        if request.group not in known_groups:
+            raise PlaygroundUpdateError(
+                (
+                    TweakDiagnostic(
+                        severity="error",
+                        key=None,
+                        message=f"unknown tweak group {request.group!r}",
+                    ),
+                )
+            )
+        raw.pop(request.group, None)
+    else:  # "all"
+        raw.clear()
+
+    if raw:
+        # Validate surviving entries (catches corruption from manual
+        # edits) but write only what's still in ``raw`` — not the
+        # registry's resolved values, which would re-emit defaults
+        # for keys we just dropped.
+        _, diagnostics = validate_persisted_values(
+            registry,
+            raw,
+            source=values_path if values_path.exists() else None,
+        )
+        errors = tuple(d for d in diagnostics if d.severity == "error")
+        if errors:
+            raise PlaygroundUpdateError(errors)
+        write_persisted_raw(values_path, raw)
+    else:
+        # No persisted entries left: remove the file entirely so the
+        # next render uses spec-code defaults without leaving a stale
+        # zero-entry TOML behind.
+        if values_path.exists():
+            values_path.unlink()
+
+    return load_playground_state(resolved_spec)
+
+
+def _serialize_declaration(
+    decl: TweakDeclaration, value: Any, *, diverged: bool = False
+) -> PlaygroundTweak:
     return PlaygroundTweak(
         key=decl.key,
         group=decl.group,
@@ -259,7 +386,31 @@ def _serialize_declaration(decl: TweakDeclaration, value: Any) -> PlaygroundTwea
         min=decl.min,
         max=decl.max,
         options=decl.options,
+        diverged=diverged,
     )
+
+
+def _persisted_keys(values_path: Path) -> frozenset[str]:
+    """Return the set of dotted keys currently present in ``theme.toml``.
+
+    Only structurally-valid TOML is honored; an unparseable file yields
+    an empty set so the playground can still render and surface the
+    error elsewhere.
+    """
+
+    try:
+        raw = load_persisted_values(values_path)
+    except Exception:
+        return frozenset()
+    if raw is None:
+        return frozenset()
+    keys: set[str] = set()
+    for group_name, members in raw.items():
+        if not isinstance(members, Mapping):
+            continue
+        for member_name in members:
+            keys.add(f"{group_name}.{member_name}")
+    return frozenset(keys)
 
 
 def _registry_from_state(state: PlaygroundState) -> TweakRegistry:

@@ -57,6 +57,10 @@ export function App(props: AppProps) {
     (store.state()?.diagnostics || []).filter((d) => !d.key),
   );
 
+  const divergedTotal = createMemo(
+    () => (store.state()?.tweaks || []).filter((t) => t.diverged).length,
+  );
+
   const specPathDisplay = createMemo(() => {
     const path = store.state()?.specPath || "";
     if (!path) return { short: "—", full: "" };
@@ -77,9 +81,38 @@ export function App(props: AppProps) {
             <p class="eyebrow">APPROVED VALUES</p>
             <h2>Tweaks</h2>
           </div>
-          <span class="panel-count" aria-live="polite">
-            {store.state()?.tweaks.length ?? 0}
-          </span>
+          <div class="panel-header-actions">
+            <button
+              type="button"
+              class="reset-btn reset-btn-all"
+              onClick={() => {
+                if (!divergedTotal()) return;
+                if (
+                  typeof window !== "undefined" &&
+                  !window.confirm(
+                    `Reset all ${divergedTotal()} edited tweak(s) to spec defaults?`,
+                  )
+                ) {
+                  return;
+                }
+                void store.resetTweaks({ scope: "all" });
+              }}
+              disabled={!divergedTotal()}
+              title={
+                divergedTotal()
+                  ? `Reset all ${divergedTotal()} edited tweak(s)`
+                  : "No tweaks edited from defaults"
+              }
+            >
+              Reset all
+              <Show when={divergedTotal() > 0}>
+                <span class="reset-btn-count">{divergedTotal()}</span>
+              </Show>
+            </button>
+            <span class="panel-count" aria-live="polite">
+              {store.state()?.tweaks.length ?? 0}
+            </span>
+          </div>
         </div>
 
         <ul
@@ -109,14 +142,42 @@ export function App(props: AppProps) {
             }
           >
             <For each={groupedTweaks()}>
-              {([groupName, groupTweaks]) => (
-                <section class="tweak-group" aria-labelledby={`group-${safeId(groupName)}`}>
-                  <h3 id={`group-${safeId(groupName)}`}>{groupName}</h3>
-                  <For each={groupTweaks}>
-                    {(tweak) => <TweakControl tweak={tweak} store={store} />}
-                  </For>
-                </section>
-              )}
+              {([groupName, groupTweaks]) => {
+                const divergedInGroup = () =>
+                  groupTweaks.filter((t) => t.diverged).length;
+                return (
+                  <section
+                    class="tweak-group"
+                    aria-labelledby={`group-${safeId(groupName)}`}
+                  >
+                    <header class="tweak-group-head">
+                      <h3 id={`group-${safeId(groupName)}`}>{groupName}</h3>
+                      <button
+                        type="button"
+                        class="reset-btn reset-btn-group"
+                        onClick={() => {
+                          if (!divergedInGroup()) return;
+                          void store.resetTweaks({
+                            scope: "group",
+                            group: groupName,
+                          });
+                        }}
+                        disabled={!divergedInGroup()}
+                        title={
+                          divergedInGroup()
+                            ? `Reset ${divergedInGroup()} tweak(s) in ${groupName}`
+                            : "No tweaks edited from defaults"
+                        }
+                      >
+                        Reset group
+                      </button>
+                    </header>
+                    <For each={groupTweaks}>
+                      {(tweak) => <TweakControl tweak={tweak} store={store} />}
+                    </For>
+                  </section>
+                );
+              }}
             </For>
           </Show>
         </section>
@@ -527,6 +588,15 @@ function TweakControl(props: TweakControlProps) {
       <div class="tweak-control-head">
         <label for={inputId()}>
           {props.tweak.label || props.tweak.name || props.tweak.key}
+          <Show when={props.tweak.diverged}>
+            <span
+              class="tweak-diverged-badge"
+              title="Edited from spec default"
+              aria-label="Edited from spec default"
+            >
+              edited
+            </span>
+          </Show>
         </label>
         <div class="tweak-meta">
           <span class="tm-key">{props.tweak.key}</span>
@@ -534,6 +604,22 @@ function TweakControl(props: TweakControlProps) {
           <span class="tm-kind">{props.tweak.kind}</span>
           <span class="tm-sep">·</span>
           <span class="tm-mode" data-mode={props.tweak.mode}>{props.tweak.mode}</span>
+          <Show when={props.tweak.diverged}>
+            <span class="tm-sep">·</span>
+            <button
+              type="button"
+              class="reset-btn reset-btn-tweak"
+              onClick={() =>
+                void props.store.resetTweaks({
+                  scope: "tweak",
+                  key: props.tweak.key,
+                })
+              }
+              title="Reset to spec default"
+            >
+              Reset
+            </button>
+          </Show>
         </div>
       </div>
 
