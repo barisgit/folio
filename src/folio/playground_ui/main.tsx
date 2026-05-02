@@ -4,6 +4,10 @@
 
 import { render } from "solid-js/web";
 
+// UnoCSS-generated utilities; loaded before ``./styles.css`` (linked
+// from ``index.html``) so legacy hand-rolled rules win on conflicts.
+import "virtual:uno.css";
+
 import { App } from "./App";
 import { createPlaygroundStore } from "./state";
 

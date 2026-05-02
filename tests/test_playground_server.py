@@ -156,8 +156,10 @@ def test_playground_assets_are_package_resources() -> None:
 # Bundle-size budget. The playground UI is shipped to every developer who
 # runs ``folio dev``, so we cap it well below the typical SPA threshold.
 # This guard fires before unnoticed dependency creep makes the dev tool
-# heavy.
-_PLAYGROUND_JS_MAX_BYTES = 80 * 1024
+# heavy. Bumped from 80 KB to 150 KB when Phase 1 of the UnoCSS+Kobalte
+# migration introduced @kobalte/core and the icon preset; later phases
+# may either tighten it back as legacy CSS shrinks or hold steady.
+_PLAYGROUND_JS_MAX_BYTES = 150 * 1024
 
 
 def test_packaged_js_size_is_within_budget() -> None:

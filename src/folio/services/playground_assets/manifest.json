@@ -2,17 +2,18 @@
   "build": "bun run build:playground",
   "sourceHashes": {
     "src/folio/playground_ui/index.html": "18664850ae69ab89e3e1040352e90d9adb4bb584fb87b883d9280540d2b978e9",
-    "src/folio/playground_ui/main.tsx": "d533937336856ec028d0ba345ffa141d0b43890502ada1c5bb5f82b5f9569a87",
-    "src/folio/playground_ui/App.tsx": "8bf8d130b75d5b1d7a14e925ed0ba6224d1d10b55e0ef1e60323bb610ed5b639",
+    "src/folio/playground_ui/main.tsx": "8a6876f48d9a31fe46aa7f82b4dc0990855c9c903fe3036fc2105d0555285564",
+    "src/folio/playground_ui/App.tsx": "12f969bbc9a9f24c127312988e7397dc8fcb08e930d43df108dc9409ecefdade",
     "src/folio/playground_ui/state.ts": "261a5004366041c3ee4edfaba2af96f30202eb1f7ec3a14ea5607d0b3ef7c93c",
     "src/folio/playground_ui/api.ts": "ca356c9453fdc25ef24afc7810536d9cadb99c87b0dbcfbae27167e69ac6c7f0",
     "src/folio/playground_ui/api.generated.ts": "dd602d39a228baadc54f6e9da52a8499b51e3fc8e2225dd95fe7735f97be50a9",
     "src/folio/playground_ui/styles.css": "b34541ed7c81e6a43379cbb7efc747bd6e02985df8cef20ec7667519c12c25c4",
-    "src/folio/playground_ui/vite.config.ts": "c7acdfc6da35971626eed49fe248ea79ab4d9200b13b3ef2d5ea6fb0a0347762",
+    "src/folio/playground_ui/uno.config.ts": "473ccb3fba5ad9211f032a8f2e5523b6fbab3a1869750eee4e06869fe470240c",
+    "src/folio/playground_ui/vite.config.ts": "b0c18414ed932ade4b8617dabf62f34ec07aeedacb1e7dc8562815d9cadbb247",
     "src/folio/playground_ui/README.md": "f7dd7d86e4a326f073e68d3dd0d1c4e20bb789df49b9b342c6566562502077d1",
-    "src/folio/playground_ui/build.mjs": "85140aed50a4a2589aed4f4e150cc2300ab78dac1a9262f42e0524a902175cd1",
+    "src/folio/playground_ui/build.mjs": "8333a103599858aa5e2fb193eb352c164d22642021be1ddf798573620504392f",
     "src/folio/_dev/gen_playground_types.py": "279879bff02912a723d42491610af946fe4af3e441ae139fe550626b8a67ce4b",
-    "package.json": "bb6af52ca3d32fdf834ed1e9cbeabc58abf647ee51d0bb77c8421b495351e369",
-    "bun.lock": "90863f59f10365afde10407fef1daec3c37735285cb64008b4fefd92f7ce6e1c"
+    "package.json": "89735befefce775a7748133e6b8f67362779036c673275b697472beb8efcd123",
+    "bun.lock": "05d84906cbeb29bcb3b404952e557681c4e816ef8e3c390705a391a5f9898bc5"
   }
 }

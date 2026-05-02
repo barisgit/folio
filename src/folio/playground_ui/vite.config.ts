@@ -1,3 +1,4 @@
+import UnoCSS from "unocss/vite";
 import { defineConfig } from "vite";
 import solidPlugin from "vite-plugin-solid";
 import { resolve } from "node:path";
@@ -15,7 +16,9 @@ const outDir = resolve(repoRoot, "src/folio/services/playground_assets");
 export default defineConfig({
   root: here,
   base: "/assets/",
-  plugins: [solidPlugin()],
+  // UnoCSS must run before solidPlugin so its ``virtual:uno.css``
+  // module is available when Solid components import it.
+  plugins: [UnoCSS({ configFile: resolve(here, "uno.config.ts") }), solidPlugin()],
   build: {
     outDir,
     emptyOutDir: false,

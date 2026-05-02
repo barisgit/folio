@@ -20,6 +20,7 @@ const sourceFiles = [
   "src/folio/playground_ui/api.ts",
   "src/folio/playground_ui/api.generated.ts",
   "src/folio/playground_ui/styles.css",
+  "src/folio/playground_ui/uno.config.ts",
   "src/folio/playground_ui/vite.config.ts",
   "src/folio/playground_ui/README.md",
   "src/folio/playground_ui/build.mjs",

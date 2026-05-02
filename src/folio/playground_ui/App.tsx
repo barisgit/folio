@@ -6,6 +6,7 @@
 // unchanged. State lives in the store from ``state.ts``; this file is
 // pure rendering.
 
+import { Select } from "@kobalte/core/select";
 import {
   For,
   Show,
@@ -610,20 +611,7 @@ function TweakControl(props: TweakControlProps) {
             title="Reset to spec default"
             aria-label="Reset to spec default"
           >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M3 8a5 5 0 1 0 1.6-3.65" />
-              <path d="M2.5 2.5v3h3" />
-            </svg>
+            <span class="i-lucide-rotate-ccw text-xs" aria-hidden="true" />
           </button>
         </Show>
         </div>
@@ -836,118 +824,44 @@ function ColorControl(props: ControlBaseProps) {
 }
 
 function SelectControl(props: ControlBaseProps) {
-  const [open, setOpen] = createSignal(false);
-  const [value, setValue] = createSignal(props.initial);
-  // Trigger viewport rect so the menu can be portaled to <body> and
-  // escape ``overflow: auto`` clipping on the surrounding tweak panel.
-  const [rect, setRect] = createSignal<{ top: number; left: number; width: number } | null>(null);
-  let triggerEl: HTMLButtonElement | undefined;
-  let menuEl: HTMLDivElement | undefined;
-
-  function close(): void {
-    setOpen(false);
-  }
-
-  function refreshRect(): void {
-    if (!triggerEl) return;
-    const r = triggerEl.getBoundingClientRect();
-    setRect({ top: r.bottom + 4, left: r.left, width: r.width });
-  }
-
-  function onDocClick(event: MouseEvent): void {
-    const target = event.target as Node;
-    if (triggerEl?.contains(target)) return;
-    if (menuEl?.contains(target)) return;
-    close();
-  }
-
-  function onDocKey(event: KeyboardEvent): void {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      close();
-      triggerEl?.focus();
-    }
-  }
-
-  createEffect(() => {
-    if (open()) {
-      refreshRect();
-      document.addEventListener("click", onDocClick, true);
-      document.addEventListener("keydown", onDocKey);
-      // Close on scroll/resize: the menu is fixed-positioned, so any
-      // viewport change would unanchor it. Scroll listener is capture
-      // so it fires for the inner ``.tweak-panel`` scroll container too.
-      window.addEventListener("scroll", close, true);
-      window.addEventListener("resize", close);
-    } else {
-      document.removeEventListener("click", onDocClick, true);
-      document.removeEventListener("keydown", onDocKey);
-      window.removeEventListener("scroll", close, true);
-      window.removeEventListener("resize", close);
-    }
-  });
-
-  onCleanup(() => {
-    document.removeEventListener("click", onDocClick, true);
-    document.removeEventListener("keydown", onDocKey);
-    window.removeEventListener("scroll", close, true);
-    window.removeEventListener("resize", close);
-  });
-
-  function pick(option: string): void {
-    setValue(option);
-    // Discrete commit: the user clicked an option, so PATCH right away.
-    props.onCommit(option);
-    close();
-  }
-
+  // Phase 1 of the UnoCSS+Kobalte migration. Kobalte's ``Select``
+  // primitive replaces the hand-rolled portal/scroll/escape logic that
+  // lived here previously; visual styling stays on the existing
+  // ``.tweak-select-*`` classes in ``styles.css`` so this is a pure
+  // behavior swap.
+  const options = () => props.tweak.options ?? [];
   return (
     <div class="tweak-select">
-      <button
-        ref={triggerEl}
-        type="button"
-        class="tweak-select-trigger"
-        id={props.id}
-        aria-haspopup="listbox"
-        aria-expanded={open()}
-        onClick={() => setOpen(!open())}
+      <Select<string>
+        value={props.initial || null}
+        onChange={(v) => {
+          // Discrete commit: ``onChange`` only fires on a real selection
+          // change, matching the commit-on-release semantics shipped
+          // for drag-style controls in 61dc11b.
+          if (v != null) props.onCommit(v);
+        }}
+        options={options()}
+        placeholder="—"
+        gutter={4}
+        sameWidth
+        itemComponent={(p) => (
+          <Select.Item item={p.item} class="tweak-select-option">
+            <Select.ItemLabel>{p.item.rawValue}</Select.ItemLabel>
+          </Select.Item>
+        )}
       >
-        <span class="tst-value">{value() || "—"}</span>
-        <span class="tst-caret">
-          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4">
-            <path d="M6 9l6 6 6-6" />
-          </svg>
-        </span>
-      </button>
-      <Show when={open() && rect()}>
-        <Portal>
-          <div
-            ref={menuEl}
-            class="tweak-select-menu is-open is-portal"
-            role="listbox"
-            style={{
-              position: "fixed",
-              top: `${rect()!.top}px`,
-              left: `${rect()!.left}px`,
-              width: `${rect()!.width}px`,
-            }}
-          >
-            <For each={props.tweak.options || []}>
-              {(option) => (
-                <button
-                  type="button"
-                  class="tweak-select-option"
-                  role="option"
-                  aria-selected={option === value()}
-                  onClick={() => pick(option)}
-                >
-                  {option}
-                </button>
-              )}
-            </For>
-          </div>
-        </Portal>
-      </Show>
+        <Select.Trigger class="tweak-select-trigger" id={props.id}>
+          <Select.Value<string> class="tst-value">
+            {(s) => s.selectedOption() || "—"}
+          </Select.Value>
+          <Select.Icon class="tst-caret i-lucide-chevron-down text-xs" />
+        </Select.Trigger>
+        <Select.Portal>
+          <Select.Content class="tweak-select-menu is-open is-portal">
+            <Select.Listbox />
+          </Select.Content>
+        </Select.Portal>
+      </Select>
     </div>
   );
 }

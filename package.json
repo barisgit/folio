@@ -6,8 +6,13 @@
     "build:playground": "node src/folio/playground_ui/build.mjs"
   },
   "devDependencies": {
+    "@iconify-json/lucide": "^1.2.105",
+    "@kobalte/core": "^0.13.11",
+    "@unocss/preset-icons": "^66.6.8",
+    "@unocss/preset-wind4": "^66.6.8",
     "esbuild": "^0.25.0",
     "solid-js": "^1.9.12",
+    "unocss": "^66.6.8",
     "vite": "^8.0.10",
     "vite-plugin-solid": "^2.11.12"
   }
