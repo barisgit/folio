@@ -588,15 +588,6 @@ function TweakControl(props: TweakControlProps) {
       <div class="tweak-control-head">
         <label for={inputId()}>
           {props.tweak.label || props.tweak.name || props.tweak.key}
-          <Show when={props.tweak.diverged}>
-            <span
-              class="tweak-diverged-badge"
-              title="Edited from spec default"
-              aria-label="Edited from spec default"
-            >
-              edited
-            </span>
-          </Show>
         </label>
         <div class="tweak-meta">
           <span class="tm-key">{props.tweak.key}</span>
@@ -605,10 +596,9 @@ function TweakControl(props: TweakControlProps) {
           <span class="tm-sep">·</span>
           <span class="tm-mode" data-mode={props.tweak.mode}>{props.tweak.mode}</span>
           <Show when={props.tweak.diverged}>
-            <span class="tm-sep">·</span>
             <button
               type="button"
-              class="reset-btn reset-btn-tweak"
+              class="reset-btn-tweak"
               onClick={() =>
                 void props.store.resetTweaks({
                   scope: "tweak",
@@ -616,8 +606,9 @@ function TweakControl(props: TweakControlProps) {
                 })
               }
               title="Reset to spec default"
+              aria-label="Reset to spec default"
             >
-              Reset
+              ↺
             </button>
           </Show>
         </div>

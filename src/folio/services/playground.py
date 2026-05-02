@@ -7,6 +7,8 @@ rendered output, or update the last-build cache.
 
 from __future__ import annotations
 
+import math
+import numbers
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Literal
@@ -78,8 +80,10 @@ class PlaygroundTweak(BaseModel):
     min: int | float | None = None
     max: int | float | None = None
     options: tuple[str, ...] | None = None
-    # True iff a persisted entry exists for this key in ``theme.toml``;
-    # i.e. the rendered value diverges from the spec-code default.
+    # True iff the resolved value differs from the spec-code default.
+    # Computed from the value pair, not from key presence in ``theme.toml``,
+    # so a persisted entry that happens to match the default does not
+    # falsely flag the tweak as edited.
     diverged: bool = False
 
 
@@ -212,7 +216,6 @@ def load_playground_state(spec_path: Path) -> PlaygroundState:
         decl.key: snapshot.values.get(decl.key, decl.default)
         for decl in snapshot.declarations
     }
-    diverged_keys = _persisted_keys(values_path)
     return PlaygroundState(
         spec_path=resolved_spec,
         values_path=values_path,
@@ -226,9 +229,7 @@ def load_playground_state(spec_path: Path) -> PlaygroundState:
             for page in outcome.result.pages
         ),
         tweaks=tuple(
-            _serialize_declaration(
-                decl, values[decl.key], diverged=decl.key in diverged_keys
-            )
+            _serialize_declaration(decl, values[decl.key])
             for decl in snapshot.declarations
         ),
         values=values,
@@ -371,7 +372,7 @@ def apply_tweak_reset(
 
 
 def _serialize_declaration(
-    decl: TweakDeclaration, value: Any, *, diverged: bool = False
+    decl: TweakDeclaration, value: Any
 ) -> PlaygroundTweak:
     return PlaygroundTweak(
         key=decl.key,
@@ -386,31 +387,36 @@ def _serialize_declaration(
         min=decl.min,
         max=decl.max,
         options=decl.options,
-        diverged=diverged,
+        diverged=_values_differ(decl.default, value, kind=decl.kind),
     )
 
 
-def _persisted_keys(values_path: Path) -> frozenset[str]:
-    """Return the set of dotted keys currently present in ``theme.toml``.
+def _values_differ(default: Any, value: Any, *, kind: str) -> bool:
+    """Return True iff ``value`` semantically differs from ``default``.
 
-    Only structurally-valid TOML is honored; an unparseable file yields
-    an empty set so the playground can still render and surface the
-    error elsewhere.
+    Handles the normalizations that the persistence layer already applies
+    so a round-tripped value is never falsely flagged as edited:
+
+    - Numeric int/float comparison uses :func:`math.isclose` so a stored
+      ``58.0`` does not diverge from a declared ``58``.
+    - Color tweaks compare case-insensitively (the writer lowercases hex
+      via :func:`folio.core.dsl.tweaks.normalize_color`, but a user could
+      type ``#D9A64B`` directly into the playground input).
+    - Everything else falls back to plain ``!=``.
     """
 
-    try:
-        raw = load_persisted_values(values_path)
-    except Exception:
-        return frozenset()
-    if raw is None:
-        return frozenset()
-    keys: set[str] = set()
-    for group_name, members in raw.items():
-        if not isinstance(members, Mapping):
-            continue
-        for member_name in members:
-            keys.add(f"{group_name}.{member_name}")
-    return frozenset(keys)
+    if (
+        isinstance(default, numbers.Real)
+        and not isinstance(default, bool)
+        and isinstance(value, numbers.Real)
+        and not isinstance(value, bool)
+    ):
+        return not math.isclose(
+            float(default), float(value), rel_tol=1e-9, abs_tol=1e-9
+        )
+    if kind == "color" and isinstance(default, str) and isinstance(value, str):
+        return default.lower() != value.lower()
+    return default != value
 
 
 def _registry_from_state(state: PlaygroundState) -> TweakRegistry:

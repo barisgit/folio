@@ -662,9 +662,25 @@ button, input, select, textarea {
   cursor: not-allowed;
 }
 .reset-btn-tweak {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
   height: 18px;
-  padding: 0 8px;
-  font-size: 9px;
+  margin-left: 4px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+.reset-btn-tweak:hover {
+  color: var(--accent);
+  background: rgb(255 255 255 / 5%);
 }
 .reset-btn-count {
   display: inline-grid;
@@ -678,22 +694,6 @@ button, input, select, textarea {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0;
-}
-
-.tweak-diverged-badge {
-  display: inline-block;
-  margin-left: 8px;
-  padding: 1px 6px;
-  border: 1px solid var(--accent);
-  border-radius: 999px;
-  background: rgb(217 166 75 / 12%);
-  color: var(--accent);
-  font-family: var(--font-mono);
-  font-size: 9px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  vertical-align: middle;
 }
 
 .tweak-control {
