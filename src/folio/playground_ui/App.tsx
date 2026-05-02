@@ -589,28 +589,43 @@ function TweakControl(props: TweakControlProps) {
         <label for={inputId()}>
           {props.tweak.label || props.tweak.name || props.tweak.key}
         </label>
+        <div class="tweak-head-right">
         <div class="tweak-meta">
           <span class="tm-key">{props.tweak.key}</span>
           <span class="tm-sep">·</span>
           <span class="tm-kind">{props.tweak.kind}</span>
           <span class="tm-sep">·</span>
           <span class="tm-mode" data-mode={props.tweak.mode}>{props.tweak.mode}</span>
-          <Show when={props.tweak.diverged}>
-            <button
-              type="button"
-              class="reset-btn-tweak"
-              onClick={() =>
-                void props.store.resetTweaks({
-                  scope: "tweak",
-                  key: props.tweak.key,
-                })
-              }
-              title="Reset to spec default"
-              aria-label="Reset to spec default"
+        </div>
+        <Show when={props.tweak.diverged}>
+          <button
+            type="button"
+            class="reset-btn-tweak"
+            onClick={() =>
+              void props.store.resetTweaks({
+                scope: "tweak",
+                key: props.tweak.key,
+              })
+            }
+            title="Reset to spec default"
+            aria-label="Reset to spec default"
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
             >
-              ↺
-            </button>
-          </Show>
+              <path d="M3 8a5 5 0 1 0 1.6-3.65" />
+              <path d="M2.5 2.5v3h3" />
+            </svg>
+          </button>
+        </Show>
         </div>
       </div>
 

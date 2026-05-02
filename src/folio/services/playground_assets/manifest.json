@@ -3,11 +3,11 @@
   "sourceHashes": {
     "src/folio/playground_ui/index.html": "18664850ae69ab89e3e1040352e90d9adb4bb584fb87b883d9280540d2b978e9",
     "src/folio/playground_ui/main.tsx": "d533937336856ec028d0ba345ffa141d0b43890502ada1c5bb5f82b5f9569a87",
-    "src/folio/playground_ui/App.tsx": "c1be096d177b405b7d629b7c35d53c1ff1fb0fbb98baa332b7b2b1ea7f3c3430",
+    "src/folio/playground_ui/App.tsx": "8bf8d130b75d5b1d7a14e925ed0ba6224d1d10b55e0ef1e60323bb610ed5b639",
     "src/folio/playground_ui/state.ts": "261a5004366041c3ee4edfaba2af96f30202eb1f7ec3a14ea5607d0b3ef7c93c",
     "src/folio/playground_ui/api.ts": "ca356c9453fdc25ef24afc7810536d9cadb99c87b0dbcfbae27167e69ac6c7f0",
     "src/folio/playground_ui/api.generated.ts": "dd602d39a228baadc54f6e9da52a8499b51e3fc8e2225dd95fe7735f97be50a9",
-    "src/folio/playground_ui/styles.css": "80f8c9ce5e1b8884c6fe341239ac3264af4ae2bcf832a553a92bad565f5b4e7d",
+    "src/folio/playground_ui/styles.css": "b34541ed7c81e6a43379cbb7efc747bd6e02985df8cef20ec7667519c12c25c4",
     "src/folio/playground_ui/vite.config.ts": "c7acdfc6da35971626eed49fe248ea79ab4d9200b13b3ef2d5ea6fb0a0347762",
     "src/folio/playground_ui/README.md": "f7dd7d86e4a326f073e68d3dd0d1c4e20bb789df49b9b342c6566562502077d1",
     "src/folio/playground_ui/build.mjs": "85140aed50a4a2589aed4f4e150cc2300ab78dac1a9262f42e0524a902175cd1",
