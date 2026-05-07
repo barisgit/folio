@@ -12,6 +12,10 @@ export interface PlaygroundPage {
   pageId: string;
   filename: string;
   svg: string;
+  documentId: string;
+  documentLabel: string;
+  widthMm: number;
+  heightMm: number;
 }
 
 export interface PlaygroundTweak {

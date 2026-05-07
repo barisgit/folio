@@ -59,6 +59,16 @@ class PlaygroundPage(BaseModel):
     page_id: str = Field(alias="pageId")
     filename: str
     svg: str
+    # Document context: which logical document this page belongs to. Used by
+    # the playground UI to group pages under a doc tree (VS Code explorer
+    # pattern). ``document_label`` falls back to ``document_id`` when the
+    # spec did not set a title.
+    document_id: str = Field(alias="documentId")
+    document_label: str = Field(alias="documentLabel")
+    # Page geometry in millimetres so the preview can size each page sheet
+    # to its actual aspect ratio (A4 portrait, 16:9 slide, ...).
+    width_mm: float = Field(alias="widthMm")
+    height_mm: float = Field(alias="heightMm")
 
 
 class PlaygroundTweak(BaseModel):
@@ -221,12 +231,22 @@ def load_playground_state(spec_path: Path) -> PlaygroundState:
         values_path=values_path,
         pages=tuple(
             PlaygroundPage(
-                page_number=page.page_number,
-                page_id=page.page_id,
-                filename=page.filename,
-                svg=page.content,
+                page_number=rendered_page.page_number,
+                page_id=rendered_page.page_id,
+                filename=rendered_page.filename,
+                svg=rendered_page.content,
+                document_id=rendered_doc.document.document_id,
+                document_label=(
+                    rendered_doc.document.title
+                    or rendered_doc.document.document_id
+                ),
+                width_mm=source_page.width_mm,
+                height_mm=source_page.height_mm,
             )
-            for page in outcome.result.pages
+            for rendered_doc in outcome.result.documents
+            for rendered_page, source_page in zip(
+                rendered_doc.pages, rendered_doc.document.pages, strict=True
+            )
         ),
         tweaks=tuple(
             _serialize_declaration(decl, values[decl.key])

@@ -2,10 +2,14 @@
   "diagnostics": [],
   "pages": [
     {
+      "documentId": "demo",
+      "documentLabel": "demo",
       "filename": "one.svg",
+      "heightMm": 297.0,
       "pageId": "one",
       "pageNumber": 1,
-      "svg": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n<svg xmlns=\"http://www.w3.org/2000/svg\"\n     xmlns:xlink=\"http://www.w3.org/1999/xlink\"\n     xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\"\n     width=\"210mm\" height=\"297mm\"\n     viewBox=\"0 0 595.28 841.89\"\n     font-family=\"Inter, 'Helvetica Neue', Arial, sans-serif\">\n<g id=\"one\" inkscape:label=\"one\" data-page-number=\"1\" data-page-id=\"one\">\n<rect id=\"panel\" x=\"0.0\" y=\"0.0\" width=\"113.39\" height=\"56.69\" fill=\"#112233\"/><text id=\"hero\" x=\"28.35\" y=\"56.69\" font-size=\"var(--folio-tweak-theme-hero-size-pt, 64.0pt)\" font-weight=\"400\" fill=\"var(--folio-tweak-theme-primary, #445566)\">Hi</text>\n</g>\n</svg>\n"
+      "svg": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n<svg xmlns=\"http://www.w3.org/2000/svg\"\n     xmlns:xlink=\"http://www.w3.org/1999/xlink\"\n     xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\"\n     width=\"210mm\" height=\"297mm\"\n     viewBox=\"0 0 595.28 841.89\"\n     font-family=\"Inter, 'Helvetica Neue', Arial, sans-serif\">\n<g id=\"one\" inkscape:label=\"one\" data-page-number=\"1\" data-page-id=\"one\">\n<rect id=\"panel\" x=\"0.0\" y=\"0.0\" width=\"113.39\" height=\"56.69\" fill=\"#112233\"/><text id=\"hero\" x=\"28.35\" y=\"56.69\" font-size=\"var(--folio-tweak-theme-hero-size-pt, 64.0pt)\" font-weight=\"400\" fill=\"var(--folio-tweak-theme-primary, #445566)\">Hi</text>\n</g>\n</svg>\n",
+      "widthMm": 210.0
     }
   ],
   "specPath": "<SPEC>",

@@ -1,13 +1,13 @@
 {
   "build": "bun run build:playground",
   "sourceHashes": {
-    "src/folio/playground_ui/index.html": "18664850ae69ab89e3e1040352e90d9adb4bb584fb87b883d9280540d2b978e9",
+    "src/folio/playground_ui/index.html": "aac0ec13fc732b8ff35604188bd9255416771df8c4727251d1e83c7d60d3af1f",
     "src/folio/playground_ui/main.tsx": "8a6876f48d9a31fe46aa7f82b4dc0990855c9c903fe3036fc2105d0555285564",
-    "src/folio/playground_ui/App.tsx": "12f969bbc9a9f24c127312988e7397dc8fcb08e930d43df108dc9409ecefdade",
+    "src/folio/playground_ui/App.tsx": "29e651be0822da9b2837b4a80a486218b1a3d1d7b43289854970d594ed77921c",
     "src/folio/playground_ui/state.ts": "261a5004366041c3ee4edfaba2af96f30202eb1f7ec3a14ea5607d0b3ef7c93c",
     "src/folio/playground_ui/api.ts": "ca356c9453fdc25ef24afc7810536d9cadb99c87b0dbcfbae27167e69ac6c7f0",
-    "src/folio/playground_ui/api.generated.ts": "dd602d39a228baadc54f6e9da52a8499b51e3fc8e2225dd95fe7735f97be50a9",
-    "src/folio/playground_ui/styles.css": "b34541ed7c81e6a43379cbb7efc747bd6e02985df8cef20ec7667519c12c25c4",
+    "src/folio/playground_ui/api.generated.ts": "dfebdee777ec555ed424065e946be1739940f15b4a0eff76ab9f74d457470bcf",
+    "src/folio/playground_ui/styles.css": "f7458a5a2e76ce27068458b74e605a1ebe52a169d8b9791310ed249bc4f56bc9",
     "src/folio/playground_ui/uno.config.ts": "473ccb3fba5ad9211f032a8f2e5523b6fbab3a1869750eee4e06869fe470240c",
     "src/folio/playground_ui/vite.config.ts": "b0c18414ed932ade4b8617dabf62f34ec07aeedacb1e7dc8562815d9cadbb247",
     "src/folio/playground_ui/README.md": "f7dd7d86e4a326f073e68d3dd0d1c4e20bb789df49b9b342c6566562502077d1",

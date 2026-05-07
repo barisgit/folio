@@ -14,11 +14,9 @@ import {
   createMemo,
   createSignal,
   onCleanup,
-  onMount,
 } from "solid-js";
-import { Portal } from "solid-js/web";
 
-import type { PlaygroundTweak } from "./api.generated";
+import type { PlaygroundPage, PlaygroundTweak } from "./api.generated";
 import {
   type PlaygroundStore,
   isChoiceKind,
@@ -26,7 +24,6 @@ import {
   isNumericKind,
   liveCssValue,
   normalizeInputValue,
-  pad2,
   safeId,
   unitForKind,
 } from "./state";
@@ -62,59 +59,50 @@ export function App(props: AppProps) {
     () => (store.state()?.tweaks || []).filter((t) => t.diverged).length,
   );
 
-  const specPathDisplay = createMemo(() => {
+  const specFilename = createMemo(() => {
     const path = store.state()?.specPath || "";
-    if (!path) return { short: "—", full: "" };
+    if (!path) return "—";
     const segments = path.split("/").filter(Boolean);
-    const short = segments.length > 2 ? `…/${segments.slice(-2).join("/")}` : path;
-    return { short, full: path };
+    return segments[segments.length - 1] || path;
+  });
+
+  // Group pages by document_id, preserving the order pages were emitted.
+  // ``meta`` is a short page-size label (e.g. "a4" / "16:9") inferred from
+  // width_mm × height_mm so the doc tree row can hint at format without
+  // additional backend work.
+  const groupedDocs = createMemo(() => {
+    const docs = new Map<string, DocGroup>();
+    const pages = store.state()?.pages || [];
+    pages.forEach((page, index) => {
+      const id = page.documentId || "document";
+      let entry = docs.get(id);
+      if (!entry) {
+        entry = {
+          id,
+          label: page.documentLabel || id,
+          meta: pageSizeLabel(page.widthMm, page.heightMm),
+          pages: [],
+        };
+        docs.set(id, entry);
+      }
+      entry.pages.push({ index, page });
+    });
+    return Array.from(docs.values());
   });
 
   return (
     <main id="folio-playground">
-      <Topbar store={store} specPath={specPathDisplay} />
+      <Topbar
+        store={store}
+        specFilename={specFilename}
+        divergedTotal={divergedTotal}
+      />
+
+      <DocTree store={store} groups={groupedDocs} />
 
       <Workspace store={store} />
 
       <aside class="panel" aria-label="Tweak controls">
-        <div class="panel-header">
-          <div>
-            <p class="eyebrow">APPROVED VALUES</p>
-            <h2>Tweaks</h2>
-          </div>
-          <div class="panel-header-actions">
-            <button
-              type="button"
-              class="reset-btn reset-btn-all"
-              onClick={() => {
-                if (!divergedTotal()) return;
-                if (
-                  typeof window !== "undefined" &&
-                  !window.confirm(
-                    `Reset all ${divergedTotal()} edited tweak(s) to spec defaults?`,
-                  )
-                ) {
-                  return;
-                }
-                void store.resetTweaks({ scope: "all" });
-              }}
-              disabled={!divergedTotal()}
-              title={
-                divergedTotal()
-                  ? `Reset all ${divergedTotal()} edited tweak(s)`
-                  : "No tweaks edited from defaults"
-              }
-            >
-              Reset all
-              <Show when={divergedTotal() > 0}>
-                <span class="reset-btn-count">{divergedTotal()}</span>
-              </Show>
-            </button>
-            <span class="panel-count" aria-live="polite">
-              {store.state()?.tweaks.length ?? 0}
-            </span>
-          </div>
-        </div>
 
         <ul
           class="diagnostics"
@@ -153,25 +141,21 @@ export function App(props: AppProps) {
                   >
                     <header class="tweak-group-head">
                       <h3 id={`group-${safeId(groupName)}`}>{groupName}</h3>
-                      <button
-                        type="button"
-                        class="reset-btn reset-btn-group"
-                        onClick={() => {
-                          if (!divergedInGroup()) return;
-                          void store.resetTweaks({
-                            scope: "group",
-                            group: groupName,
-                          });
-                        }}
-                        disabled={!divergedInGroup()}
-                        title={
-                          divergedInGroup()
-                            ? `Reset ${divergedInGroup()} tweak(s) in ${groupName}`
-                            : "No tweaks edited from defaults"
-                        }
-                      >
-                        Reset group
-                      </button>
+                      <Show when={divergedInGroup() > 0}>
+                        <button
+                          type="button"
+                          class="reset-btn reset-btn-group"
+                          onClick={() => {
+                            void store.resetTweaks({
+                              scope: "group",
+                              group: groupName,
+                            });
+                          }}
+                          title={`Reset ${divergedInGroup()} tweak(s) in ${groupName}`}
+                        >
+                          reset group
+                        </button>
+                      </Show>
                     </header>
                     <For each={groupTweaks}>
                       {(tweak) => <TweakControl tweak={tweak} store={store} />}
@@ -187,38 +171,182 @@ export function App(props: AppProps) {
   );
 }
 
+interface DocGroup {
+  id: string;
+  label: string;
+  meta: string;
+  pages: { index: number; page: PlaygroundPage }[];
+}
+
+// Map a page width/height in millimetres to a short visual hint shown in
+// the doc tree (e.g. "a4", "16:9"). Falls back to the raw dimensions
+// rounded to the nearest mm.
+function pageSizeLabel(widthMm: number, heightMm: number): string {
+  const w = Math.round(widthMm);
+  const h = Math.round(heightMm);
+  // Common ISO/letter sizes in either orientation.
+  const known: [number, number, string][] = [
+    [210, 297, "a4"],
+    [297, 420, "a3"],
+    [148, 210, "a5"],
+    [216, 279, "letter"],
+  ];
+  for (const [kw, kh, label] of known) {
+    if ((w === kw && h === kh) || (w === kh && h === kw)) return label;
+  }
+  // Aspect-ratio sniff for broadcast/screen sizes.
+  const long = Math.max(w, h);
+  const short = Math.min(w, h);
+  if (short > 0) {
+    const ratio = long / short;
+    if (Math.abs(ratio - 16 / 9) < 0.02) return "16:9";
+    if (Math.abs(ratio - 4 / 3) < 0.02) return "4:3";
+  }
+  return `${w}×${h}mm`;
+}
+
+// Inline value display next to a tweak's label: "58 pt", "#445566",
+// "calm", "40 mm". Trims trailing zeros for numeric values so 32.0 reads
+// as ``32`` while 12.5 stays ``12.5``.
+function formatTweakValue(tweak: PlaygroundTweak, raw: string): string {
+  const unit = unitForKind(tweak.kind);
+  if (isNumericKind(tweak.kind)) {
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return raw;
+    const formatted =
+      tweak.kind === "opacity"
+        ? n.toFixed(2).replace(/\.0+$/, "")
+        : Number(n.toFixed(2)).toString();
+    return unit ? `${formatted} ${unit}` : formatted;
+  }
+  return raw;
+}
+
 interface TopbarProps {
   store: PlaygroundStore;
-  specPath: () => { short: string; full: string };
+  specFilename: () => string;
+  divergedTotal: () => number;
+}
+
+interface DocTreeProps {
+  store: PlaygroundStore;
+  groups: () => DocGroup[];
+}
+
+// Left zone: nested doc tree (VS Code explorer pattern). When the spec
+// returns a single document the chevron + meta are dropped so it reads as
+// a flat page list. Clicking a page row scrolls the matching ``.page-sheet``
+// into view via the same ``selectedPageIndex`` signal the workspace uses.
+function DocTree(props: DocTreeProps) {
+  const [collapsed, setCollapsed] = createSignal<Record<string, boolean>>({});
+
+  function toggle(id: string): void {
+    setCollapsed((prev) => ({ ...prev, [id]: !prev[id] }));
+  }
+
+  function selectPage(index: number): void {
+    props.store.setSelectedPageIndex(index);
+    if (typeof document === "undefined") return;
+    const root = document.querySelector<HTMLElement>(".page-stack");
+    const sheets = root?.querySelectorAll<HTMLElement>(".page-sheet");
+    sheets?.[index]?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }
+
+  const isFlat = () => props.groups().length <= 1;
+
+  return (
+    <aside class="doc-tree" aria-label="Document pages">
+      <For each={props.groups()}>
+        {(group) => {
+          const open = () => !collapsed()[group.id];
+          return (
+            <section class="doc">
+              <Show when={!isFlat()}>
+                <button
+                  type="button"
+                  class="doc-row"
+                  aria-expanded={open()}
+                  onClick={() => toggle(group.id)}
+                >
+                  <span
+                    class="doc-chevron"
+                    classList={{ "is-open": open() }}
+                    aria-hidden="true"
+                  >
+                    ▾
+                  </span>
+                  <span class="doc-name">{group.label}</span>
+                  <span class="doc-meta">{group.meta}</span>
+                </button>
+              </Show>
+              <Show when={open()}>
+                <div class="doc-pages">
+                  <For each={group.pages}>
+                    {(entry) => {
+                      const active = () =>
+                        props.store.selectedPageIndex() === entry.index;
+                      return (
+                        <button
+                          type="button"
+                          class="page-row"
+                          classList={{
+                            "is-active": active(),
+                            "is-flat": isFlat(),
+                          }}
+                          aria-current={active() ? "page" : undefined}
+                          onClick={() => selectPage(entry.index)}
+                        >
+                          {pageRowLabel(entry.page.filename)}
+                        </button>
+                      );
+                    }}
+                  </For>
+                </div>
+              </Show>
+            </section>
+          );
+        }}
+      </For>
+    </aside>
+  );
+}
+
+// Page row label: drop a trailing ``.svg`` (the design rule says page
+// rows show just the name, no extension), but keep any other extension a
+// caller might use (e.g. ``cover.png``) so the row still identifies the
+// page unambiguously.
+function pageRowLabel(filename: string): string {
+  return filename.replace(/\.svg$/i, "");
 }
 
 function Topbar(props: TopbarProps) {
   return (
     <header class="topbar" aria-label="Playground header">
       <div class="brand">
-        <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6">
-            <path d="M5 4h10l4 4v12H5z" />
-            <path d="M15 4v4h4" />
-            <path d="M9 12h6M9 16h6" />
-          </svg>
-        </span>
-        <div class="brand-text">
-          <span class="brand-eyebrow">FOLIO · DEV</span>
-          <span class="brand-title">Playground</span>
-        </div>
-      </div>
-
-      <div class="topbar-meta" aria-label="Active document">
-        <span class="meta-eyebrow">SPEC</span>
-        <span class="meta-value" title={props.specPath().full}>
-          {props.specPath().short}
+        <span class="brand-dot" aria-hidden="true" />
+        <span class="brand-name">folio</span>
+        <span class="brand-spec" title={props.store.state()?.specPath || ""}>
+          {props.specFilename()}
         </span>
       </div>
 
-      <div class="topbar-status" aria-label="Render status">
-        <span class="status-dot" data-state={props.store.globalStatus().state} aria-hidden="true" />
-        <span class="status-text" role="status" aria-live="polite">
+      <div class="topbar-actions">
+        <Show when={props.divergedTotal() > 0}>
+          <button
+            type="button"
+            class="reset-all-link"
+            onClick={() => void props.store.resetTweaks({ scope: "all" })}
+            title={`Reset all ${props.divergedTotal()} edited tweak(s)`}
+          >
+            reset all
+          </button>
+        </Show>
+        <span
+          class="topbar-status"
+          data-state={props.store.globalStatus().state}
+          role="status"
+          aria-live="polite"
+        >
           {props.store.globalStatus().text}
         </span>
       </div>
@@ -326,35 +454,7 @@ function Workspace(props: WorkspaceProps) {
 
   return (
     <section class="workspace" aria-label="Rendered document workspace">
-      <div class="workspace-toolbar" aria-label="Document controls">
-        <div class="page-nav" aria-label="Page navigation">
-          <button
-            type="button"
-            class="ghost-button"
-            aria-label="Previous page"
-            title="Previous page (PgUp)"
-            disabled={pageCount() === 0 || props.store.selectedPageIndex() <= 0}
-            onClick={() => selectPage(props.store.selectedPageIndex() - 1)}
-          >
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          </button>
-          <PageSelector store={props.store} onSelect={(i) => selectPage(i, true)} />
-          <button
-            type="button"
-            class="ghost-button"
-            aria-label="Next page"
-            title="Next page (PgDn)"
-            disabled={pageCount() === 0 || props.store.selectedPageIndex() >= pageCount() - 1}
-            onClick={() => selectPage(props.store.selectedPageIndex() + 1)}
-          >
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 6l6 6-6 6" />
-            </svg>
-          </button>
-        </div>
-
+      <div class="center-bar" aria-label="Document controls">
         <div class="zoom-segments" role="tablist" aria-label="Zoom mode">
           <For each={["fit-width", "fit-page", "actual-size"] as const}>
             {(mode) => {
@@ -421,6 +521,11 @@ function Workspace(props: WorkspaceProps) {
                     data-page-id={page.pageId}
                     tabindex={-1}
                     aria-label={`Page ${page.pageNumber} — ${page.filename}`}
+                    style={{
+                      "--page-w-mm": String(page.widthMm),
+                      "--page-h-mm": String(page.heightMm),
+                      "aspect-ratio": `${page.widthMm} / ${page.heightMm}`,
+                    }}
                     // SVG content arrives as trusted markup from the
                     // backend pipeline; innerHTML is intentional.
                     innerHTML={page.svg}
@@ -432,108 +537,6 @@ function Workspace(props: WorkspaceProps) {
         </div>
       </div>
     </section>
-  );
-}
-
-interface PageSelectorProps {
-  store: PlaygroundStore;
-  onSelect: (index: number) => void;
-}
-
-function PageSelector(props: PageSelectorProps) {
-  const [open, setOpen] = createSignal(false);
-  let hostEl: HTMLDivElement | undefined;
-  let triggerEl: HTMLButtonElement | undefined;
-
-  function close(): void {
-    setOpen(false);
-  }
-
-  function onDocumentClick(event: MouseEvent): void {
-    if (hostEl && !hostEl.contains(event.target as Node)) close();
-  }
-
-  function onDocumentKeydown(event: KeyboardEvent): void {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      close();
-      triggerEl?.focus();
-    }
-  }
-
-  createEffect(() => {
-    if (open()) {
-      document.addEventListener("click", onDocumentClick, true);
-      document.addEventListener("keydown", onDocumentKeydown);
-    } else {
-      document.removeEventListener("click", onDocumentClick, true);
-      document.removeEventListener("keydown", onDocumentKeydown);
-    }
-  });
-
-  onCleanup(() => {
-    document.removeEventListener("click", onDocumentClick, true);
-    document.removeEventListener("keydown", onDocumentKeydown);
-  });
-
-  const pages = () => props.store.state()?.pages || [];
-  const total = () => pages().length;
-  const current = () => pages()[props.store.selectedPageIndex()];
-
-  return (
-    <div ref={hostEl} class="page-selector">
-      <button
-        ref={triggerEl}
-        type="button"
-        class="page-selector-trigger"
-        disabled={total() === 0}
-        aria-haspopup="listbox"
-        aria-expanded={open()}
-        onClick={() => setOpen(!open())}
-      >
-        <span class="pst-index">
-          {total() ? pad2(props.store.selectedPageIndex() + 1) : "—"}
-        </span>
-        <span class="pst-sep"> / </span>
-        <span class="pst-total">{total() ? pad2(total()) : ""}</span>
-        <Show when={current()}>
-          {(page) => (
-            <span class="pst-name" title={page().filename}>
-              {page().filename}
-            </span>
-          )}
-        </Show>
-        <span class="pst-caret">
-          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4">
-            <path d="M6 9l6 6 6-6" />
-          </svg>
-        </span>
-      </button>
-      <div
-        class="page-selector-menu"
-        classList={{ "is-open": open() }}
-        role="listbox"
-      >
-        <For each={pages()}>
-          {(page, index) => (
-            <button
-              type="button"
-              class="page-selector-option"
-              role="option"
-              aria-selected={index() === props.store.selectedPageIndex()}
-              data-index={index()}
-              onClick={() => {
-                props.onSelect(index());
-                close();
-              }}
-            >
-              <span class="pso-index">{pad2(page.pageNumber)}</span>
-              <span class="pso-name">{page.filename}</span>
-            </button>
-          )}
-        </For>
-      </div>
-    </div>
   );
 }
 
@@ -587,33 +590,27 @@ function TweakControl(props: TweakControlProps) {
       classList={{ "is-invalid": isInvalid() }}
     >
       <div class="tweak-control-head">
-        <label for={inputId()}>
+        <label for={inputId()} class="tweak-name">
           {props.tweak.label || props.tweak.name || props.tweak.key}
         </label>
         <div class="tweak-head-right">
-        <div class="tweak-meta">
-          <span class="tm-key">{props.tweak.key}</span>
-          <span class="tm-sep">·</span>
-          <span class="tm-kind">{props.tweak.kind}</span>
-          <span class="tm-sep">·</span>
-          <span class="tm-mode" data-mode={props.tweak.mode}>{props.tweak.mode}</span>
-        </div>
-        <Show when={props.tweak.diverged}>
-          <button
-            type="button"
-            class="reset-btn-tweak"
-            onClick={() =>
-              void props.store.resetTweaks({
-                scope: "tweak",
-                key: props.tweak.key,
-              })
-            }
-            title="Reset to spec default"
-            aria-label="Reset to spec default"
-          >
-            <span class="i-lucide-rotate-ccw text-xs" aria-hidden="true" />
-          </button>
-        </Show>
+          <span class="tweak-value">{formatTweakValue(props.tweak, initialValue())}</span>
+          <Show when={props.tweak.diverged}>
+            <button
+              type="button"
+              class="reset-btn-tweak"
+              onClick={() =>
+                void props.store.resetTweaks({
+                  scope: "tweak",
+                  key: props.tweak.key,
+                })
+              }
+              title="Reset to spec default"
+              aria-label="Reset to spec default"
+            >
+              ↺
+            </button>
+          </Show>
         </div>
       </div>
 

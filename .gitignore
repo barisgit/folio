@@ -8,3 +8,4 @@ out/
 *.egg-info/
 uv.lock
 tmp/
+node_modules
