@@ -30,6 +30,8 @@ class ExportPreset:
     viewport: tuple[int, int] | None = None
     filename_pattern: str | None = None
     source: str | None = None
+    renderer: str | None = None
+    background: str = "transparent"
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "format", ExportFormat(self.format))

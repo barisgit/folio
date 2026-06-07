@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-04-30T15:45:47Z",
+  "generated_at": "2026-06-07T12:10:21Z",
   "folio_version": "0.1.0",
   "symbols": [
     {
@@ -85,7 +85,7 @@
         "layout",
         "builder"
       ],
-      "source": "folio.core.dsl.builtins:1089"
+      "source": "folio.core.dsl.builtins:1093"
     },
     {
       "id": "folio.dsl.ChartHandle",
@@ -493,7 +493,7 @@
       "name": "ExportPreset",
       "kind": "helper",
       "module": "folio.dsl",
-      "signature": "ExportPreset(name: 'str', format: 'ExportFormat', scope: 'ExportScope', viewport: 'tuple[int, int] | None' = None, filename_pattern: 'str | None' = None, source: 'str | None' = None) -> None",
+      "signature": "ExportPreset(name: 'str', format: 'ExportFormat', scope: 'ExportScope', viewport: 'tuple[int, int] | None' = None, filename_pattern: 'str | None' = None, source: 'str | None' = None, renderer: 'str | None' = None, background: 'str' = 'transparent') -> None",
       "summary": "Named build target declared by a document.",
       "description": "",
       "params": [
@@ -525,6 +525,16 @@
         {
           "name": "source",
           "type": "str | None",
+          "doc": ""
+        },
+        {
+          "name": "renderer",
+          "type": "str | None",
+          "doc": ""
+        },
+        {
+          "name": "background",
+          "type": "str",
           "doc": ""
         }
       ],
@@ -735,7 +745,7 @@
         "path",
         "builder"
       ],
-      "source": "folio.core.dsl.builtins:984"
+      "source": "folio.core.dsl.builtins:988"
     },
     {
       "id": "folio.dsl.TextLayoutWarning",
@@ -758,7 +768,7 @@
         "text",
         "layout"
       ],
-      "source": "folio.core.dsl.builtins:190"
+      "source": "folio.core.dsl.builtins:194"
     },
     {
       "id": "folio.dsl.TextMetrics",
@@ -963,7 +973,7 @@
         "transform",
         "builder"
       ],
-      "source": "folio.core.dsl.builtins:911"
+      "source": "folio.core.dsl.builtins:915"
     },
     {
       "id": "folio.dsl.block",
@@ -1000,7 +1010,7 @@
         "layout",
         "builder"
       ],
-      "source": "folio.core.dsl.builtins:1438"
+      "source": "folio.core.dsl.builtins:1442"
     },
     {
       "id": "folio.dsl.chart",
@@ -1120,7 +1130,7 @@
         "shape",
         "primitive"
       ],
-      "source": "folio.core.dsl.builtins:1553"
+      "source": "folio.core.dsl.builtins:1557"
     },
     {
       "id": "folio.dsl.clip_path",
@@ -1162,7 +1172,7 @@
         "defs",
         "clipping"
       ],
-      "source": "folio.core.dsl.builtins:2436"
+      "source": "folio.core.dsl.builtins:2440"
     },
     {
       "id": "folio.dsl.collection",
@@ -1199,7 +1209,7 @@
         "document",
         "collection"
       ],
-      "source": "folio.core.dsl.builtins:2818"
+      "source": "folio.core.dsl.builtins:2822"
     },
     {
       "id": "folio.dsl.cols",
@@ -1274,7 +1284,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.core.dsl.builtins:2354"
+      "source": "folio.core.dsl.builtins:2358"
     },
     {
       "id": "folio.dsl.document",
@@ -1340,7 +1350,7 @@
       "tags": [
         "document"
       ],
-      "source": "folio.core.dsl.builtins:2771"
+      "source": "folio.core.dsl.builtins:2775"
     },
     {
       "id": "folio.dsl.drop_shadow",
@@ -1398,7 +1408,7 @@
         "filter",
         "shadow"
       ],
-      "source": "folio.core.dsl.builtins:2528"
+      "source": "folio.core.dsl.builtins:2532"
     },
     {
       "id": "folio.dsl.ellipse",
@@ -1455,7 +1465,7 @@
         "shape",
         "primitive"
       ],
-      "source": "folio.core.dsl.builtins:1586"
+      "source": "folio.core.dsl.builtins:1590"
     },
     {
       "id": "folio.dsl.filter_",
@@ -1497,7 +1507,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.core.dsl.builtins:2295"
+      "source": "folio.core.dsl.builtins:2299"
     },
     {
       "id": "folio.dsl.flow_cols",
@@ -1572,7 +1582,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.core.dsl.builtins:2377"
+      "source": "folio.core.dsl.builtins:2381"
     },
     {
       "id": "folio.dsl.gaussian_blur",
@@ -1609,7 +1619,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.core.dsl.builtins:2318"
+      "source": "folio.core.dsl.builtins:2322"
     },
     {
       "id": "folio.dsl.grain",
@@ -1672,7 +1682,7 @@
         "filter",
         "texture"
       ],
-      "source": "folio.core.dsl.builtins:2574"
+      "source": "folio.core.dsl.builtins:2578"
     },
     {
       "id": "folio.dsl.grid",
@@ -1762,7 +1772,7 @@
         "layout",
         "primitive"
       ],
-      "source": "folio.core.dsl.builtins:2032"
+      "source": "folio.core.dsl.builtins:2036"
     },
     {
       "id": "folio.dsl.idml",
@@ -1790,7 +1800,7 @@
       },
       "examples": [],
       "tags": [],
-      "source": "folio.core.dsl.builtins:156"
+      "source": "folio.core.dsl.builtins:160"
     },
     {
       "id": "folio.dsl.image",
@@ -1852,7 +1862,7 @@
         "asset",
         "primitive"
       ],
-      "source": "folio.core.dsl.builtins:1874"
+      "source": "folio.core.dsl.builtins:1878"
     },
     {
       "id": "folio.dsl.line",
@@ -1909,7 +1919,7 @@
         "shape",
         "primitive"
       ],
-      "source": "folio.core.dsl.builtins:2086"
+      "source": "folio.core.dsl.builtins:2090"
     },
     {
       "id": "folio.dsl.linear_gradient",
@@ -1951,7 +1961,7 @@
         "defs",
         "gradient"
       ],
-      "source": "folio.core.dsl.builtins:2241"
+      "source": "folio.core.dsl.builtins:2245"
     },
     {
       "id": "folio.dsl.linear_gradient_stops",
@@ -1998,7 +2008,7 @@
         "defs",
         "gradient"
       ],
-      "source": "folio.core.dsl.builtins:2482"
+      "source": "folio.core.dsl.builtins:2486"
     },
     {
       "id": "folio.dsl.markup",
@@ -2029,7 +2039,7 @@
       "tags": [
         "text"
       ],
-      "source": "folio.core.dsl.builtins:2202"
+      "source": "folio.core.dsl.builtins:2206"
     },
     {
       "id": "folio.dsl.mask",
@@ -2071,7 +2081,7 @@
         "defs",
         "masking"
       ],
-      "source": "folio.core.dsl.builtins:2459"
+      "source": "folio.core.dsl.builtins:2463"
     },
     {
       "id": "folio.dsl.measure_text",
@@ -2113,7 +2123,7 @@
         "text",
         "metrics"
       ],
-      "source": "folio.core.dsl.builtins:760"
+      "source": "folio.core.dsl.builtins:764"
     },
     {
       "id": "folio.dsl.measure_wrapped_text",
@@ -2175,7 +2185,7 @@
         "text",
         "metrics"
       ],
-      "source": "folio.core.dsl.builtins:809"
+      "source": "folio.core.dsl.builtins:813"
     },
     {
       "id": "folio.dsl.merge",
@@ -2217,7 +2227,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.core.dsl.builtins:2395"
+      "source": "folio.core.dsl.builtins:2399"
     },
     {
       "id": "folio.dsl.merge_node",
@@ -2254,7 +2264,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.core.dsl.builtins:2418"
+      "source": "folio.core.dsl.builtins:2422"
     },
     {
       "id": "folio.dsl.multiline",
@@ -2316,7 +2326,7 @@
         "text",
         "layout"
       ],
-      "source": "folio.core.dsl.builtins:1755"
+      "source": "folio.core.dsl.builtins:1759"
     },
     {
       "id": "folio.dsl.offset",
@@ -2353,7 +2363,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.core.dsl.builtins:2336"
+      "source": "folio.core.dsl.builtins:2340"
     },
     {
       "id": "folio.dsl.page",
@@ -2435,7 +2445,7 @@
         "page",
         "layout"
       ],
-      "source": "folio.core.dsl.builtins:1457"
+      "source": "folio.core.dsl.builtins:1461"
     },
     {
       "id": "folio.dsl.path",
@@ -2477,7 +2487,7 @@
         "path",
         "primitive"
       ],
-      "source": "folio.core.dsl.builtins:2062"
+      "source": "folio.core.dsl.builtins:2066"
     },
     {
       "id": "folio.dsl.path_builder",
@@ -2503,7 +2513,7 @@
         "path",
         "builder"
       ],
-      "source": "folio.core.dsl.builtins:2656"
+      "source": "folio.core.dsl.builtins:2660"
     },
     {
       "id": "folio.dsl.pdf",
@@ -2536,14 +2546,14 @@
       },
       "examples": [],
       "tags": [],
-      "source": "folio.core.dsl.builtins:143"
+      "source": "folio.core.dsl.builtins:147"
     },
     {
       "id": "folio.dsl.png",
       "name": "png",
       "kind": "helper",
       "module": "folio.dsl",
-      "signature": "png(name: 'str', *, viewport: 'tuple[int, int]', filename_pattern: 'str | None' = None, source: 'str' = 'svg') -> 'ExportPreset'",
+      "signature": "png(name: 'str', *, viewport: 'tuple[int, int]', filename_pattern: 'str | None' = None, source: 'str' = 'svg', renderer: 'str | None' = None, background: 'str' = 'transparent') -> 'ExportPreset'",
       "summary": "Create a page-scoped PNG export preset with a fixed viewport.",
       "description": "",
       "params": [
@@ -2564,6 +2574,16 @@
         },
         {
           "name": "source",
+          "type": "str",
+          "doc": ""
+        },
+        {
+          "name": "renderer",
+          "type": "str | None",
+          "doc": ""
+        },
+        {
+          "name": "background",
           "type": "str",
           "doc": ""
         }
@@ -2616,7 +2636,7 @@
         "shape",
         "primitive"
       ],
-      "source": "folio.core.dsl.builtins:1621"
+      "source": "folio.core.dsl.builtins:1625"
     },
     {
       "id": "folio.dsl.polyline",
@@ -2658,7 +2678,7 @@
         "shape",
         "primitive"
       ],
-      "source": "folio.core.dsl.builtins:1649"
+      "source": "folio.core.dsl.builtins:1653"
     },
     {
       "id": "folio.dsl.qr",
@@ -2745,7 +2765,7 @@
         "asset",
         "primitive"
       ],
-      "source": "folio.core.dsl.builtins:1929"
+      "source": "folio.core.dsl.builtins:1933"
     },
     {
       "id": "folio.dsl.radial_gradient",
@@ -2787,7 +2807,7 @@
         "defs",
         "gradient"
       ],
-      "source": "folio.core.dsl.builtins:2268"
+      "source": "folio.core.dsl.builtins:2272"
     },
     {
       "id": "folio.dsl.rect",
@@ -2844,7 +2864,7 @@
         "shape",
         "primitive"
       ],
-      "source": "folio.core.dsl.builtins:1518"
+      "source": "folio.core.dsl.builtins:1522"
     },
     {
       "id": "folio.dsl.render",
@@ -2887,7 +2907,7 @@
       },
       "examples": [],
       "tags": [],
-      "source": "folio.core.dsl.builtins:2847"
+      "source": "folio.core.dsl.builtins:2851"
     },
     {
       "id": "folio.dsl.rule",
@@ -2954,7 +2974,7 @@
         "layout",
         "primitive"
       ],
-      "source": "folio.core.dsl.builtins:2122"
+      "source": "folio.core.dsl.builtins:2126"
     },
     {
       "id": "folio.dsl.span",
@@ -3001,7 +3021,7 @@
         "text",
         "primitive"
       ],
-      "source": "folio.core.dsl.builtins:1720"
+      "source": "folio.core.dsl.builtins:1724"
     },
     {
       "id": "folio.dsl.stop",
@@ -3038,7 +3058,7 @@
         "defs",
         "gradient"
       ],
-      "source": "folio.core.dsl.builtins:2223"
+      "source": "folio.core.dsl.builtins:2227"
     },
     {
       "id": "folio.dsl.svg",
@@ -3117,7 +3137,7 @@
       "tags": [
         "defs"
       ],
-      "source": "folio.core.dsl.builtins:2165"
+      "source": "folio.core.dsl.builtins:2169"
     },
     {
       "id": "folio.dsl.text",
@@ -3174,7 +3194,7 @@
         "text",
         "primitive"
       ],
-      "source": "folio.core.dsl.builtins:1677"
+      "source": "folio.core.dsl.builtins:1681"
     },
     {
       "id": "folio.dsl.tokens",
@@ -4745,7 +4765,7 @@
         "transform",
         "builder"
       ],
-      "source": "folio.core.dsl.builtins:2642"
+      "source": "folio.core.dsl.builtins:2646"
     },
     {
       "id": "folio.dsl.triangle",
@@ -4822,7 +4842,7 @@
         "shape",
         "primitive"
       ],
-      "source": "folio.core.dsl.builtins:2674"
+      "source": "folio.core.dsl.builtins:2678"
     },
     {
       "id": "folio.dsl.tspan",
@@ -4869,7 +4889,7 @@
         "text",
         "primitive"
       ],
-      "source": "folio.core.dsl.builtins:1720"
+      "source": "folio.core.dsl.builtins:1724"
     },
     {
       "id": "folio.dsl.tweaks",
@@ -5583,7 +5603,7 @@
         "text",
         "layout"
       ],
-      "source": "folio.core.dsl.builtins:1806"
+      "source": "folio.core.dsl.builtins:1810"
     }
   ]
 }

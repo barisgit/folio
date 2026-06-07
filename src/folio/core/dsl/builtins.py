@@ -128,6 +128,8 @@ def png(
     viewport: tuple[int, int],
     filename_pattern: str | None = None,
     source: str = "svg",
+    renderer: str | None = None,
+    background: str = "transparent",
 ) -> ExportPreset:
     """Create a page-scoped PNG export preset with a fixed viewport."""
     return ExportPreset(
@@ -137,6 +139,8 @@ def png(
         viewport=_validate_viewport(viewport),
         filename_pattern=filename_pattern,
         source=source,
+        renderer=renderer,
+        background=background,
     )
 
 

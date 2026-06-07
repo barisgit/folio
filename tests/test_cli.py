@@ -31,10 +31,14 @@ def test_rasterize_can_render_arbitrary_svg_path(
         *,
         output_path: Path | None = None,
         viewport: tuple[int, int] | None = None,
+        renderer: str | None = None,
+        background: str = "transparent",
     ) -> Path:
         captured["svg_path"] = preview_svg
         captured["output_path"] = output_path
         captured["viewport"] = viewport
+        captured["renderer"] = renderer
+        captured["background"] = background
         target = output_path or preview_svg.with_suffix(".png")
         target.write_bytes(b"PNG")
         return target
@@ -63,6 +67,8 @@ def test_rasterize_can_render_arbitrary_svg_path(
         "svg_path": svg_path,
         "output_path": output_path,
         "viewport": (800, 600),
+        "renderer": None,
+        "background": "transparent",
     }
 
 
@@ -545,7 +551,7 @@ def test_build_explicit_png_target_writes_only_participating_pages(
     calls: list[tuple[Path, tuple[int, int] | None]] = []
 
     def fake_render(
-        svg_text: str, *, output_path: Path, viewport: tuple[int, int] | None = None
+        svg_text: str, *, output_path: Path, viewport: tuple[int, int] | None = None, **_: object
     ) -> Path:
         calls.append((output_path, viewport))
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -598,7 +604,7 @@ def test_build_all_writes_declared_svg_png_pdf_and_idml(tmp_path: Path, monkeypa
     out_dir = tmp_path / "out"
 
     def fake_render(
-        svg_text: str, *, output_path: Path, viewport: tuple[int, int] | None = None
+        svg_text: str, *, output_path: Path, viewport: tuple[int, int] | None = None, **_: object
     ) -> Path:
         from PIL import Image
 
@@ -655,7 +661,7 @@ def test_build_pdf_source_uses_internal_png_without_public_png(tmp_path: Path, m
     calls: list[tuple[Path, tuple[int, int] | None]] = []
 
     def fake_render(
-        svg_text: str, *, output_path: Path, viewport: tuple[int, int] | None = None
+        svg_text: str, *, output_path: Path, viewport: tuple[int, int] | None = None, **_: object
     ) -> Path:
         from PIL import Image
 
@@ -732,7 +738,7 @@ def test_build_explicit_targets_apply_to_matching_documents_only(
     out_dir = tmp_path / "out"
 
     def fake_render(
-        svg_text: str, *, output_path: Path, viewport: tuple[int, int] | None = None
+        svg_text: str, *, output_path: Path, viewport: tuple[int, int] | None = None, **_: object
     ) -> Path:
         from PIL import Image
 

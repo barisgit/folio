@@ -40,6 +40,21 @@ def rasterize_command(
         str | None,
         typer.Option("--viewport", help="Viewport as WIDTHxHEIGHT, e.g. 1920x1080"),
     ] = None,
+    renderer: Annotated[
+        str | None,
+        typer.Option(
+            "--renderer",
+            help="Renderer engine: playwright (default), cairosvg, rsvg, or inkscape. "
+            "Non-playwright engines do not render curved text (textPath) or all filters.",
+        ),
+    ] = None,
+    background: Annotated[
+        str,
+        typer.Option(
+            "--background",
+            help="Background: 'transparent' or a CSS color like 'white'.",
+        ),
+    ] = "transparent",
 ) -> None:
     resolved_viewport = _parse_viewport(viewport) if viewport is not None else None
 
@@ -54,6 +69,8 @@ def rasterize_command(
                     svg_path,
                     output_path=output_path,
                     viewport=resolved_viewport,
+                    renderer=renderer,
+                    background=background,
                 )
             )
         else:
@@ -66,6 +83,8 @@ def rasterize_command(
                         spec_path=resolved_spec,
                         page_number=page.page_number,
                         viewport=resolved_viewport,
+                        renderer=renderer,
+                        background=background,
                     )
                 )
     except (CacheError, FileNotFoundError, PreviewError) as exc:

@@ -186,6 +186,8 @@ def execute_export_plan(
                         page.content,
                         output_path=output_path,
                         viewport=preset.viewport,
+                        renderer=preset.renderer,
+                        background=preset.background,
                     )
                     pngs.append(PagePngArtifact(page_number=page.page_number, path=path))
                     if public:
