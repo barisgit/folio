@@ -22,7 +22,7 @@ from folio.services.docs.serialize import dumps
 def build_index(*, generated_at: str | None = None) -> Index:
     """Return an :class:`Index` produced by walking the public DSL surface."""
     try:
-        folio_version = importlib.metadata.version("folio")
+        folio_version = importlib.metadata.version("folio-dsl")
     except importlib.metadata.PackageNotFoundError:
         folio_version = "0.0.0+dev"
     timestamp = generated_at or _utcnow_iso()

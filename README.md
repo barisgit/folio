@@ -4,11 +4,23 @@ CLI for creating, building, rasterizing, validating, and reconciling SVG pages f
 
 ## Quick start
 
+Install the published CLI package and run the `folio` command:
+
+```bash
+pipx install folio-dsl
+# or: pip install folio-dsl
+folio --version
+```
+
+For local development from this checkout:
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -e .
+```
 
+```bash
 # bundled starter spec
 folio validate config/folio.py
 folio build config/folio.py
@@ -236,7 +248,7 @@ Layout helpers are available both as classes and convenience builders:
 ## Charts
 
 `chart()` turns a matplotlib figure into a folio `Element` (kind `IMAGE`) that participates in the normal layout, reconcile, and SVG-embedding pipeline.
-It is an optional feature — install with `pip install 'folio[charts]'` (or add matplotlib directly).
+It is an optional feature — install with `pip install 'folio-dsl[charts]'` (or add matplotlib directly).
 
 It accepts any library that writes into a matplotlib `Axes` (seaborn, pandas, matplotlib itself) or hands back a matplotlib `Figure`. Libraries that produce their own PNGs directly (Plotly static export, Altair) should keep using `image()`.
 

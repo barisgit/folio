@@ -77,7 +77,7 @@ def _import_pyplot() -> Any:
     except ImportError as exc:
         raise RuntimeError(
             "chart() requires matplotlib. Install the optional extra with "
-            "`pip install 'folio[charts]'` or add matplotlib directly."
+            "`pip install 'folio-dsl[charts]'` or add matplotlib directly."
         ) from exc
     matplotlib.use("Agg", force=False)
     import matplotlib.pyplot as plt

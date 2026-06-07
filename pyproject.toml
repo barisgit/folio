@@ -10,8 +10,24 @@ name = "folio-dsl"
 version = "0.1.0"
 description = "Python DSL SVG page builder and reconciliation CLI"
 readme = "README.md"
+license = "MIT"
 requires-python = ">=3.11"
-authors = [{ name = "Blaž Aristovnik" }]
+authors = [{ name = "Blaž Aristovnik", email = "blaz@paxia.co" }]
+maintainers = [{ name = "Blaž Aristovnik", email = "blaz@paxia.co" }]
+keywords = ["dsl", "svg", "layout", "documents", "cli"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Multimedia :: Graphics",
+  "Topic :: Printing",
+]
 dependencies = [
   "jinja2>=3.1.0",
   "pillow>=10.0.0",
@@ -23,14 +39,21 @@ dependencies = [
 [project.scripts]
 folio = "folio.cli:app"
 
+[project.urls]
+Homepage = "https://github.com/barisgit/folio"
+Repository = "https://github.com/barisgit/folio"
+"Bug Tracker" = "https://github.com/barisgit/folio/issues"
+
 [project.optional-dependencies]
 charts = ["matplotlib>=3.8"]
 
 [dependency-groups]
 dev = [
+  "build>=1.2.0",
   "matplotlib>=3.8",
   "pytest>=8.0.0",
   "ruff>=0.5.0",
+  "twine>=5.0.0",
 ]
 
 [tool.hatch.build.targets.sdist]
@@ -42,6 +65,7 @@ include = [
   "src/folio/**/*",
   "src/folio/**/.*",
   "README.md",
+  "LICENSE",
   "pyproject.toml",
   "hatch_build.py",
   "package.json",

@@ -3,12 +3,7 @@ name = "{{ project_slug | default('my-folio-project') }}"
 version = "0.1.0"
 description = "A folio document."
 requires-python = ">=3.11"
-# folio is not yet published to PyPI. While developing, install it in
-# editable mode from your local checkout:
-#     pip install -e /path/to/folio
-# Once folio ships, replace that with:
-#     dependencies = ["folio>=0.1"]
-dependencies = []
+dependencies = ["folio-dsl>=0.1"]
 
 [tool.ruff]
 line-length = 100

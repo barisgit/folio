@@ -43,7 +43,7 @@ app = typer.Typer(
 
 def version_callback(value: bool) -> None:
     if value:
-        console.print(importlib.metadata.version("folio"))
+        console.print(importlib.metadata.version("folio-dsl"))
         raise typer.Exit()
 
 

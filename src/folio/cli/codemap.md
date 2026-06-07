@@ -20,7 +20,7 @@ Commands are wired into a single `typer.Typer` app (`app`) exported from `cli/__
 
 - `app: typer.Typer` — root application, registered as `__all__ = []`
 - Global `--version`/`-V` option via `@app.callback()` with `version_callback()`
-- Version resolved from `importlib.metadata.version("folio")`
+- Version resolved from `importlib.metadata.version("folio-dsl")`
 - Registered commands:
 
 | Registration | Source |

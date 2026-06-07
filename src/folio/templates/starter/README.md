@@ -7,7 +7,7 @@ Generated from the folio starter template.
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e /path/to/folio   # until folio is published to PyPI
+pip install folio-dsl
 ```
 
 `folio check` auto-discovers the `.venv` adjacent to this project, so

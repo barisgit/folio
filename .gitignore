@@ -9,3 +9,7 @@ out/
 uv.lock
 tmp/
 node_modules
+
+.pi/
+design-previews/
+qa-artifacts/

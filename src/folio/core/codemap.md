@@ -369,7 +369,7 @@ SVG output with resolved color/size
 | Dependency | Used By | Purpose |
 |------------|---------|---------|
 | `folio.vendor.qrcodegen` | `dsl/builtins.py`, `dsl/elements.py` | QR code generation via `QrCode` class. |
-| `matplotlib` | `dsl/charts.py` | Chart rasterization (optional, via `folio[charts]` extra). |
+| `matplotlib` | `dsl/charts.py` | Chart rasterization (optional, via `folio-dsl[charts]` extra). |
 | `Pillow` (PIL) | `export/pdf.py`, `preview.py` | Image assembly and rasterization. |
 | `playwright` | `preview.py` | SVG rasterization (optional). |
 | `cairosvg` | `preview.py` | SVG rasterization fallback. |
