@@ -384,46 +384,10 @@
       "name": "ElementKind",
       "kind": "primitive",
       "module": "folio.dsl",
-      "signature": "ElementKind(value, names=None, *, module=None, qualname=None, type=None, start=1, boundary=None)",
+      "signature": "ElementKind",
       "summary": "Discriminator for every concrete :class:`Element` the DSL produces.",
       "description": "Each renderer primitive (``rect``, ``circle``, ``text``, etc.) maps to\nexactly one ``ElementKind``. The enum is stable across releases and\nused by the reconcile and renderer layers to pick the right code path.",
-      "params": [
-        {
-          "name": "value",
-          "type": "Any",
-          "doc": ""
-        },
-        {
-          "name": "names",
-          "type": "Any",
-          "doc": ""
-        },
-        {
-          "name": "module",
-          "type": "Any",
-          "doc": ""
-        },
-        {
-          "name": "qualname",
-          "type": "Any",
-          "doc": ""
-        },
-        {
-          "name": "type",
-          "type": "Any",
-          "doc": ""
-        },
-        {
-          "name": "start",
-          "type": "Any",
-          "doc": ""
-        },
-        {
-          "name": "boundary",
-          "type": "Any",
-          "doc": ""
-        }
-      ],
+      "params": [],
       "returns": null,
       "examples": [
         {
@@ -443,46 +407,10 @@
       "name": "ExportFormat",
       "kind": "helper",
       "module": "folio.dsl",
-      "signature": "ExportFormat(value, names=None, *, module=None, qualname=None, type=None, start=1, boundary=None)",
+      "signature": "ExportFormat",
       "summary": "Supported export artifact formats.",
       "description": "",
-      "params": [
-        {
-          "name": "value",
-          "type": "Any",
-          "doc": ""
-        },
-        {
-          "name": "names",
-          "type": "Any",
-          "doc": ""
-        },
-        {
-          "name": "module",
-          "type": "Any",
-          "doc": ""
-        },
-        {
-          "name": "qualname",
-          "type": "Any",
-          "doc": ""
-        },
-        {
-          "name": "type",
-          "type": "Any",
-          "doc": ""
-        },
-        {
-          "name": "start",
-          "type": "Any",
-          "doc": ""
-        },
-        {
-          "name": "boundary",
-          "type": "Any",
-          "doc": ""
-        }
-      ],
+      "params": [],
       "returns": null,
       "examples": [],
       "tags": [],
@@ -551,46 +479,10 @@
       "name": "ExportScope",
       "kind": "helper",
       "module": "folio.dsl",
-      "signature": "ExportScope(value, names=None, *, module=None, qualname=None, type=None, start=1, boundary=None)",
+      "signature": "ExportScope",
       "summary": "Whether an export produces page artifacts or one document artifact.",
       "description": "",
-      "params": [
-        {
-          "name": "value",
-          "type": "Any",
-          "doc": ""
-        },
-        {
-          "name": "names",
-          "type": "Any",
-          "doc": ""
-        },
-        {
-          "name": "module",
-          "type": "Any",
-          "doc": ""
-        },
-        {
-          "name": "qualname",
-          "type": "Any",
-          "doc": ""
-        },
-        {
-          "name": "type",
-          "type": "Any",
-          "doc": ""
-        },
-        {
-          "name": "start",
-          "type": "Any",
-          "doc": ""
-        },
-        {
-          "name": "boundary",
-          "type": "Any",
-          "doc": ""
-        }
-      ],
+      "params": [],
       "returns": null,
       "examples": [],
       "tags": [],

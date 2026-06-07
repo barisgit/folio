@@ -2,12 +2,103 @@ name: Release
 
 on:
   push:
-    tags:
-      - "v*"
+    branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
+  precheck-release:
+    name: Release precheck
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      github_release_exists: ${{ steps.state.outputs.github_release_exists }}
+      pypi_version_exists: ${{ steps.state.outputs.pypi_version_exists }}
+      should_release: ${{ steps.state.outputs.should_release }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Detected version: $VERSION"
+
+      - name: Check release state
+        id: state
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            GITHUB_RELEASE_EXISTS=true
+            echo "GitHub release $TAG already exists"
+          else
+            GITHUB_RELEASE_EXISTS=false
+            echo "GitHub release $TAG does not exist"
+          fi
+
+          PYPI_VERSION_EXISTS=$(python - <<'PY'
+          import os
+          import sys
+          import urllib.error
+          import urllib.request
+
+          version = os.environ["VERSION"]
+          url = f"https://pypi.org/pypi/folio-dsl/{version}/json"
+          try:
+              with urllib.request.urlopen(url, timeout=15) as response:
+                  exists = response.status == 200
+          except urllib.error.HTTPError as exc:
+              if exc.code == 404:
+                  exists = False
+              else:
+                  raise
+          except urllib.error.URLError as exc:
+              print(f"Could not check PyPI version state: {exc}", file=sys.stderr)
+              raise
+          print(str(exists).lower())
+          PY
+          )
+
+          if [ "$PYPI_VERSION_EXISTS" = "true" ]; then
+            echo "PyPI version folio-dsl==$VERSION already exists"
+          else
+            echo "PyPI version folio-dsl==$VERSION does not exist"
+          fi
+
+          if [ "$GITHUB_RELEASE_EXISTS" = "true" ] && [ "$PYPI_VERSION_EXISTS" = "true" ]; then
+            SHOULD_RELEASE=false
+            echo "Version $VERSION is already fully released. Skipping build/publish."
+          else
+            SHOULD_RELEASE=true
+            echo "Version $VERSION still needs release work."
+          fi
+
+          echo "github_release_exists=$GITHUB_RELEASE_EXISTS" >> "$GITHUB_OUTPUT"
+          echo "pypi_version_exists=$PYPI_VERSION_EXISTS" >> "$GITHUB_OUTPUT"
+          echo "should_release=$SHOULD_RELEASE" >> "$GITHUB_OUTPUT"
+
   build-and-publish:
+    name: Build and publish
+    needs: precheck-release
+    if: needs.precheck-release.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -36,34 +127,25 @@ jobs:
       - name: Install dependencies
         run: uv sync --group dev
 
-      - name: Get version
-        id: version
-        run: |
-          VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Validate tag matches project version
-        if: github.event_name == 'push'
-        run: |
-          test "${GITHUB_REF_NAME}" = "${{ steps.version.outputs.tag }}"
-
       - name: Build package
         run: |
           uv run python -m build
           uv run twine check dist/*
 
+      - name: Publish to PyPI
+        if: needs.precheck-release.outputs.pypi_version_exists == 'false'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          print-hash: true
+
       - name: Create GitHub release
+        if: needs.precheck-release.outputs.github_release_exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: Release ${{ steps.version.outputs.tag }}
+          tag_name: ${{ needs.precheck-release.outputs.tag }}
+          name: Release ${{ needs.precheck-release.outputs.tag }}
+          target_commitish: ${{ github.sha }}
           generate_release_notes: true
           files: |
             dist/*.whl
             dist/*.tar.gz
-
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          print-hash: true

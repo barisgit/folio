@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import inspect
 from collections.abc import Iterable
+from enum import Enum
 from typing import Any
 
 from folio.services.docs.docstring_parser import ParsedDoc, parse_docstring
@@ -285,6 +286,8 @@ def _ensure_examples(
 
 
 def _render_signature(name: str, value: Any) -> tuple[str, list[Param], str]:
+    if inspect.isclass(value) and issubclass(value, Enum):
+        return (name, [], "")
     try:
         sig = inspect.signature(value)
     except (TypeError, ValueError):

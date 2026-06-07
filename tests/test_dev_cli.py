@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -9,6 +10,11 @@ from typer.testing import CliRunner
 from folio.cli import app
 
 runner = CliRunner()
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def _plain(text: str) -> str:
+    return _ANSI_RE.sub("", text)
 
 
 class _FakeServer:
@@ -29,10 +35,11 @@ def test_dev_help_includes_host_port_and_open_flags() -> None:
     result = runner.invoke(app, ["dev", "--help"])
 
     assert result.exit_code == 0
-    assert "--host" in result.stdout
-    assert "--port" in result.stdout
-    assert "--open" in result.stdout
-    assert "--no-open" in result.stdout
+    stdout = _plain(result.stdout)
+    assert "--host" in stdout
+    assert "--port" in stdout
+    assert "--open" in stdout
+    assert "--no-open" in stdout
 
 
 def test_dev_invalid_spec_exits_nonzero(tmp_path: Path) -> None:

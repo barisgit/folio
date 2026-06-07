@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import textwrap
 from pathlib import Path
 
@@ -76,7 +77,7 @@ def test_load_rejects_top_level_scalar(tmp_path: Path) -> None:
 def test_load_reports_parse_error_with_path(tmp_path: Path) -> None:
     path = tmp_path / "theme.toml"
     path.write_text("[theme\nprimary = \n", encoding="utf-8")
-    with pytest.raises(TweakValuesError, match=str(path)):
+    with pytest.raises(TweakValuesError, match=re.escape(str(path))):
         load_persisted_values(path)
 
 

@@ -74,6 +74,6 @@ def test_prints_absolute_destination(tmp_path: Path, monkeypatch: pytest.MonkeyP
     monkeypatch.chdir(tmp_path)
     result = runner.invoke(app, ["skill", "install"])
     assert result.exit_code == 0
-    printed = result.output.strip().splitlines()[-1]
-    assert Path(printed).is_absolute()
-    assert printed.endswith(".agents/skills/folio")
+    printed = Path(result.output.strip().splitlines()[-1])
+    assert printed.is_absolute()
+    assert printed == (tmp_path / ".agents" / "skills" / "folio").resolve()
