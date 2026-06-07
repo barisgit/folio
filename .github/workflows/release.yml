@@ -22,12 +22,12 @@ jobs:
       pypi_version_exists: ${{ steps.state.outputs.pypi_version_exists }}
       should_release: ${{ steps.state.outputs.should_release }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
@@ -106,12 +106,12 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
@@ -139,6 +139,54 @@ jobs:
         with:
           print-hash: true
 
+      - name: Write release notes
+        if: needs.precheck-release.outputs.github_release_exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.precheck-release.outputs.version }}
+          TAG: ${{ needs.precheck-release.outputs.tag }}
+        run: |
+          cat > release-notes.md <<EOF
+          Folio DSL is available on PyPI as \`folio-dsl\`.
+
+          ## Install
+
+          \`\`\`bash
+          pip install folio-dsl==$VERSION
+          \`\`\`
+
+          ## Highlights
+
+          - Python DSL for building SVG page/document outputs.
+          - \`folio\` CLI for validation, builds, rasterization, reconciliation, docs, skills, and the local tweak playground.
+          - Packaged browser playground assets, so installed users can run \`folio dev\` without Node/Bun at runtime.
+          - Optional chart support via \`folio-dsl[charts]\`.
+          - Generated DSL documentation index included in the package.
+
+          ## Package links
+
+          - PyPI: https://pypi.org/project/folio-dsl/$VERSION/
+          - Wheel: \`folio_dsl-$VERSION-py3-none-any.whl\`
+          - Source distribution: \`folio_dsl-$VERSION.tar.gz\`
+          EOF
+
+          if generated_notes=$(gh api repos/${{ github.repository }}/releases/generate-notes \
+            -f tag_name="$TAG" \
+            -f target_commitish="${{ github.sha }}" \
+            --jq .body); then
+            {
+              echo
+              echo "## Changes"
+              echo
+              printf '%s\n' "$generated_notes"
+            } >> release-notes.md
+          else
+            {
+              echo
+              echo "**Full changelog**: https://github.com/${{ github.repository }}/commits/$TAG"
+            } >> release-notes.md
+          fi
+
       - name: Create GitHub release
         if: needs.precheck-release.outputs.github_release_exists == 'false'
         uses: softprops/action-gh-release@v2
@@ -146,7 +194,7 @@ jobs:
           tag_name: ${{ needs.precheck-release.outputs.tag }}
           name: Release ${{ needs.precheck-release.outputs.tag }}
           target_commitish: ${{ github.sha }}
-          generate_release_notes: true
+          body_path: release-notes.md
           files: |
             dist/*.whl
             dist/*.tar.gz
