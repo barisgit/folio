@@ -116,9 +116,10 @@ jobs:
           python-version: "3.11"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v8
         with:
           enable-cache: true
+          cache-dependency-glob: pyproject.toml
 
       - name: Install Bun
         uses: oven-sh/setup-bun@v2
