@@ -53,5 +53,5 @@ jobs:
       - name: Build package
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: |
-          uv run python -m build
+          uv build
           uv run twine check dist/*

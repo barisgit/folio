@@ -49,7 +49,6 @@ charts = ["matplotlib>=3.8"]
 
 [dependency-groups]
 dev = [
-  "build>=1.2.0",
   "matplotlib>=3.8",
   "pytest>=8.0.0",
   "ruff>=0.5.0",
