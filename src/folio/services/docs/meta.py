@@ -34,6 +34,8 @@ DSL_KINDS: dict[str, str] = {
     "TextStyle": "style",
     "TransformBuilder": "builder",
     # Shape primitives (produce Element)
+    "annulus": "primitive",
+    "arc_text": "primitive",
     "circle": "primitive",
     "ellipse": "primitive",
     "group": "primitive",
@@ -47,6 +49,7 @@ DSL_KINDS: dict[str, str] = {
     "polyline": "primitive",
     "qr": "primitive",
     "rect": "primitive",
+    "ring": "primitive",
     "rule": "primitive",
     "span": "primitive",
     "text": "primitive",

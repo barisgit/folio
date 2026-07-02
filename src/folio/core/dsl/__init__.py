@@ -24,6 +24,8 @@ from folio.core.model import (
 )
 
 Block = _builtins.Block
+annulus = _builtins.annulus
+arc_text = _builtins.arc_text
 block = _builtins.block
 circle = _builtins.circle
 clip_path = _builtins.clip_path
@@ -62,6 +64,7 @@ transform_builder = _builtins.transform_builder
 radial_gradient = _builtins.radial_gradient
 rect = _builtins.rect
 render = _builtins.render
+ring = _builtins.ring
 rule = _builtins.rule
 span = _builtins.tspan
 stop = _builtins.stop
@@ -95,6 +98,8 @@ __all__ = [
     "TextSpan",
     "TextStyle",
     "TransformBuilder",
+    "annulus",
+    "arc_text",
     "block",
     "chart",
     "circle",
@@ -136,6 +141,7 @@ __all__ = [
     "radial_gradient",
     "rect",
     "render",
+    "ring",
     "rule",
     "span",
     "stop",

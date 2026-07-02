@@ -4,6 +4,7 @@ import __future__ as _future
 import re
 import types
 import warnings
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import cast
 
@@ -1128,6 +1129,158 @@ def test_path_builder_arc_to_emits_valid_svg_arc_flags() -> None:
 
     not_swept = path_builder().move_to(0, 0).arc_to(5, 5, 0, 5, 5, sweep=False)
     assert not_swept.build().split()[6] == "0"
+
+
+def test_path_raw_string_defaults_to_mm_and_scales() -> None:
+    """A raw ``d`` string is mm by default (consistent with circle/rect/text)."""
+    from folio.dsl import path
+
+    scaled = path("p", "M 10,10 L 20,20")
+    # 10mm * 72/25.4 ≈ 28.35pt, 20mm ≈ 56.69pt.
+    assert scaled.content == "M 28.35 28.35 L 56.69 56.69"
+
+
+def test_path_units_pt_emits_verbatim() -> None:
+    from folio.dsl import path
+
+    raw = path("p", "M 10,10 L 20,20", units="pt")
+    assert raw.content == "M 10,10 L 20,20"
+
+
+def test_path_mm_scaling_preserves_arc_rotation_and_flags() -> None:
+    """Scaling a raw mm arc must leave rotation/large/sweep flags untouched."""
+    from folio.dsl import path
+
+    arc = path("a", "M 0,0 A 5,5 0 0 1 10,0")
+    tokens_out = arc.content.split()
+    # M 0.0 0.0 A <rx> <ry> <rot> <large> <sweep> <x> <y>
+    assert tokens_out[3] == "A" or tokens_out[3].startswith("A")
+    # rotation/flags stay 0/0/1; radii and endpoints scale.
+    assert "0 0 1" in arc.content
+    assert tokens_out[-2:] == ["28.35", "0.0"]
+
+
+def test_path_mm_scaling_preserves_compact_arc_flags() -> None:
+    from folio.dsl import path
+
+    arc = path("a", "M0 0 A5 5 0 0110 0")
+    assert arc.content == "M 0.0 0.0 A 14.17 14.17 0 0 1 28.35 0.0"
+
+    repeated = path("a", "M0 0 A5 5 0 0110 0 6 6 0 1012 0")
+    assert repeated.content == (
+        "M 0.0 0.0 A 14.17 14.17 0 0 1 28.35 0.0 "
+        "17.01 17.01 0 1 0 34.02 0.0"
+    )
+
+
+def test_path_invalid_units_raises() -> None:
+    from folio.dsl import path
+
+    with pytest.raises(ValueError, match="units"):
+        path("p", "M 0,0", units="in")
+
+
+def test_arc_text_renders_textpath_riding_a_named_arc(tmp_path: Path) -> None:
+    from folio.dsl import arc_text
+
+    document = render(
+        page(
+            page_id="badge",
+            filename="badge.svg",
+            page_number=1,
+            elements=[
+                arc_text(
+                    "top",
+                    "FRESH & PURE",
+                    30,
+                    30,
+                    22,
+                    sweep="top",
+                    size_pt=8,
+                    fill=tokens.INK,
+                ),
+            ],
+        )
+    )
+
+    content = render_document(document, config_dir=tmp_path).pages[0].content
+    ET.fromstring(content)
+    # Reference arc emitted with a generated id the textPath points at.
+    assert 'id="top__arc"' in content
+    assert 'href="#top__arc"' in content
+    assert 'startOffset="50%"' in content
+    # Content is escaped; caller never wrote raw SVG.
+    assert "FRESH &amp; PURE" in content
+    assert 'inkscape:label="arc_text"' in content
+    # Chromium gotcha: the wrapping text element must sit at 0,0.
+    label_tag = re.search(r"<text\b[^>]*>", content).group(0)
+    assert 'x="0.0"' in label_tag
+    assert 'y="0.0"' in label_tag
+    assert 'text-anchor="middle"' in label_tag
+    # Styling kwargs flow through to the label exactly like text().
+    assert 'font-size="8.0"' in label_tag
+    assert f'fill="{tokens.INK}"' in label_tag
+
+
+def test_arc_text_sweep_bottom_flips_arc_flag(tmp_path: Path) -> None:
+    from folio.dsl import arc_text
+
+    top = arc_text("t", "X", 30, 30, 20, sweep="top")
+    bottom = arc_text("b", "X", 30, 30, 20, sweep="bottom")
+    # Arc path is the first child; its sweep flag differs between top/bottom.
+    top_sweep = top.children[0].content.split()[6]
+    bottom_sweep = bottom.children[0].content.split()[6]
+    assert top_sweep == "1"
+    assert bottom_sweep == "0"
+
+
+def test_arc_text_rejects_invalid_sweep() -> None:
+    from folio.dsl import arc_text
+
+    with pytest.raises(ValueError, match="sweep"):
+        arc_text("x", "hi", 0, 0, 10, sweep="left")
+
+
+def test_ring_and_annulus_render_evenodd_path(tmp_path: Path) -> None:
+    from folio.dsl import annulus, ring
+
+    document = render(
+        page(
+            page_id="rim_page",
+            filename="rim.svg",
+            page_number=1,
+            elements=[
+                ring("rim", 30, 30, 24, 3, fill=tokens.ACCENT),
+                annulus("hole", 30, 30, 10, 6, fill=tokens.INK),
+            ],
+        )
+    )
+
+    content = render_document(document, config_dir=tmp_path).pages[0].content
+    ET.fromstring(content)
+    assert '<path id="rim"' in content
+    assert '<path id="hole"' in content
+    assert 'fill-rule="evenodd"' in content
+
+
+def test_ring_keeps_inner_outer_radii_in_sync() -> None:
+    from folio.dsl import annulus, ring
+
+    # ring(outer=24, width=3) == annulus(outer=24, inner=21)
+    assert ring("r", 30, 30, 24, 3).content == annulus("r", 30, 30, 24, 21).content
+
+
+def test_ring_and_annulus_validate_radii() -> None:
+    from folio.dsl import annulus, ring
+
+    with pytest.raises(ValueError):
+        ring("r", 0, 0, 10, 0)  # zero width
+    with pytest.raises(ValueError):
+        ring("r", 0, 0, 10, 20)  # width exceeds outer radius
+    with pytest.raises(ValueError):
+        annulus("a", 0, 0, 10, 10)  # inner == outer
+    with pytest.raises(ValueError):
+        annulus("a", 0, 0, 10, 12)  # inner > outer
 
 
 def test_text_raw_is_replaced_by_markup_builder() -> None:

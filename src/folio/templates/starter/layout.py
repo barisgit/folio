@@ -506,6 +506,7 @@ def sparkline_chart(
     area = path(
         f"{element_id}_area",
         area_builder.build(),
+        units="pt",
         fill="url(#chart_area_gradient)",
         opacity=0.9,
     )

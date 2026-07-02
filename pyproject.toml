@@ -7,7 +7,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "folio-dsl"
-version = "0.1.0"
+version = "0.2.0"
 description = "Python DSL SVG page builder and reconciliation CLI"
 readme = "README.md"
 license = "MIT"

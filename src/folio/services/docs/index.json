@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-06-07T12:10:21Z",
+  "generated_at": "2026-07-02T10:43:54Z",
   "folio_version": "0.1.0",
   "symbols": [
     {
@@ -868,6 +868,152 @@
       "source": "folio.core.dsl.builtins:915"
     },
     {
+      "id": "folio.dsl.annulus",
+      "name": "annulus",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "annulus(element_id: 'str | None', cx_mm: 'float', cy_mm: 'float', outer_r_mm: 'float', inner_r_mm: 'float', *, fill: 'str | None' = None, stroke: 'str | None' = None, **attrs: 'Any') -> 'Element'",
+      "summary": "Create a filled annulus (a disk with a concentric circular hole).",
+      "description": "",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "cx_mm",
+          "type": "float",
+          "doc": "Center x in mm."
+        },
+        {
+          "name": "cy_mm",
+          "type": "float",
+          "doc": "Center y in mm."
+        },
+        {
+          "name": "outer_r_mm",
+          "type": "float",
+          "doc": "Outer radius in mm."
+        },
+        {
+          "name": "inner_r_mm",
+          "type": "float",
+          "doc": "Inner (hole) radius in mm."
+        },
+        {
+          "name": "fill",
+          "type": "str | None",
+          "doc": "Optional fill color."
+        },
+        {
+          "name": "stroke",
+          "type": "str | None",
+          "doc": "Optional stroke color."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra SVG attributes."
+        }
+      ],
+      "returns": {
+        "type": "Element",
+        "doc": "Element: A path primitive using ``fill-rule=\"evenodd\"``."
+      },
+      "examples": [
+        {
+          "code": "annulus(None, 30, 30, 24, 21, fill='#7a1f1f')",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "shape",
+        "badge",
+        "primitive"
+      ],
+      "source": "folio.core.dsl.builtins:2942"
+    },
+    {
+      "id": "folio.dsl.arc_text",
+      "name": "arc_text",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "arc_text(element_id: 'str | None', content: 'str', cx_mm: 'float', cy_mm: 'float', radius_mm: 'float', *, sweep: 'str' = 'top', start: 'str | float' = 'center', style: 'TextStyle | None' = None, anchor: 'str' = 'middle', **attrs: 'Any') -> 'Element'",
+      "summary": "Lay out a line of text along a circular arc (badge / seal text).",
+      "description": "Emits an invisible reference arc plus a ``<textPath>`` that rides it, so\ncallers never touch raw SVG, pt math, or the Chromium ``x/y=0,0`` rule.\nAll geometry is in mm like every other primitive.",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "content",
+          "type": "str",
+          "doc": "Plain text to curve (HTML-escaped automatically)."
+        },
+        {
+          "name": "cx_mm",
+          "type": "float",
+          "doc": "Arc center x in mm."
+        },
+        {
+          "name": "cy_mm",
+          "type": "float",
+          "doc": "Arc center y in mm."
+        },
+        {
+          "name": "radius_mm",
+          "type": "float",
+          "doc": "Arc radius in mm."
+        },
+        {
+          "name": "sweep",
+          "type": "str",
+          "doc": "``\"top\"`` curves text over the top (upright); ``\"bottom\"`` places upright text along the bottom."
+        },
+        {
+          "name": "start",
+          "type": "str | float",
+          "doc": "``\"center\"`` (default) centers the string on the arc apex via ``startOffset=\"50%\"``; any other value is passed through as the ``startOffset`` (e.g. ``\"25%\"``)."
+        },
+        {
+          "name": "style",
+          "type": "TextStyle | None",
+          "doc": "Optional :class:`TextStyle` applied to the label."
+        },
+        {
+          "name": "anchor",
+          "type": "str",
+          "doc": "Text anchor (``\"middle\"`` by default so centered text sits on the apex)."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra text attributes (``size_pt``, ``family``, ``weight``, ``fill``, ``letter_spacing``, ``filter``...) passed to the label."
+        }
+      ],
+      "returns": {
+        "type": "Element",
+        "doc": "Element: A group containing the reference arc and the curved label."
+      },
+      "examples": [
+        {
+          "code": "arc_text('top', 'FRESH PRESERVES', 30, 30, 22, sweep='top', size_pt=8)",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "text",
+        "badge",
+        "primitive"
+      ],
+      "source": "folio.core.dsl.builtins:2848"
+    },
+    {
       "id": "folio.dsl.block",
       "name": "block",
       "kind": "builder",
@@ -1064,7 +1210,7 @@
         "defs",
         "clipping"
       ],
-      "source": "folio.core.dsl.builtins:2440"
+      "source": "folio.core.dsl.builtins:2513"
     },
     {
       "id": "folio.dsl.collection",
@@ -1101,7 +1247,7 @@
         "document",
         "collection"
       ],
-      "source": "folio.core.dsl.builtins:2822"
+      "source": "folio.core.dsl.builtins:3085"
     },
     {
       "id": "folio.dsl.cols",
@@ -1176,7 +1322,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.core.dsl.builtins:2358"
+      "source": "folio.core.dsl.builtins:2431"
     },
     {
       "id": "folio.dsl.document",
@@ -1242,7 +1388,7 @@
       "tags": [
         "document"
       ],
-      "source": "folio.core.dsl.builtins:2775"
+      "source": "folio.core.dsl.builtins:3038"
     },
     {
       "id": "folio.dsl.drop_shadow",
@@ -1300,7 +1446,7 @@
         "filter",
         "shadow"
       ],
-      "source": "folio.core.dsl.builtins:2532"
+      "source": "folio.core.dsl.builtins:2605"
     },
     {
       "id": "folio.dsl.ellipse",
@@ -1399,7 +1545,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.core.dsl.builtins:2299"
+      "source": "folio.core.dsl.builtins:2372"
     },
     {
       "id": "folio.dsl.flow_cols",
@@ -1474,7 +1620,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.core.dsl.builtins:2381"
+      "source": "folio.core.dsl.builtins:2454"
     },
     {
       "id": "folio.dsl.gaussian_blur",
@@ -1511,7 +1657,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.core.dsl.builtins:2322"
+      "source": "folio.core.dsl.builtins:2395"
     },
     {
       "id": "folio.dsl.grain",
@@ -1574,7 +1720,7 @@
         "filter",
         "texture"
       ],
-      "source": "folio.core.dsl.builtins:2578"
+      "source": "folio.core.dsl.builtins:2651"
     },
     {
       "id": "folio.dsl.grid",
@@ -1664,7 +1810,7 @@
         "layout",
         "primitive"
       ],
-      "source": "folio.core.dsl.builtins:2036"
+      "source": "folio.core.dsl.builtins:2037"
     },
     {
       "id": "folio.dsl.idml",
@@ -1811,7 +1957,7 @@
         "shape",
         "primitive"
       ],
-      "source": "folio.core.dsl.builtins:2090"
+      "source": "folio.core.dsl.builtins:2163"
     },
     {
       "id": "folio.dsl.linear_gradient",
@@ -1853,7 +1999,7 @@
         "defs",
         "gradient"
       ],
-      "source": "folio.core.dsl.builtins:2245"
+      "source": "folio.core.dsl.builtins:2318"
     },
     {
       "id": "folio.dsl.linear_gradient_stops",
@@ -1900,7 +2046,7 @@
         "defs",
         "gradient"
       ],
-      "source": "folio.core.dsl.builtins:2486"
+      "source": "folio.core.dsl.builtins:2559"
     },
     {
       "id": "folio.dsl.markup",
@@ -1931,7 +2077,7 @@
       "tags": [
         "text"
       ],
-      "source": "folio.core.dsl.builtins:2206"
+      "source": "folio.core.dsl.builtins:2279"
     },
     {
       "id": "folio.dsl.mask",
@@ -1973,7 +2119,7 @@
         "defs",
         "masking"
       ],
-      "source": "folio.core.dsl.builtins:2463"
+      "source": "folio.core.dsl.builtins:2536"
     },
     {
       "id": "folio.dsl.measure_text",
@@ -2119,7 +2265,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.core.dsl.builtins:2399"
+      "source": "folio.core.dsl.builtins:2472"
     },
     {
       "id": "folio.dsl.merge_node",
@@ -2156,7 +2302,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.core.dsl.builtins:2422"
+      "source": "folio.core.dsl.builtins:2495"
     },
     {
       "id": "folio.dsl.multiline",
@@ -2255,7 +2401,7 @@
         "defs",
         "filter"
       ],
-      "source": "folio.core.dsl.builtins:2340"
+      "source": "folio.core.dsl.builtins:2413"
     },
     {
       "id": "folio.dsl.page",
@@ -2344,7 +2490,7 @@
       "name": "path",
       "kind": "primitive",
       "module": "folio.dsl",
-      "signature": "path(element_id: 'str | None', d: 'str | PathBuilder', **attrs: 'Any') -> 'Element'",
+      "signature": "path(element_id: 'str | None', d: 'str | PathBuilder', *, units: 'str' = 'mm', **attrs: 'Any') -> 'Element'",
       "summary": "Create a path Element from an SVG ``d`` string or :class:`PathBuilder`.",
       "description": "",
       "params": [
@@ -2356,7 +2502,12 @@
         {
           "name": "d",
           "type": "str | PathBuilder",
-          "doc": "Raw SVG path data string or a :class:`PathBuilder` to build from."
+          "doc": "Path data. A :class:`PathBuilder` (recommended) already works in mm and is used verbatim. A raw string is interpreted according to ``units``."
+        },
+        {
+          "name": "units",
+          "type": "str",
+          "doc": "Units for a raw ``d`` string — ``\"mm\"`` (default, consistent with every other primitive; coordinates are scaled to pt) or ``\"pt\"`` (advanced escape hatch; emitted verbatim as pt user units). Ignored when ``d`` is a :class:`PathBuilder`."
         },
         {
           "name": "attrs",
@@ -2370,7 +2521,7 @@
       },
       "examples": [
         {
-          "code": "path(None, path_builder().move_to(0, 0).line_to(10, 10), stroke='#0a1628')",
+          "code": "path(None, path_builder().move_to(0, 0).line_to(10, 10), stroke='#0a1628')\npath(None, 'M 10,10 L 20,20')              # mm, like circle/rect/text\npath(None, 'M 28.35,28.35', units='pt')    # advanced: raw pt user units",
           "caption": null,
           "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
         }
@@ -2379,7 +2530,7 @@
         "path",
         "primitive"
       ],
-      "source": "folio.core.dsl.builtins:2066"
+      "source": "folio.core.dsl.builtins:2117"
     },
     {
       "id": "folio.dsl.path_builder",
@@ -2405,7 +2556,7 @@
         "path",
         "builder"
       ],
-      "source": "folio.core.dsl.builtins:2660"
+      "source": "folio.core.dsl.builtins:2733"
     },
     {
       "id": "folio.dsl.pdf",
@@ -2699,7 +2850,7 @@
         "defs",
         "gradient"
       ],
-      "source": "folio.core.dsl.builtins:2272"
+      "source": "folio.core.dsl.builtins:2345"
     },
     {
       "id": "folio.dsl.rect",
@@ -2799,7 +2950,75 @@
       },
       "examples": [],
       "tags": [],
-      "source": "folio.core.dsl.builtins:2851"
+      "source": "folio.core.dsl.builtins:3114"
+    },
+    {
+      "id": "folio.dsl.ring",
+      "name": "ring",
+      "kind": "primitive",
+      "module": "folio.dsl",
+      "signature": "ring(element_id: 'str | None', cx_mm: 'float', cy_mm: 'float', outer_r_mm: 'float', width_mm: 'float', *, fill: 'str | None' = None, stroke: 'str | None' = None, **attrs: 'Any') -> 'Element'",
+      "summary": "Create a concentric rim of thickness ``width_mm`` at ``outer_r_mm``.",
+      "description": "A thickness-first convenience over :func:`annulus` that keeps inner and\nouter radii in sync automatically (``inner = outer_r_mm - width_mm``).",
+      "params": [
+        {
+          "name": "element_id",
+          "type": "str | None",
+          "doc": "Stable id (``None`` auto-generates one)."
+        },
+        {
+          "name": "cx_mm",
+          "type": "float",
+          "doc": "Center x in mm."
+        },
+        {
+          "name": "cy_mm",
+          "type": "float",
+          "doc": "Center y in mm."
+        },
+        {
+          "name": "outer_r_mm",
+          "type": "float",
+          "doc": "Outer radius in mm."
+        },
+        {
+          "name": "width_mm",
+          "type": "float",
+          "doc": "Rim thickness in mm."
+        },
+        {
+          "name": "fill",
+          "type": "str | None",
+          "doc": "Optional fill color."
+        },
+        {
+          "name": "stroke",
+          "type": "str | None",
+          "doc": "Optional stroke color."
+        },
+        {
+          "name": "attrs",
+          "type": "Any",
+          "doc": "Extra SVG attributes."
+        }
+      ],
+      "returns": {
+        "type": "Element",
+        "doc": "Element: A path primitive using ``fill-rule=\"evenodd\"``."
+      },
+      "examples": [
+        {
+          "code": "ring(None, 30, 30, 24, 3, fill='#c8a24a')",
+          "caption": null,
+          "setup": "from folio.dsl import *  # noqa: F401,F403\nfrom folio.dsl import tokens  # noqa: F401\n"
+        }
+      ],
+      "tags": [
+        "shape",
+        "badge",
+        "primitive"
+      ],
+      "source": "folio.core.dsl.builtins:2988"
     },
     {
       "id": "folio.dsl.rule",
@@ -2866,7 +3085,7 @@
         "layout",
         "primitive"
       ],
-      "source": "folio.core.dsl.builtins:2126"
+      "source": "folio.core.dsl.builtins:2199"
     },
     {
       "id": "folio.dsl.span",
@@ -2950,7 +3169,7 @@
         "defs",
         "gradient"
       ],
-      "source": "folio.core.dsl.builtins:2227"
+      "source": "folio.core.dsl.builtins:2300"
     },
     {
       "id": "folio.dsl.svg",
@@ -3029,7 +3248,7 @@
       "tags": [
         "defs"
       ],
-      "source": "folio.core.dsl.builtins:2169"
+      "source": "folio.core.dsl.builtins:2242"
     },
     {
       "id": "folio.dsl.text",
@@ -4657,7 +4876,7 @@
         "transform",
         "builder"
       ],
-      "source": "folio.core.dsl.builtins:2646"
+      "source": "folio.core.dsl.builtins:2719"
     },
     {
       "id": "folio.dsl.triangle",
@@ -4734,7 +4953,7 @@
         "shape",
         "primitive"
       ],
-      "source": "folio.core.dsl.builtins:2678"
+      "source": "folio.core.dsl.builtins:2751"
     },
     {
       "id": "folio.dsl.tspan",

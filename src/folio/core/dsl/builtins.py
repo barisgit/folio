@@ -2027,6 +2027,7 @@ def qr(
                 size_mm=matrix_size_mm,
                 border_modules=border_modules,
             ),
+            units="pt",
             fill=fill,
         )
     )
@@ -2063,12 +2064,74 @@ def group(
     )
 
 
-def path(element_id: str | None, d: str | PathBuilder, **attrs: Any) -> Element:
+_PATH_UNITS = ("mm", "pt")
+_PATH_TOKEN_RE = re.compile(
+    r"([MmLlHhVvCcSsQqTtAaZz])|(-?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?)"
+)
+_PATH_PARAM_COUNTS = {
+    "M": 2, "L": 2, "H": 1, "V": 1, "C": 6, "S": 4, "Q": 4, "T": 2, "A": 7, "Z": 0,
+}
+# Within an elliptical-arc (A/a) command the rotation (index 2) and the two
+# arc flags (indices 3, 4) are unit-less and must never be scaled — mirrors
+# :meth:`PathBuilder.arc_to`.
+_ARC_NOSCALE_POS = frozenset({2, 3, 4})
+
+
+def _scale_path_data(d: str, scale: float) -> str:
+    """Scale every coordinate in an SVG ``d`` string by ``scale``.
+
+    Command letters, the arc rotation, and the arc large/sweep flags pass
+    through unchanged so the result stays a valid path. Used to convert a
+    raw mm path string into pt user units consistently with the rest of the
+    DSL.
+    """
+    out: list[str] = []
+    command = ""
+    n_params = 0
+    pos = 0
+    for cmd_tok, num_tok in _PATH_TOKEN_RE.findall(d):
+        if cmd_tok:
+            command = cmd_tok
+            n_params = _PATH_PARAM_COUNTS.get(cmd_tok.upper(), 0)
+            pos = 0
+            out.append(cmd_tok)
+            continue
+        if not num_tok:
+            continue
+        remaining = num_tok
+        while remaining:
+            local = pos % n_params if n_params else 0
+            if command.upper() == "A" and local in (3, 4) and remaining[0] in "01":
+                out.append(remaining[0])
+                remaining = remaining[1:]
+            else:
+                if command.upper() == "A" and local in _ARC_NOSCALE_POS:
+                    out.append(remaining)
+                else:
+                    out.append(str(round(float(remaining) * scale, 2)))
+                remaining = ""
+            pos += 1
+    return " ".join(out)
+
+
+def path(
+    element_id: str | None,
+    d: str | PathBuilder,
+    *,
+    units: str = "mm",
+    **attrs: Any,
+) -> Element:
     """Create a path Element from an SVG ``d`` string or :class:`PathBuilder`.
 
     Args:
         element_id: Stable id (``None`` auto-generates one).
-        d: Raw SVG path data string or a :class:`PathBuilder` to build from.
+        d: Path data. A :class:`PathBuilder` (recommended) already works in
+            mm and is used verbatim. A raw string is interpreted according to
+            ``units``.
+        units: Units for a raw ``d`` string — ``"mm"`` (default, consistent
+            with every other primitive; coordinates are scaled to pt) or
+            ``"pt"`` (advanced escape hatch; emitted verbatim as pt user
+            units). Ignored when ``d`` is a :class:`PathBuilder`.
         attrs: Extra SVG attributes.
 
     Returns:
@@ -2076,13 +2139,23 @@ def path(element_id: str | None, d: str | PathBuilder, **attrs: Any) -> Element:
 
     Example:
         path(None, path_builder().move_to(0, 0).line_to(10, 10), stroke='#0a1628')
+        path(None, 'M 10,10 L 20,20')              # mm, like circle/rect/text
+        path(None, 'M 28.35,28.35', units='pt')    # advanced: raw pt user units
 
     Tags: path, primitive
     """
+    if units not in _PATH_UNITS:
+        raise ValueError(f"path() units must be one of {_PATH_UNITS}, got {units!r}")
+    if isinstance(d, PathBuilder):
+        content = d.build()
+    elif units == "mm":
+        content = _scale_path_data(d, MM_TO_PT)
+    else:
+        content = d
     return Element(
         kind=ElementKind.PATH,
         element_id=_element_id("path", element_id),
-        content=d.build() if isinstance(d, PathBuilder) else d,
+        content=content,
         attrs=dict(attrs),
     )
 
@@ -2770,6 +2843,196 @@ def triangle(
     for x_point, y_point in points[1:]:
         builder.line_to(x_point, y_point)
     return path(element_id, builder.close(), **attrs)
+
+
+def arc_text(
+    element_id: str | None,
+    content: str,
+    cx_mm: float,
+    cy_mm: float,
+    radius_mm: float,
+    *,
+    sweep: str = "top",
+    start: str | float = "center",
+    style: TextStyle | None = None,
+    anchor: str = "middle",
+    **attrs: Any,
+) -> Element:
+    """Lay out a line of text along a circular arc (badge / seal text).
+
+    Emits an invisible reference arc plus a ``<textPath>`` that rides it, so
+    callers never touch raw SVG, pt math, or the Chromium ``x/y=0,0`` rule.
+    All geometry is in mm like every other primitive.
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        content: Plain text to curve (HTML-escaped automatically).
+        cx_mm: Arc center x in mm.
+        cy_mm: Arc center y in mm.
+        radius_mm: Arc radius in mm.
+        sweep: ``"top"`` curves text over the top (upright); ``"bottom"``
+            places upright text along the bottom.
+        start: ``"center"`` (default) centers the string on the arc apex via
+            ``startOffset="50%"``; any other value is passed through as the
+            ``startOffset`` (e.g. ``"25%"``).
+        style: Optional :class:`TextStyle` applied to the label.
+        anchor: Text anchor (``"middle"`` by default so centered text sits on
+            the apex).
+        attrs: Extra text attributes (``size_pt``, ``family``, ``weight``,
+            ``fill``, ``letter_spacing``, ``filter``...) passed to the label.
+
+    Returns:
+        Element: A group containing the reference arc and the curved label.
+
+    Example:
+        arc_text('top', 'FRESH PRESERVES', 30, 30, 22, sweep='top', size_pt=8)
+
+    Tags: text, badge, primitive
+    """
+    if sweep not in ("top", "bottom"):
+        raise ValueError(f"arc_text() sweep must be 'top' or 'bottom', got {sweep!r}")
+    base_id = _element_id("arc_text", element_id)
+    arc_id = f"{base_id}__arc"
+    # sweep="top" -> SVG sweep flag 1 (arc bulges over the top, text upright);
+    # sweep="bottom" -> flag 0 (bulges under the bottom, text upright beneath).
+    arc_builder = (
+        path_builder()
+        .move_to(cx_mm - radius_mm, cy_mm)
+        .arc_to(
+            radius_mm,
+            radius_mm,
+            0,
+            cx_mm + radius_mm,
+            cy_mm,
+            sweep=(sweep == "top"),
+        )
+    )
+    arc_path = path(arc_id, arc_builder, fill="none")
+    start_offset = "50%" if start == "center" else str(start)
+    inner = html.escape(content, quote=False)
+    label = text(
+        f"{base_id}__label",
+        0,
+        0,
+        markup(
+            f'<textPath href="#{arc_id}" startOffset="{start_offset}">{inner}</textPath>'
+        ),
+        style=style,
+        anchor=anchor,
+        **attrs,
+    )
+    return group(base_id, "arc_text", arc_path, label)
+
+
+def _annulus_builder(
+    cx_mm: float, cy_mm: float, outer_r_mm: float, inner_r_mm: float
+) -> PathBuilder:
+    builder = path_builder()
+    for radius_mm in (outer_r_mm, inner_r_mm):
+        # A full circle as two half-arcs; even-odd fill turns the inner
+        # circle into a hole.
+        builder.move_to(cx_mm + radius_mm, cy_mm).arc_to(
+            radius_mm, radius_mm, 0, cx_mm - radius_mm, cy_mm, sweep=True
+        ).arc_to(
+            radius_mm, radius_mm, 0, cx_mm + radius_mm, cy_mm, sweep=True
+        ).close()
+    return builder
+
+
+def annulus(
+    element_id: str | None,
+    cx_mm: float,
+    cy_mm: float,
+    outer_r_mm: float,
+    inner_r_mm: float,
+    *,
+    fill: str | None = None,
+    stroke: str | None = None,
+    **attrs: Any,
+) -> Element:
+    """Create a filled annulus (a disk with a concentric circular hole).
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        cx_mm: Center x in mm.
+        cy_mm: Center y in mm.
+        outer_r_mm: Outer radius in mm.
+        inner_r_mm: Inner (hole) radius in mm.
+        fill: Optional fill color.
+        stroke: Optional stroke color.
+        attrs: Extra SVG attributes.
+
+    Returns:
+        Element: A path primitive using ``fill-rule="evenodd"``.
+
+    Example:
+        annulus(None, 30, 30, 24, 21, fill='#7a1f1f')
+
+    Tags: shape, badge, primitive
+    """
+    if outer_r_mm <= 0:
+        raise ValueError("annulus() outer_r_mm must be positive")
+    if not 0 <= inner_r_mm < outer_r_mm:
+        raise ValueError("annulus() requires 0 <= inner_r_mm < outer_r_mm")
+    merged: dict[str, Any] = {"fill_rule": "evenodd"}
+    if fill is not None:
+        merged["fill"] = fill
+    if stroke is not None:
+        merged["stroke"] = stroke
+    merged.update(attrs)
+    return path(
+        element_id, _annulus_builder(cx_mm, cy_mm, outer_r_mm, inner_r_mm), **merged
+    )
+
+
+def ring(
+    element_id: str | None,
+    cx_mm: float,
+    cy_mm: float,
+    outer_r_mm: float,
+    width_mm: float,
+    *,
+    fill: str | None = None,
+    stroke: str | None = None,
+    **attrs: Any,
+) -> Element:
+    """Create a concentric rim of thickness ``width_mm`` at ``outer_r_mm``.
+
+    A thickness-first convenience over :func:`annulus` that keeps inner and
+    outer radii in sync automatically (``inner = outer_r_mm - width_mm``).
+
+    Args:
+        element_id: Stable id (``None`` auto-generates one).
+        cx_mm: Center x in mm.
+        cy_mm: Center y in mm.
+        outer_r_mm: Outer radius in mm.
+        width_mm: Rim thickness in mm.
+        fill: Optional fill color.
+        stroke: Optional stroke color.
+        attrs: Extra SVG attributes.
+
+    Returns:
+        Element: A path primitive using ``fill-rule="evenodd"``.
+
+    Example:
+        ring(None, 30, 30, 24, 3, fill='#c8a24a')
+
+    Tags: shape, badge, primitive
+    """
+    if width_mm <= 0:
+        raise ValueError("ring() width_mm must be positive")
+    if width_mm > outer_r_mm:
+        raise ValueError("ring() width_mm must not exceed outer_r_mm")
+    return annulus(
+        element_id,
+        cx_mm,
+        cy_mm,
+        outer_r_mm,
+        outer_r_mm - width_mm,
+        fill=fill,
+        stroke=stroke,
+        **attrs,
+    )
 
 
 def document(
